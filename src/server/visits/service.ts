@@ -384,6 +384,30 @@ export function listFeed(db: AppDb, ctx: AuthCtx, raw: FeedInput): FeedPage {
   return { rows: out, nextCursor };
 }
 
+/**
+ * All visits visible to ctx, paged through the same serializer as the feed
+ * (journalMd only for editors). Used by the export; visibility stays in the
+ * SQL predicate of listFeed, never in a JS filter here.
+ */
+export async function* visitPagesForExport(
+  db: AppDb,
+  ctx: AuthCtx,
+  pageSize = 100,
+): AsyncGenerator<SerializedVisit[]> {
+  let cursor: string | undefined;
+  for (;;) {
+    const page = listFeed(db, ctx, {
+      limit: Math.min(Math.max(1, pageSize), 100),
+      ...(cursor ? { cursor } : {}),
+    });
+    if (page.rows.length === 0) return;
+    yield page.rows;
+    if (!page.nextCursor) return;
+    cursor = page.nextCursor;
+    await new Promise<void>((resolve) => setImmediate(resolve));
+  }
+}
+
 /** Counts over visible visits only; countries come from visible locations. */
 export function yearReview(db: AppDb, ctx: AuthCtx, raw: { year: number }): YearReview {
   const { year } = parseInput(yearInput, raw);

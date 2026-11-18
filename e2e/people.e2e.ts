@@ -16,15 +16,12 @@ test("admin invites a member, who has no admin access", async ({ adminPage, page
   const username = uniqueName("lena");
   await acceptInvite(page, link, { username, password: "lenas-password-1", displayName: "Lena" });
 
-  // Members cannot open the admin area at all (admin-only in this stage).
-  await expect(page.getByRole("link", { name: "Verwaltung" })).toHaveCount(0);
-  for (const path of [
-    "/admin",
-    "/admin/users",
-    "/admin/invites",
-    "/admin/groups",
-    "/admin/settings",
-  ]) {
+  // Members can only open the export section of the admin area.
+  await expect(page.getByRole("link", { name: "Verwaltung" }).first()).toBeVisible();
+  await page.goto("/admin");
+  await expect(page).toHaveURL(/\/admin\/export$/);
+  await expect(page.getByRole("heading", { name: "Daten exportieren" })).toBeVisible();
+  for (const path of ["/admin/users", "/admin/invites", "/admin/groups", "/admin/settings"]) {
     await page.goto(path);
     await expect(page.getByText("Seite nicht gefunden.")).toBeVisible();
   }

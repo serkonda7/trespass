@@ -26,7 +26,7 @@ const NAV: NavItem[] = [
   { to: "/", label: m.nav_map, icon: "⌂" },
   { to: "/logbuch", label: m.nav_logbook, icon: "▤" },
   { to: "/suche", label: m.nav_search, icon: "⌕" },
-  { to: "/admin", label: m.nav_admin, icon: "⚙", roles: ["admin"] },
+  { to: "/admin", label: m.nav_admin, icon: "⚙", roles: ["admin", "member"] },
 ];
 
 export async function logout() {

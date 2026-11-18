@@ -2,7 +2,7 @@
 // request; ./functions.ts adds authMiddleware, ./upload.ts handles multipart.
 // Every visibility decision comes from src/server/authz/photos.ts and is
 // enforced in SQL. Precise-only fields are added to the DTO on the server.
-import { and, asc, eq, isNull, type SQL } from "drizzle-orm";
+import { and, asc, eq, gt, isNull, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import type { z } from "zod";
 import {
@@ -67,9 +67,14 @@ function parse<S extends z.ZodType>(schema: S, input: unknown): z.output<S> {
 }
 
 /** One SQL query, with the visibility predicate ANDed in, never JS filtering. */
-function selectRows(db: DbOrTx, ctx: AuthCtx, where: SQL[]): PhotoRow[] {
+function selectRows(
+  db: DbOrTx,
+  ctx: AuthCtx,
+  where: SQL[],
+  opts: { byId?: boolean; limit?: number } = {},
+): PhotoRow[] {
   const loc = photoLoc();
-  return db
+  const query = db
     .select({
       photo: photos,
       locationId: loc.id,
@@ -83,9 +88,11 @@ function selectRows(db: DbOrTx, ctx: AuthCtx, where: SQL[]): PhotoRow[] {
     .from(photos)
     .leftJoin(loc, eq(loc.id, photos.locationId))
     .leftJoin(users, eq(users.id, photos.uploaderId))
-    .where(and(visiblePhotosWhere(ctx, photos), ...where))
-    .orderBy(asc(photos.sort), asc(photos.takenAt), asc(photos.createdAt), asc(photos.id))
-    .all();
+    .where(and(visiblePhotosWhere(ctx, photos), ...where));
+  const ordered = opts.byId
+    ? query.orderBy(asc(photos.id))
+    : query.orderBy(asc(photos.sort), asc(photos.takenAt), asc(photos.createdAt), asc(photos.id));
+  return (opts.limit === undefined ? ordered : ordered.limit(opts.limit)).all();
 }
 
 function requireRow(db: DbOrTx, ctx: AuthCtx, id: string): PhotoRow {
@@ -214,6 +221,45 @@ export function listPhotos(db: AppDb, ctx: AuthCtx, raw: unknown): PhotoList {
 export function getPhoto(db: AppDb, ctx: AuthCtx, raw: unknown): SerializedPhoto {
   const { id } = parse(photoIdInput, raw);
   return serialize(db, ctx, requireRow(db, ctx, id));
+}
+
+/** DTO plus the storage fields the export needs for the file itself. */
+export type PhotoExportRow = {
+  dto: SerializedPhoto;
+  sha256: string;
+  mime: string;
+  status: SerializedPhoto["status"];
+  uploaderId: string;
+};
+
+/**
+ * All photos visible to ctx, paged by id. DTOs come from the same serializer
+ * as getPhoto/listPhotos (no GPS or original URL below the allowed level);
+ * visibility is ANDed into the SQL query, never filtered in JS.
+ */
+export async function* photoPagesForExport(
+  db: AppDb,
+  ctx: AuthCtx,
+  pageSize = 500,
+): AsyncGenerator<PhotoExportRow[]> {
+  let after = "";
+  for (;;) {
+    const rows = selectRows(db, ctx, [gt(photos.id, after)], {
+      byId: true,
+      limit: pageSize,
+    });
+    if (rows.length === 0) return;
+    after = rows[rows.length - 1]?.photo.id ?? after;
+    const page = rows.map((row) => ({
+      dto: serialize(db, ctx, row),
+      sha256: row.photo.sha256,
+      mime: row.photo.mime,
+      status: row.photo.status,
+      uploaderId: row.photo.uploaderId,
+    }));
+    yield page;
+    await new Promise<void>((resolve) => setImmediate(resolve));
+  }
 }
 
 /**
