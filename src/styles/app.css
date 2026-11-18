@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+/* Design tokens (shadcn-style). Dark only; WCAG AA contrast. */
+:root {
+  color-scheme: dark;
+  --background: oklch(0.17 0.01 260);
+  --foreground: oklch(0.88 0.005 260);
+  --muted: oklch(0.24 0.012 260);
+  --muted-foreground: oklch(0.72 0.015 260);
+  --card: oklch(0.21 0.012 260);
+  --card-foreground: var(--foreground);
+  --popover: oklch(0.23 0.012 260);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(0.72 0.12 250);
+  --primary-foreground: oklch(0.17 0.02 260);
+  --secondary: oklch(0.28 0.012 260);
+  --secondary-foreground: var(--foreground);
+  --accent: oklch(0.3 0.03 250);
+  --accent-foreground: var(--foreground);
+  --destructive: oklch(0.7 0.14 25);
+  --destructive-foreground: oklch(0.17 0.02 25);
+  --success: oklch(0.74 0.14 150);
+  --border: oklch(0.31 0.012 260);
+  --input: oklch(0.5 0.012 260);
+  --ring: oklch(0.72 0.13 250);
+  --radius: 0.5rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+    /* Tailwind's ring offset defaults to white; match the dark page instead. */
+    --tw-ring-offset-color: var(--color-background);
+  }
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Kobalte exposes open/closed state via data attributes; keep transitions subtle. */
+@keyframes tr-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes tr-zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes tr-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.tr-animate-fade[data-expanded] {
+  animation: tr-fade-in 150ms ease-out;
+}
+.tr-animate-zoom[data-expanded] {
+  animation: tr-zoom-in 150ms ease-out;
+}
+.tr-animate-slide[data-opened] {
+  animation: tr-slide-in 150ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tr-animate-fade,
+  .tr-animate-zoom,
+  .tr-animate-slide {
+    animation: none;
+  }
+}

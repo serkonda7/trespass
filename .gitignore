@@ -1,0 +1,16 @@
+node_modules/
+.output/
+.nitro/
+.tanstack/
+dist/
+src/routeTree.gen.ts
+.env
+.env.*
+!.env.example
+!.env.backup.example
+data/
+deploy/data/
+deploy/ts-state/
+src/paraglide/
+test-results/
+playwright-report/

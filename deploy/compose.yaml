@@ -1,0 +1,110 @@
+# Trespass production stack. Run from /opt/trespass/deploy.
+# Nothing here publishes a host port: Caddy lives in the Tailscale netns.
+name: trespass
+
+services:
+  tailscale:
+    image: tailscale/tailscale:v1.104.4
+    hostname: trespass
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY:-} # one-off key, tagged tag:trespass; only needed on first start
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "false" # kernel TUN (needs /dev/net/tun)
+      TS_EXTRA_ARGS: --advertise-tags=tag:trespass
+    volumes: ["./ts-state:/var/lib/tailscale"]
+    devices: ["/dev/net/tun:/dev/net/tun"]
+    cap_add: [NET_ADMIN, NET_RAW]
+    mem_limit: 128m
+    restart: unless-stopped
+
+  caddy:
+    build: ./caddy
+    image: trespass-caddy:2.11.9
+    network_mode: service:tailscale # listens on the tailnet only
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+      DESEC_TOKEN: ${DESEC_TOKEN:?set DESEC_TOKEN in .env}
+      ACME_CA: ${ACME_CA:-https://acme-staging-v02.api.letsencrypt.org/directory}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [tailscale, app]
+    mem_limit: 256m
+    restart: unless-stopped
+
+  app:
+    build: ..
+    image: trespass-app:${APP_VERSION:-dev}
+    environment:
+      ORIGIN: https://${DOMAIN}
+      DATABASE_PATH: /data/db/app.sqlite
+      UPLOAD_DIR: /data/uploads
+      BETTER_AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET in .env (openssl rand -base64 48)}
+      # Optional integrations for later stages; empty means disabled.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      SMTP_URL: ${SMTP_URL:-}
+      NTFY_URL: ${NTFY_URL:-}
+      HEALTHCHECK_URL: ${HEALTHCHECK_URL:-}
+    volumes: ["./data:/data"]
+    mem_limit: 512m
+    restart: unless-stopped
+
+  # Separate worker process: claims jobs from the shared jobs table (DESIGN §10).
+  worker:
+    build: ..
+    image: trespass-app:${APP_VERSION:-dev}
+    command: ["bun", "run", "worker"]
+    environment:
+      ORIGIN: https://${DOMAIN}
+      DATABASE_PATH: /data/db/app.sqlite
+      UPLOAD_DIR: /data/uploads
+      BETTER_AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET in .env (openssl rand -base64 48)}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      SMTP_URL: ${SMTP_URL:-}
+      NTFY_URL: ${NTFY_URL:-}
+    volumes: ["./data:/data"]
+    depends_on: [app] # the app migrates the database at startup
+    mem_limit: 768m
+    restart: unless-stopped
+
+  # Optional research search backend: `docker compose --profile research up -d`.
+  searxng:
+    image: searxng/searxng:2025.10.0
+    profiles: [research]
+    environment:
+      SEARXNG_BASE_URL: http://searxng:8080/
+    volumes: ["./data/cache/searxng:/etc/searxng"]
+    mem_limit: 256m
+    restart: unless-stopped
+
+  litestream:
+    image: litestream/litestream:0.5.18
+    command: replicate -config /etc/litestream.yml
+    volumes:
+      - ./data/db:/data/db
+      - ./litestream.yml:/etc/litestream.yml:ro
+    env_file: .env.backup
+    depends_on: [app]
+    mem_limit: 128m
+    restart: unless-stopped
+
+  # One-shot: `docker compose run --rm restic <args>` (used by backup-uploads.sh)
+  restic:
+    image: restic/restic:0.19.1
+    profiles: [tools]
+    env_file: .env.backup
+    volumes:
+      - ./data/uploads:/data/uploads:ro
+      - restic_cache:/root/.cache/restic
+    hostname: trespass
+    mem_limit: 256m
+
+volumes:
+  caddy_data: {}
+  caddy_config: {}
+  restic_cache: {}

@@ -1,0 +1,23 @@
+// Every job handler of the app, registered with the process-wide registry.
+// Imported by the standalone worker (`scripts/worker.ts`) before it starts.
+// A feature adds its handlers here (relative imports only: Nitro/standalone
+// bundling may happen outside Vite's `~` alias).
+import { pruneJobs } from "./queue";
+import { nextDailyInBerlin } from "./schedule";
+import { addJobHandler, jobRegistry } from "./worker";
+
+let done = false;
+
+export function registerAllJobHandlers() {
+  if (done) return;
+  done = true;
+  const registry = jobRegistry();
+  // Generic maintenance: drop successfully finished jobs older than seven days.
+  // Handlers must be idempotent, so a crash re-runs this safely.
+  addJobHandler(
+    registry,
+    "jobs.prune",
+    (_payload, { db }) => pruneJobs(db, new Date(Date.now() - 7 * 86_400_000)),
+    { recurring: { next: (now) => nextDailyInBerlin(now, 3) } },
+  );
+}
