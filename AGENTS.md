@@ -6,8 +6,10 @@ Drizzle, Better Auth (password + passkeys, invite-only), Tailwind 4 + Kobalte,
 Paraglide (German only), Biome, `bun test`, Playwright. Dependencies are pinned
 exactly: add one with `bun add --exact`, only on purpose.
 
-Stage 1 is the **foundation only**: identity, admin and jobs. Locations, map,
-journal, photos, trips, research and export come in later stages.
+The MVP (DESIGN §12) is in place: identity, admin and jobs, locations with
+coordinate privacy, map and tile regions, visits/journal, photos, search and
+export. History, comments, trips, equipment, push, offline and research are
+later versions (v1.1+).
 
 ## Layout
 - `src/routes/` file routes. Pages needing login live under `_authed/` (the
