@@ -29,6 +29,8 @@ export const LOCATION_STATUSES = [
 export const VISIBILITIES = ["private", "friends"] as const;
 export const FRIENDS_LEVELS = ["view", "contribute", "precise"] as const;
 export const LOCATION_GRANT_LEVELS = ["view", "contribute", "precise", "edit", "manage"] as const;
+export const VISIT_ACCESS = ["open", "difficult", "sealed"] as const;
+export const VISIT_CONDITIONS = ["good", "fair", "poor", "collapsing"] as const;
 
 const id = () =>
   text("id")
@@ -238,9 +240,10 @@ export const locations = sqliteTable(
     categoryId: text("category_id")
       .notNull()
       .references(() => categories.id),
-    // TODO(Stage 4): `visited` is derived from visits (and a later non-derived
-    // status); only the non-derived statuses are stored here.
+    // `visited` is derived from visits; only the non-derived statuses are stored.
     status: text("status", { enum: LOCATION_STATUSES }).notNull().default("idea"),
+    /** When `status` last changed; the effective status uses it against visits. */
+    statusChangedAt: integer("status_changed_at", { mode: "timestamp_ms" }),
     lat: real("lat").notNull(),
     lon: real("lon").notNull(),
     pubLat: real("pub_lat").notNull(),
@@ -313,6 +316,64 @@ export const locationTags = sqliteTable(
   (t) => [primaryKey({ columns: [t.locationId, t.tagId] })],
 );
 
+// --- Journal ----------------------------------------------------------------
+/** Structured conditions of one visit (DESIGN §5.2). Stored as JSON. */
+export type VisitConditions = {
+  access?: (typeof VISIT_ACCESS)[number];
+  securitySeen?: boolean;
+  condition?: (typeof VISIT_CONDITIONS)[number];
+  hazards?: string[];
+};
+
+/**
+ * One time someone was at a location. `visitedOn` is the LOCAL date in the
+ * location's time zone; timestamps are UTC. Inherits its location's visibility.
+ */
+export const visits = sqliteTable(
+  "visits",
+  {
+    id: id(),
+    locationId: text("location_id")
+      .notNull()
+      .references(() => locations.id, { onDelete: "cascade" }),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => users.id),
+    visitedOn: text("visited_on").notNull(),
+    conditions: text("conditions", { mode: "json" })
+      .$type<VisitConditions>()
+      .notNull()
+      .default(sql`'{}'`),
+    journalMd: text("journal_md").notNull().default(""),
+    /** No trips table yet; a plain nullable reference for the later stage. */
+    tripId: text("trip_id"),
+    version: integer("version").notNull().default(1),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("visits_location_date_idx").on(t.locationId, t.visitedOn),
+    index("visits_author_idx").on(t.authorId),
+  ],
+);
+
+/** People on a visit: either a user or a free name (DESIGN §9, §5.2). */
+export const visitPeople = sqliteTable(
+  "visit_people",
+  {
+    id: id(),
+    visitId: text("visit_id")
+      .notNull()
+      .references(() => visits.id, { onDelete: "cascade" }),
+    userId: text("user_id").references(() => users.id),
+    name: text("name"),
+  },
+  (t) => [
+    check("visit_people_exactly_one", sql`(user_id IS NULL) <> (name IS NULL)`),
+    index("visit_people_visit_idx").on(t.visitId),
+  ],
+);
+
 // --- Activity ---------------------------------------------------------------
 /**
  * Event log. No FK on entity_id/actor_id on purpose: history outlives deletions.
@@ -374,3 +435,7 @@ export type LocationGrant = typeof locationGrants.$inferSelect;
 export type NewLocationGrant = typeof locationGrants.$inferInsert;
 export type Tag = typeof tags.$inferSelect;
 export type LocationTag = typeof locationTags.$inferSelect;
+export type Visit = typeof visits.$inferSelect;
+export type NewVisit = typeof visits.$inferInsert;
+export type VisitPersonRow = typeof visitPeople.$inferSelect;
+export type NewVisitPerson = typeof visitPeople.$inferInsert;

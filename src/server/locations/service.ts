@@ -38,6 +38,7 @@ import type {
   LocationCategoryRef,
   LocationDetail,
   LocationListItem,
+  LocationStatus,
   PrincipalOption,
 } from "../../lib/locations/types";
 import { normalizeSearchText } from "../../lib/normalize";
@@ -76,6 +77,7 @@ import { timeZoneForPoint } from "../geo/tz";
 import { geocodeEnabled } from "../geocode/reverse";
 import { enqueueJob } from "../jobs/queue";
 import { conflict, forbidden, LocationsError, notFound, parseInput } from "./errors";
+import { effectiveStatusExpr, effectiveStatusFor, statusChangeTime } from "./status";
 
 const asDb = (db: DbOrTx) => db as unknown as AppDb;
 
@@ -238,6 +240,7 @@ export function createLocation(
   if (!can(ctx, "createLocation")) throw forbidden();
   const input = parseInput(createLocationInput, raw);
   return db.transaction((tx) => {
+    const at = new Date();
     requireCategory(tx, input.categoryId);
     const fuzzRadiusM = input.fuzzRadiusM ?? defaultFuzz(tx);
     if (!Number.isSafeInteger(fuzzRadiusM) || fuzzRadiusM < 0) {
@@ -255,6 +258,7 @@ export function createLocation(
         description: input.description ?? null,
         categoryId: input.categoryId,
         status: input.status ?? "idea",
+        statusChangedAt: at,
         lat: exact.lat,
         lon: exact.lon,
         pubLat: pub.lat,
@@ -313,7 +317,13 @@ export function getLocation(db: AppDb, ctx: AuthCtx, id: string): LocationDetail
   const owner = ownerName(db, location.ownerId);
   const grants = atLeast(level, "manage") ? grantRowsFor(db, location.id) : null;
   return {
-    location: serializeLocation(location, level, { category, tags, ownerName: owner, grants }),
+    location: serializeLocation(location, level, {
+      category,
+      tags,
+      ownerName: owner,
+      grants,
+      effectiveStatus: effectiveStatusFor(db, location.id),
+    }),
     category,
     tags,
     ownerName: owner,
@@ -349,6 +359,10 @@ export function updateLocation(
     const before = pick(location, EDIT_KEYS);
     const after = { ...before, ...next };
     const diff = diffFields(before, after);
+    // A dedicated event (with only the non-secret status diff) feeds the
+    // location timeline; statusChangedAt drives the derived `visited` status.
+    const statusChanged = diff.status !== undefined;
+    if (statusChanged) next.statusChangedAt = statusChangeTime(tx, location.id);
 
     let tagChange: { from: string[]; to: string[] } | null = null;
     let tagIds: string[] | null = null;
@@ -373,6 +387,14 @@ export function updateLocation(
       action: "location.updated",
       diff: { ...diff, ...(tagChange ? { tags: tagChange } : {}) },
     });
+    if (statusChanged) {
+      recordEvent(tx, {
+        actorId: ctx.userId,
+        entityId: location.id,
+        action: "location.status_changed",
+        diff: { status: diff.status },
+      });
+    }
     return { version };
   });
 }
@@ -563,7 +585,17 @@ export function listLocations(db: AppDb, ctx: AuthCtx, raw: ListLocationsInput):
   const limit = input.limit ?? DEFAULT_PAGE_SIZE;
   const cursor = decodeCursor(input.cursor);
   const conditions: SQL[] = [visibleLocationsWhere(ctx)];
-  if (input.status?.length) conditions.push(inArray(locations.status, input.status));
+  if (input.status?.length) {
+    // Filter the EFFECTIVE status in SQL, so `visited` works and no JS pass
+    // over the rows can disagree with the returned status (DESIGN §2).
+    const eff = effectiveStatusExpr();
+    conditions.push(
+      sql`${eff} in (${sql.join(
+        input.status.map((s) => sql`${s}`),
+        sql`, `,
+      )})`,
+    );
+  }
   if (input.categoryId?.length) conditions.push(inArray(locations.categoryId, input.categoryId));
   if (input.country?.length) conditions.push(inArray(locations.country, input.country));
   if (input.tag?.length) {
@@ -617,6 +649,7 @@ export function listLocations(db: AppDb, ctx: AuthCtx, raw: ListLocationsInput):
       name: locations.name,
       categoryId: locations.categoryId,
       status: locations.status,
+      effectiveStatus: sql<LocationStatus>`${effectiveStatusExpr()}`.as("effective_status"),
       country: locations.country,
       ownerId: locations.ownerId,
       visibility: locations.visibility,
@@ -654,7 +687,8 @@ export function listLocations(db: AppDb, ctx: AuthCtx, raw: ListLocationsInput):
       name: row.name,
       categoryKey: cat?.key ?? "",
       categoryIcon: cat?.icon ?? "",
-      status: row.status,
+      status: row.effectiveStatus,
+      storedStatus: row.status,
       point: { lat: row.visibleLat, lon: row.visibleLon },
       exact: canSeeExact(level),
       level: level as VisibleLevel,

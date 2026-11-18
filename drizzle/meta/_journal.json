@@ -15,6 +15,13 @@
       "when": 1795007224346,
       "tag": "0001_locations",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1795012131945,
+      "tag": "0002_visits",
+      "breakpoints": true
     }
   ]
 }

@@ -7,6 +7,12 @@ import { bboxAround } from "../../lib/geo/distance";
 import type { Point } from "../../lib/geo/types";
 import type { AppDb } from "../db/client";
 import { findDuplicates, getLocation, listLocations } from "../locations/service";
+import {
+  getLocationTimeline,
+  listFeed,
+  listVisitsForLocation,
+  yearReview,
+} from "../visits/service";
 import type { AuthCtx } from "./ctx";
 
 export type ExtraProbe = (
@@ -14,6 +20,17 @@ export type ExtraProbe = (
   ctx: AuthCtx,
   locationId: string,
 ) => Record<string, unknown> | Promise<Record<string, unknown>>;
+
+/**
+ * Stage 4 probes: every journal endpoint that returns location data. Pass as
+ * `extra` to captureLocationResponses after creating a visit on the location.
+ */
+export const visitProbes: ExtraProbe = (db, ctx, locationId) => ({
+  listVisitsForLocation: listVisitsForLocation(db, ctx, locationId),
+  listFeed: listFeed(db, ctx, { limit: 100 }),
+  yearReview: yearReview(db, ctx, { year: new Date().getUTCFullYear() }),
+  getLocationTimeline: getLocationTimeline(db, ctx, locationId),
+});
 
 /** Captures one JSON string per endpoint, keyed by a stable name. */
 export async function captureLocationResponses(

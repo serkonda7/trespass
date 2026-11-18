@@ -20,6 +20,14 @@ const TEXT: Record<string, () => string> = {
   SETTINGS_BUDGET_INVALID: m.admin_settings_error_budget,
   SETTINGS_TILE_BUDGET_INVALID: m.admin_settings_error_tile_budget,
   SETTINGS_FUZZ_INVALID: m.admin_settings_error_fuzz,
+  VISIT_NOT_FOUND: m.visits_error_not_found,
+  VISIT_FORBIDDEN: m.visits_error_forbidden,
+  VISIT_DATE_INVALID: m.visits_error_date,
+  VISIT_PERSON_INVALID: m.visits_error_person,
+  // Shared with the location forms.
+  VERSION_CONFLICT: m.locations_error_version_conflict,
+  INVALID_INPUT: m.locations_error_invalid_input,
+  CURSOR_INVALID: m.locations_error_cursor,
 };
 
 export function errorCode(err: unknown): string | undefined {

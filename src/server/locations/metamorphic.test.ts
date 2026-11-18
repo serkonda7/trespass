@@ -4,11 +4,12 @@
 import { describe, expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
 import type { AuthCtx, Role } from "../authz/ctx";
-import { runMetamorphicPrivacyCheck } from "../authz/metamorphic";
+import { runMetamorphicPrivacyCheck, visitProbes } from "../authz/metamorphic";
 import { ctxFor, seed } from "../authz/test-fixtures";
 import type { AppDb } from "../db/client";
 import { locations } from "../db/schema";
 import { createTestDb } from "../db/test-db";
+import { createVisit } from "../visits/service";
 import { createLocation, getLocation, setLocationGrant } from "./service";
 
 const ADMIN = "admin-user";
@@ -77,6 +78,11 @@ describe("metamorphic coordinate privacy", () => {
           level: c.grant,
         });
       }
+      createVisit(db, ctxFor(ADMIN, "admin"), {
+        locationId: id,
+        journalMd: "**Besuch** im Tagebuch",
+        people: [],
+      });
       const before = getLocation(db, c.ctx, id);
       expect(before.location.exact).toBe(false);
       expect(before.location.level === "view" || before.location.level === "contribute").toBe(true);
@@ -88,6 +94,7 @@ describe("metamorphic coordinate privacy", () => {
         NEW_EXACT,
         {
           exact: EXACT,
+          extra: visitProbes,
         },
       );
       expect(Object.keys(snapshots).sort()).toEqual([
@@ -95,8 +102,12 @@ describe("metamorphic coordinate privacy", () => {
         "bboxPub",
         "findDuplicates",
         "getLocation",
+        "getLocationTimeline",
         "list",
+        "listFeed",
+        "listVisitsForLocation",
         "nearExact",
+        "yearReview",
       ]);
       for (const key of Object.keys(snapshots)) {
         expect(after[key], `${key} changed`).toBe(snapshots[key]);

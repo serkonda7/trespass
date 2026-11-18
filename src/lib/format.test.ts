@@ -1,5 +1,6 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, test } from "bun:test";
 import {
+  addDays,
   formatCents,
   formatDate,
   formatDateTime,
@@ -8,6 +9,8 @@ import {
   isoDayInBerlin,
   parseDecimalDe,
   parseEuroToCents,
+  todayInTz,
+  tzOffsetLabel,
 } from "./format";
 
 describe("formatDate", () => {
@@ -107,5 +110,29 @@ describe("isoDayInBerlin", () => {
     expect(isoDayInBerlin(new Date("2026-12-31T23:30:00Z"))).toBe("2027-01-01");
     expect(isoDayInBerlin(new Date("2026-07-01T21:59:00Z"))).toBe("2026-07-01");
     expect(formatIsoDay("2026-11-21")).toBe("21.11.2026");
+  });
+});
+
+// Visit dates are the LOCAL date in the location's time zone (DESIGN §5.7, §13).
+describe("todayInTz", () => {
+  test("a UTC afternoon is already the next day in Japan", () => {
+    expect(todayInTz("Asia/Tokyo", "2026-03-01T15:30:00Z")).toBe("2026-03-02");
+    expect(todayInTz("Europe/Berlin", "2026-03-01T15:30:00Z")).toBe("2026-03-01");
+  });
+
+  test("23:30 local keeps the same date", () => {
+    expect(todayInTz("Asia/Tokyo", "2026-03-01T14:30:00Z")).toBe("2026-03-01");
+    expect(todayInTz("Etc/UTC", "2026-03-01T23:30:00Z")).toBe("2026-03-01");
+  });
+
+  test("midnight UTC is a different date east and west", () => {
+    expect(todayInTz("Pacific/Honolulu", "2026-03-01T00:30:00Z")).toBe("2026-02-28");
+    expect(todayInTz("Asia/Tokyo", "2026-02-28T23:30:00Z")).toBe("2026-03-01");
+  });
+
+  test("addDays crosses month boundaries and offset labels are stable", () => {
+    expect(addDays("2026-02-28", 1)).toBe("2026-03-01");
+    expect(addDays("2026-03-01", -1)).toBe("2026-02-28");
+    expect(tzOffsetLabel("Asia/Tokyo", "2026-03-01T15:30:00Z")).toBe("UTC+9");
   });
 });

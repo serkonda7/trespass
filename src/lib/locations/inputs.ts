@@ -21,6 +21,7 @@ export const pointSchema = z.object({
 });
 export type PointInput = z.input<typeof pointSchema>;
 
+/** Stored statuses only: `visited` is derived and can never be written. */
 export const statusSchema = z.enum([
   "idea",
   "researched",
@@ -29,6 +30,8 @@ export const statusSchema = z.enum([
   "redeveloped",
   "demolished",
 ]);
+/** Statuses usable as a filter/list value, including derived `visited`. */
+export const effectiveStatusSchema = z.enum([...statusSchema.options, "visited"] as const);
 export const visibilitySchema = z.enum(["private", "friends"]);
 export const friendsLevelSchema = z.enum(["view", "contribute", "precise"]);
 export const grantLevelSchema = z.enum(["view", "contribute", "precise", "edit", "manage"]);
@@ -114,7 +117,7 @@ export const bboxSchema = z.object({
 });
 
 export const listLocationsInput = z.object({
-  status: z.array(statusSchema).max(7).optional(),
+  status: z.array(effectiveStatusSchema).max(7).optional(),
   categoryId: z.array(idSchema).max(50).optional(),
   tag: z.array(z.string().trim().min(1).max(TAG_NAME_MAX)).max(50).optional(),
   country: z.array(z.string().trim().min(1).max(100)).max(50).optional(),

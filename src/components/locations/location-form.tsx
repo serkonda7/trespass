@@ -9,12 +9,12 @@ import { Textarea } from "~/components/ui/textarea";
 import { findCoordinateLikeText } from "~/lib/geo/coord-leak";
 import { formatCoordinates, parseCoordinates } from "~/lib/geo/parse-coords";
 import { useHydrated } from "~/lib/hydrated";
-import { STATUSES, statusLabel } from "~/lib/locations/status";
+import { EDITABLE_STATUSES, statusLabel } from "~/lib/locations/status";
 import type {
   CategoryRow,
   FriendsLevel,
-  LocationStatus,
   SerializedLocation,
+  StoredLocationStatus,
   Visibility,
 } from "~/lib/locations/types";
 import { m } from "~/paraglide/messages";
@@ -22,7 +22,7 @@ import { m } from "~/paraglide/messages";
 export type LocationFormValues = {
   name: string;
   categoryId: string;
-  status: LocationStatus;
+  status: StoredLocationStatus;
   coordText: string;
   fuzzRadiusM: string;
   visibility: Visibility;
@@ -57,7 +57,7 @@ export const emptyLocationValues = (
 export const valuesFromLocation = (loc: SerializedLocation): LocationFormValues => ({
   name: loc.name,
   categoryId: loc.categoryId,
-  status: loc.status,
+  status: loc.storedStatus,
   coordText: formatCoordinates(loc.point),
   fuzzRadiusM: String(loc.fuzzRadiusM ?? 1500),
   visibility: loc.visibility,
@@ -171,9 +171,11 @@ export function LocationForm(props: {
               id="location-status"
               class={inputClass}
               value={values().status}
-              onChange={(e) => set("status", e.currentTarget.value as LocationStatus)}
+              onChange={(e) => set("status", e.currentTarget.value as StoredLocationStatus)}
             >
-              <For each={STATUSES}>{(s) => <option value={s}>{statusLabel(s)}</option>}</For>
+              <For each={EDITABLE_STATUSES}>
+                {(s) => <option value={s}>{statusLabel(s)}</option>}
+              </For>
             </select>
           </Field>
         </div>

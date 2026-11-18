@@ -24,7 +24,11 @@ export type AuditAction =
   | "location.moved"
   | "location.deleted"
   | "location.visibility"
-  | "location.grant";
+  | "location.grant"
+  | "location.status_changed"
+  | "visit.created"
+  | "visit.updated"
+  | "visit.deleted";
 
 /** Keys that look like secrets. Matched case-insensitively at any depth. */
 const SECRET_KEY = /pass(word)?|token|hash|secret|credential/i;

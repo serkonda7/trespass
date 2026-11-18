@@ -15,15 +15,16 @@ import { m } from "~/paraglide/messages";
 import type { SessionUser } from "~/server/auth/functions";
 
 type NavItem = {
-  to: "/" | "/admin";
+  to: "/" | "/logbuch" | "/admin";
   label: () => string;
   icon: string;
   roles?: SessionUser["role"][];
 };
 
-// Later stages add Logbuch (journal), Suche (search), Touren and Ausrüstung.
+// Later stages add Suche (search), Touren and Ausrüstung.
 const NAV: NavItem[] = [
   { to: "/", label: m.nav_map, icon: "⌂" },
+  { to: "/logbuch", label: m.nav_logbook, icon: "▤" },
   { to: "/admin", label: m.nav_admin, icon: "⚙", roles: ["admin"] },
 ];
 

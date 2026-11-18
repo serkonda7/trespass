@@ -2,21 +2,29 @@
 // the Paraglide catalog; the colours are the single map used by pins, lists and
 // badges so a status always looks the same everywhere.
 import { m } from "~/paraglide/messages";
-import type { LocationStatus } from "./types";
+import type { LocationStatus, StoredLocationStatus } from "./types";
 
+/** Every status, including derived `visited` (for badges, colours and filters). */
 export const STATUSES: readonly LocationStatus[] = [
   "idea",
   "researched",
   "planned",
+  "visited",
   "sealed",
   "redeveloped",
   "demolished",
 ];
 
+/** Statuses the create/edit form may set; `visited` is derived from visits. */
+export const EDITABLE_STATUSES: readonly StoredLocationStatus[] = STATUSES.filter(
+  (s): s is StoredLocationStatus => s !== "visited",
+);
+
 const LABELS: Record<LocationStatus, () => string> = {
   idea: m.location_status_idea,
   researched: m.location_status_researched,
   planned: m.location_status_planned,
+  visited: m.location_status_visited,
   sealed: m.location_status_sealed,
   redeveloped: m.location_status_redeveloped,
   demolished: m.location_status_demolished,
@@ -27,6 +35,7 @@ const COLORS: Record<LocationStatus, string> = {
   idea: "#a78bfa",
   researched: "#38bdf8",
   planned: "#fbbf24",
+  visited: "#22d3ee",
   sealed: "#f97316",
   redeveloped: "#34d399",
   demolished: "#ef4444",

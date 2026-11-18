@@ -191,7 +191,7 @@ describe("updateLocation", () => {
         .where(eq(events.entityId, id))
         .all()
         .map((e) => e.action),
-    ).toEqual(["location.created", "location.updated"]);
+    ).toEqual(["location.created", "location.updated", "location.status_changed"]);
   });
 
   test("an edit grantee can edit but not change visibility", () => {

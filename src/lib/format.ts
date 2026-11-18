@@ -44,6 +44,52 @@ export function formatIsoDay(day: string): string {
   return formatDate(`${day}T12:00:00Z`);
 }
 
+/** The calendar date in an IANA time zone as 'YYYY-MM-DD' (DESIGN §5.7). */
+export function todayInTz(tz: string, now: Date | string | number = new Date()): string {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: tz,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    })
+      .formatToParts(toDate(now))
+      .filter((p) => p.type !== "literal")
+      .map((p) => [p.type, p.value]),
+  );
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+/** Adds whole calendar days to a 'YYYY-MM-DD' string (noon UTC avoids DST). */
+export function addDays(day: string, days: number): string {
+  const at = new Date(`${day}T12:00:00Z`);
+  at.setUTCDate(at.getUTCDate() + days);
+  return at.toISOString().slice(0, 10);
+}
+
+/** UTC offset of a zone at a moment, e.g. "UTC+9" / "UTC+2" (DESIGN §5.7). */
+export function tzOffsetLabel(tz: string, now: Date | string | number = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    timeZoneName: "longOffset",
+  }).formatToParts(toDate(now));
+  const name = parts.find((p) => p.type === "timeZoneName")?.value ?? "UTC";
+  const match = name.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+  if (!match) return name.replace("GMT", "UTC");
+  const [, sign, hours, minutes] = match;
+  const suffix = minutes && minutes !== "00" ? `:${Number(minutes)}` : "";
+  return `UTC${sign}${Number(hours)}${suffix}`;
+}
+
+/** The browser's IANA time zone, or null when the environment has none. */
+export function browserTimeZone(): string | null {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function formatNumber(n: number, maximumFractionDigits = 2): string {
   return new Intl.NumberFormat("de-DE", { maximumFractionDigits }).format(n);
 }

@@ -87,8 +87,22 @@ export async function signIn(page: Page, username: string, password: string) {
 
 /** Opens the user menu in the header and picks an entry. */
 export async function userMenu(page: Page, entry: "Mein Konto" | "Abmelden") {
-  await page.getByRole("banner").getByRole("button").last().click();
-  await page.getByRole("menuitem", { name: entry }).click();
+  // A header button clicked before hydration is replaced by Solid's first
+  // render, so the click can land on a detached element.
+  await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+  await page
+    .getByRole("banner")
+    .getByRole("button")
+    .last()
+    .click({ force: true, noWaitAfter: true, timeout: 2_000 })
+    .catch(() => undefined);
+  // A disabled user is bounced to /login by the menu item's navigation. That
+  // unmounts the item mid-click, so do not wait for the click to settle here;
+  // callers assert the resulting URL.
+  await page
+    .getByRole("menuitem", { name: entry })
+    .click({ force: true, noWaitAfter: true, timeout: 2_000 })
+    .catch(() => undefined);
 }
 
 /**

@@ -26,3 +26,14 @@ export async function createLocation(
   await expect(page).toHaveURL(/\/locations\/[0-9a-f-]{36}$/);
   return page.url();
 }
+
+/** Opens the location's "Besuche" tab and fills a visit with a journal text. */
+export async function addVisit(page: Page, journalMd: string): Promise<void> {
+  await hydrated(page);
+  await page.getByRole("tab", { name: "Besuche" }).click();
+  await page.getByTestId("add-visit").click();
+  await expect(page).toHaveURL(/\/visits\/new\?location=/);
+  await hydrated(page);
+  await page.getByLabel("Tagebuch (Markdown)").fill(journalMd);
+  await page.getByRole("button", { name: "Besuch eintragen", exact: true }).last().click();
+}

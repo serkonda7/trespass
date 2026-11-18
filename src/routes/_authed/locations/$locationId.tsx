@@ -19,6 +19,7 @@ import { Input, inputClass } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { showToast } from "~/components/ui/toast";
+import { LocationTimeline } from "~/components/visits/location-timeline";
 import { settingsQuery } from "~/lib/admin-queries";
 import { formatCoordinates, parseCoordinates } from "~/lib/geo/parse-coords";
 import { parseLocationsError } from "~/lib/locations/errors";
@@ -74,12 +75,18 @@ function LocationPage() {
   const q = useQuery(() => locationQuery(params().locationId));
   return (
     <Show when={q.data} fallback={<Card class="mx-auto max-w-lg p-6">{m.common_loading()}</Card>}>
-      {(data) => <LocationView location={data().location} meId={ctx().user.id} />}
+      {(data) => (
+        <LocationView
+          location={data().location}
+          meId={ctx().user.id}
+          canAddVisit={data().location.permissions.canContribute && ctx().user.role !== "guest"}
+        />
+      )}
     </Show>
   );
 }
 
-function LocationView(props: { location: SerializedLocation; meId: string }) {
+function LocationView(props: { location: SerializedLocation; meId: string; canAddVisit: boolean }) {
   const loc = () => props.location;
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -266,9 +273,7 @@ function LocationView(props: { location: SerializedLocation; meId: string }) {
           </Card>
         </TabsContent>
         <TabsContent value="visits">
-          <Card>
-            <CardContent class="pt-4">{m.location_soon()}</CardContent>
-          </Card>
+          <LocationTimeline locationId={loc().id} tz={loc().tz} canAdd={props.canAddVisit} />
         </TabsContent>
         <TabsContent value="photos">
           <Card>

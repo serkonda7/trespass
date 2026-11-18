@@ -9,6 +9,7 @@ import type {
   GrantRow,
   LocationCategoryRef,
   LocationPermissions,
+  LocationStatus,
   SerializedLocation,
 } from "../../lib/locations/types";
 import type { AppDb } from "../db/client";
@@ -23,6 +24,8 @@ export type SerializeExtra = {
   ownerName?: string | null;
   /** Only emitted at `manage`; dropped for every lower level. */
   grants?: GrantRow[] | null;
+  /** Effective status from the SQL expression; defaults to the stored status. */
+  effectiveStatus?: LocationStatus;
 };
 
 function permissions(level: VisibleLevel): LocationPermissions {
@@ -55,7 +58,8 @@ export function serializeLocation(
     name: loc.name,
     description: loc.description,
     categoryId: loc.categoryId,
-    status: loc.status,
+    status: extra.effectiveStatus ?? loc.status,
+    storedStatus: loc.status,
     point,
     exact,
     country: loc.country,

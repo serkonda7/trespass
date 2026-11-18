@@ -2,7 +2,7 @@
 // The route's `validateSearch` is `parseLocationSearch`, every control calls
 // `navigate({ search: (s) => patchLocationSearch(s, {...}) })`, and
 // `toListInput` maps the URL state to the server function's input.
-import { type ListLocationsInput, statusSchema } from "./inputs";
+import { effectiveStatusSchema, type ListLocationsInput } from "./inputs";
 import type { LocationStatus } from "./types";
 
 export type LocationSearch = {
@@ -31,7 +31,7 @@ const listOf = (value: unknown, max: number, valid?: (s: string) => boolean): st
   return out;
 };
 
-const statuses = statusSchema.options as readonly string[];
+const statuses = effectiveStatusSchema.options as readonly string[];
 const one = (value: unknown): string | undefined => {
   const list = rawList(value);
   const s = list[0]?.trim().slice(0, 200) ?? "";

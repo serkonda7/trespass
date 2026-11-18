@@ -7,9 +7,12 @@ export type LocationStatus =
   | "idea"
   | "researched"
   | "planned"
+  | "visited"
   | "sealed"
   | "redeveloped"
   | "demolished";
+/** Statuses a user may set; `visited` is derived from visits. */
+export type StoredLocationStatus = Exclude<LocationStatus, "visited">;
 export type Visibility = "private" | "friends";
 export type FriendsLevel = "view" | "contribute" | "precise";
 export type LocationGrantLevel = "view" | "contribute" | "precise" | "edit" | "manage";
@@ -40,7 +43,10 @@ export type SerializedLocation = {
   name: string;
   description: string | null;
   categoryId: string;
+  /** Effective status (`visited` derived from visits, §2). */
   status: LocationStatus;
+  /** The stored status, for the edit form (never `visited`). */
+  storedStatus: StoredLocationStatus;
   point: Point;
   /** True when `point` is the exact position; false when it is the fuzzed one. */
   exact: boolean;
@@ -78,6 +84,7 @@ export type LocationListItem = {
   categoryKey: string;
   categoryIcon: string;
   status: LocationStatus;
+  storedStatus: StoredLocationStatus;
   point: Point;
   exact: boolean;
   level: VisibleLocationLevel;

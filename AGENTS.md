@@ -78,6 +78,38 @@ journal, photos, trips, research and export come in later stages.
 - `/` keeps filters (q, status, category, tag, country) in URL search params via `src/lib/locations/list-search.ts` (`parseLocationSearch` as `validateSearch`, `patchLocationSearch`, `toListInput`). The first load fits all visible locations (or Germany); a `moveend` bbox is debounced 300 ms before the `listLocationsFn` query (limit 2000). The sr-only `home_hello` heading is kept because existing e2e fixtures assert it. The "+ Ort" button uses the app-level `can` from `src/lib/app-actions.ts` (re-exported by `server/authz/actions.ts`) so the client never imports server modules.
 - `/locations/new` uses `LocationForm` (TanStack Form store, live `parseCoordinates`/`formatCoordinates`, settings' default fuzz, map pick, `findDuplicatesFn` suggestions and a `findCoordinateLikeText` warning). `/locations/$locationId` renders only serialized data: exact notes/parking/coordinates/"Öffnen in …" links at `precise+`, otherwise the stable fuzzed point, a circle and "Ungefährer Standort". `/locations/$locationId/edit` shows a conflict message and reloads on `VERSION_CONFLICT`. `listPrincipalsFn` (admin/member) feeds the "Teilen" picker; writes use `runAction` plus query invalidation.
 
+## Visits and journal (Stage 4)
+
+- `src/server/authz/visits.ts` holds every visit rule and the SQL predicate
+  `visibleVisitsWhere(ctx)`: a visit is visible when its location is visible
+  (via an `EXISTS` over `locations`) **or** the caller is its author. Authors keep
+  their visit after the location becomes invisible; the DTO then has
+  `location: null`. Never filter visits in JS. Create needs `contribute` on the
+  location and a writable role; edit needs the author or `edit`, delete the author
+  or `manage`. Invisible → `VISIT_NOT_FOUND` (404), visible-but-denied → 403.
+- `src/server/visits/` has `service.ts` (create/update/delete/get/listFeed/
+  listVisitsForLocation/yearReview/getLocationTimeline), `functions.ts` (server
+  functions with `authMiddleware`) and `errors.ts`. Zod inputs, output types,
+  error text and query options live in `src/lib/visits/`. `visitedOn` is the
+  local date in the location's tz (`todayInTz` in `lib/format.ts`); audits record
+  only ids, never journal text or coordinates. Optimistic locking throws
+  `VERSION_CONFLICT` (409).
+- `src/server/locations/status.ts` has `effectiveStatusExpr()`; it is used in
+  `getLocation`, `listLocations` output **and** its status filter. `visited` is
+  derived from visits, but a later terminal status wins; `storedStatus` is kept
+  for the edit form. Status changes set `locations.status_changed_at` and record
+  a `location.status_changed` event with a status-only diff (timeline source).
+- Markdown goes through `renderMarkdown(md, { resolvePhoto })` /
+  `renderJournalMarkdown` in `src/server/markdown.ts` (`marked` + `sanitize-html`).
+  Only the sanitized `journalHtml` is sent to everyone; `journalMd` is included
+  only for editors. `photo:ID` embeds are resolved by the hook (always null until
+  Stage 5). `previewMarkdownFn` renders editor previews. `innerHTML` is used only
+  for this server-sanitized HTML.
+- `/logbuch` is the feed (cursor paging, "Mehr laden") plus the year review;
+  the location page has a "Besuche" tab with visits and status changes. The map
+  status filter includes "Besucht". The coordinate warning uses the client-side
+  `findCoordinateLikeText` when the location is visible to friends.
+
 ## Commands
 `bun run dev` · `build` · `start` · `check` (= `lint` + `typecheck` + `test`) ·
 `format` (Biome, writes) · `db:generate` (after schema edits) · `gen` (route tree
