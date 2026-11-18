@@ -140,6 +140,12 @@ journal, photos, trips, research and export come in later stages.
   Logbuch link to it. `locations.cover_photo_id` has no DB FK (circular Drizzle types); the
   service validates it and clears it on photo delete.
 
+## Export (Stage 8)
+
+- `GET /api/v1/export` streams a ZIP while the client reads it; the layout is the contract in `docs/export-format.md` (`EXPORT_FORMAT_VERSION = 1` in `src/lib/export/types.ts`). Code in `src/server/export/`: `build.ts` (`writeExport`, `PATHS`), `zip.ts` (streaming ZIP64 writer), `stream.ts` (backpressure, `ExportAborted`), `snapshot.ts` (read-only connection in one read transaction), `registry.ts` (one export per user, two overall, page tickets), `handler.ts` (route logic + `export.created` audit of counts only), `functions.ts`, `service.ts`, `paths.ts`.
+- Contents follow `visibleLocationsWhere` / `visibleVisitsWhere` / `visiblePhotosWhere` (never JS filtering); locations use `visibleLatExpr`/`visibleLonExpr` in SQL and `serializeLocation`. New tables/columns: decide whether they are exported, then update `build.ts`, the doc and the secret-sentinel test. Never export auth tables, invites, sessions, passkeys, settings secrets or notifications; `data/users.json` holds only referenced ids and display names.
+- Page: `/admin/export` is a section for admin **and** member; it reserves a slot with `reserveExportFn`, then opens `?ticket=…`; `getExportInfoFn` gives the estimate and progress. Guests get 404. Tests: `exportToMemory()` in `src/server/export/test-helpers.ts`; metamorphic check pins `now` so the whole archive is byte-comparable.
+
 ## Commands
 `bun run dev` · `build` · `start` · `check` (= `lint` + `typecheck` + `test`) ·
 `format` (Biome, writes) · `db:generate` (after schema edits) · `gen` (route tree

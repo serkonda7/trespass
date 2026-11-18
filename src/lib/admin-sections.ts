@@ -8,16 +8,18 @@ import type { Role } from "~/server/authz/ctx";
 export type AdminSection = { to: string; label: () => string; roles: readonly Role[] };
 
 const ADMIN: readonly Role[] = ["admin"];
+const EXPORT_ROLES: readonly Role[] = ["admin", "member"];
 
 export const ADMIN_SECTIONS: readonly AdminSection[] = [
   { to: "/admin/users", label: m.admin_nav_users, roles: ADMIN },
   { to: "/admin/invites", label: m.admin_nav_invites, roles: ADMIN },
   { to: "/admin/groups", label: m.admin_nav_groups, roles: ADMIN },
   { to: "/admin/settings", label: m.admin_nav_settings, roles: ADMIN },
+  { to: "/admin/export", label: m.admin_nav_export, roles: EXPORT_ROLES },
 ];
 
-/** Roles that may open /admin at all (guests may not). */
-export const ADMIN_AREA_ROLES: readonly Role[] = ["admin"];
+/** Roles that may open /admin at all (guests may not; members only Export). */
+export const ADMIN_AREA_ROLES: readonly Role[] = ["admin", "member"];
 
 export const sectionsFor = (role: Role) => ADMIN_SECTIONS.filter((s) => s.roles.includes(role));
 

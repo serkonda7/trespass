@@ -33,7 +33,8 @@ export type AuditAction =
   | "photo.updated"
   | "photo.assigned"
   | "photo.deleted"
-  | "photo.cover";
+  | "photo.cover"
+  | "export.created";
 
 /** Keys that look like secrets. Matched case-insensitively at any depth. */
 const SECRET_KEY = /pass(word)?|token|hash|secret|credential/i;
