@@ -2,6 +2,7 @@
 // Imported by the standalone worker (`scripts/worker.ts`) before it starts.
 // A feature adds its handlers here (relative imports only: Nitro/standalone
 // bundling may happen outside Vite's `~` alias).
+import { handleReverseGeocode } from "../geocode/handler";
 import { pruneJobs } from "./queue";
 import { nextDailyInBerlin } from "./schedule";
 import { addJobHandler, jobRegistry } from "./worker";
@@ -20,4 +21,9 @@ export function registerAllJobHandlers() {
     (_payload, { db }) => pruneJobs(db, new Date(Date.now() - 7 * 86_400_000)),
     { recurring: { next: (now) => nextDailyInBerlin(now, 3) } },
   );
+  // Reverse geocoding is best-effort and polite (1 req/s inside the handler).
+  addJobHandler(registry, "geocode.reverse", handleReverseGeocode, {
+    maxAttempts: 3,
+    backoffBaseMs: 10_000,
+  });
 }

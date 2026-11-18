@@ -42,6 +42,33 @@ journal, photos, trips, research and export come in later stages.
   Wrap server-function calls in `runAction` and throw `HttpError(409, "CODE")`;
   map codes to German in `src/lib/error-text.ts`.
 
+## Locations and authorization (Stage 2)
+
+- `src/server/authz/` is the **only** place for location permission logic:
+  `levels.ts` (`locationLevel`, `LEVELS`, `ROLE_CEILING`, `canSeeExact`),
+  `predicates.ts` (`locationsAtLeastWhere`, `visibleLocationsWhere`, `preciseWhere`),
+  `coords.ts` (`visibleLatExpr` / `visibleLonExpr`), `load.ts` (`loadLocationForCtx`,
+  `requireLocationForCtx`, `locationLevels`), `serialize.ts` (`serializeLocation`),
+  `metamorphic.ts` (test helper) and `index.ts` (re-exports). `actions.ts` keeps
+  app-level `can`; `ctx.ts` keeps `AuthCtx`.
+- **Rules:** filter locations **only in SQL** with `visibleLocationsWhere(ctx)` —
+  never in JS. Every query that filters, sorts or returns coordinates uses
+  `visibleLatExpr` / `visibleLonExpr`. All responses go through
+  `serializeLocation` (below `precise` exact coords, outline, parking, notes and
+  fuzz radius are absent, not null). Invisible or missing → 404, never 403;
+  403 only when visible but below the required level. Geocode jobs and the
+  audit diff never record exact coordinates.
+- `src/server/locations/` holds `service.ts` (create/get/update/move/
+  setVisibility/grants/delete/listLocations/findDuplicates), `functions.ts`
+  (server functions with `authMiddleware`), `errors.ts` (`LocationsError`),
+  `categories.ts`. Inputs/outputs/error text live in `src/lib/locations/`.
+  Geo helpers: `src/lib/geo/` (parser, leak detector, distance) and
+  `src/server/geo/` (`fuzz.ts`, `tz.ts`).
+- The ten categories (DESIGN §2) are seeded **idempotently at startup** in
+  `nitro/startup.ts` via `seedCategories()` — admin edits survive, tests seed
+  them through `authz/test-fixtures.ts`. Reverse geocoding is a separate
+  job (`geocode.reverse`, injectable fetch, 1 req/s, `GEOCODE=off` disables it).
+
 ## Commands
 `bun run dev` · `build` · `start` · `check` (= `lint` + `typecheck` + `test`) ·
 `format` (Biome, writes) · `db:generate` (after schema edits) · `gen` (route tree

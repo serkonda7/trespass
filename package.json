@@ -41,6 +41,7 @@
   "dependencies": {
     "@better-auth/passkey": "1.7.25",
     "@kobalte/core": "0.13.14",
+    "@photostructure/tz-lookup": "11.8.0",
     "@tanstack/solid-form": "1.33.5",
     "@tanstack/solid-query": "5.108.0",
     "@tanstack/solid-router": "1.170.43",

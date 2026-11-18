@@ -23,6 +23,8 @@ const schema = z.object({
   SMTP_URL: optional,
   VAPID_PUBLIC_KEY: optional,
   VAPID_PRIVATE_KEY: optional,
+  /** Reverse geocoding (Nominatim); "off" disables the job entirely (e2e sets this). */
+  GEOCODE: optional.pipe(z.enum(["on", "off"]).default("on")),
   /** Optional integrations used by later stages (research, notifications, healthchecks.io). */
   ANTHROPIC_API_KEY: optional,
   NTFY_URL: optional,

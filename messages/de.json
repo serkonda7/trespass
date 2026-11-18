@@ -145,5 +145,18 @@
   "admin_settings_error_name": "Bitte einen Namen mit 1 bis 80 Zeichen eingeben.",
   "admin_settings_error_budget": "Das Budget muss eine nicht-negative ganze Zahl sein.",
   "admin_settings_error_tile_budget": "Das Karten-Budget muss mindestens 1 MB betragen.",
-  "admin_settings_error_fuzz": "Die Unschärfe muss eine nicht-negative ganze Zahl sein."
+  "admin_settings_error_fuzz": "Die Unschärfe muss eine nicht-negative ganze Zahl sein.",
+  "locations_error_not_found": "Ort nicht gefunden.",
+  "locations_error_forbidden": "Dafür hast du keine Berechtigung.",
+  "locations_error_version_conflict": "Der Ort wurde inzwischen geändert. Bitte neu laden.",
+  "locations_error_invalid_input": "Die Eingabe ist ungültig.",
+  "locations_error_category": "Die Kategorie ist ungültig.",
+  "locations_error_coords": "Die Koordinaten sind ungültig.",
+  "locations_error_fuzz": "Die Unschärfe muss eine nicht-negative ganze Zahl sein.",
+  "locations_error_grant": "Die Berechtigung ist ungültig.",
+  "locations_error_grant_ceiling": "Die Berechtigung übersteigt die höchstmögliche Stufe dieser Person.",
+  "locations_error_principal_not_found": "Person oder Gruppe nicht gefunden.",
+  "locations_error_principal_disabled": "Diese Person ist deaktiviert.",
+  "locations_error_cursor": "Die Seitenmarkierung ist ungültig.",
+  "locations_error_tag": "Das Schlagwort ist ungültig."
 }

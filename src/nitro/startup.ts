@@ -9,6 +9,7 @@ import { definePlugin } from "nitro";
 import { bootstrapInviteAtStartup } from "../server/auth/invites";
 import { getDb } from "../server/db/client";
 import { getEnv } from "../server/env";
+import { seedCategories } from "../server/locations/categories";
 import { installGracefulShutdown } from "../server/shutdown";
 
 export default definePlugin((nitroApp) => {
@@ -17,6 +18,9 @@ export default definePlugin((nitroApp) => {
     // The process-wide connection (snapshot + migrations on first open), shared
     // with the app bundle through globalThis; shutdown closes it.
     const db = getDb();
+    // The ten categories are seeded idempotently at startup, so admin edits to
+    // their names/icons survive while fresh installations get the defaults.
+    seedCategories(db);
     // First admin (README "First admin"): while there are no users at all,
     // print a fresh one-time admin invite link. Nothing is printed afterwards.
     const link = bootstrapInviteAtStartup(db, env.ORIGIN);

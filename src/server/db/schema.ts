@@ -1,12 +1,34 @@
 // Drizzle schema (DESIGN §9). After editing, run `bun run db:generate`
 // and commit the generated SQL in ./drizzle. Timestamps are integer milliseconds
 // (Drizzle `timestamp_ms` -> Date). Ids are UUIDv7 (Bun.randomUUIDv7).
-// Only the foundation is present so far; domain tables are added in later stages.
+// Stages add their domain tables here; every edit is followed by `bun run db:generate`.
+
 import { sql } from "drizzle-orm";
-import { check, index, integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  check,
+  index,
+  integer,
+  primaryKey,
+  real,
+  sqliteTable,
+  text,
+} from "drizzle-orm/sqlite-core";
+import type { GeoJsonPolygon, Point } from "../../lib/geo/types";
 
 export const ROLES = ["admin", "member", "guest"] as const;
 export const PRINCIPAL_KINDS = ["user", "group"] as const;
+/** Non-derived statuses; `visited` is computed from visits in Stage 4 (DESIGN §2, §9). */
+export const LOCATION_STATUSES = [
+  "idea",
+  "researched",
+  "planned",
+  "sealed",
+  "redeveloped",
+  "demolished",
+] as const;
+export const VISIBILITIES = ["private", "friends"] as const;
+export const FRIENDS_LEVELS = ["view", "contribute", "precise"] as const;
+export const LOCATION_GRANT_LEVELS = ["view", "contribute", "precise", "edit", "manage"] as const;
 
 const id = () =>
   text("id")
@@ -187,6 +209,110 @@ export const invites = sqliteTable(
   () => [check("invites_role", inList("role", ROLES))],
 );
 
+// --- Places -----------------------------------------------------------------
+/** Seeded and admin-editable category (DESIGN §2). Keys are stable identifiers. */
+export const categories = sqliteTable("categories", {
+  id: id(),
+  key: text("key").notNull().unique(),
+  name: text("name").notNull(),
+  icon: text("icon").notNull().default("circle"),
+  sort: integer("sort").notNull().default(0),
+});
+
+/**
+ * One abandoned place (DESIGN §4, §9). `lat/lon` is exact; `pub_lat/pub_lon` is
+ * the single stable fuzzed point shown below `precise`. `cover_photo_id` has no
+ * FK yet: photos arrive in Stage 3.
+ */
+export const locations = sqliteTable(
+  "locations",
+  {
+    id: id(),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => users.id),
+    name: text("name").notNull(),
+    /** Normalized name for case/diacritic-insensitive sorting and duplicate checks. */
+    nameSort: text("name_sort").notNull(),
+    description: text("description"),
+    categoryId: text("category_id")
+      .notNull()
+      .references(() => categories.id),
+    // TODO(Stage 4): `visited` is derived from visits (and a later non-derived
+    // status); only the non-derived statuses are stored here.
+    status: text("status", { enum: LOCATION_STATUSES }).notNull().default("idea"),
+    lat: real("lat").notNull(),
+    lon: real("lon").notNull(),
+    pubLat: real("pub_lat").notNull(),
+    pubLon: real("pub_lon").notNull(),
+    fuzzRadiusM: integer("fuzz_radius_m").notNull().default(1500),
+    geomArea: text("geom_area", { mode: "json" }).$type<GeoJsonPolygon>(),
+    parking: text("parking", { mode: "json" }).$type<Point[]>(),
+    accessNotes: text("access_notes"),
+    dangerNotes: text("danger_notes"),
+    country: text("country"),
+    adminArea: text("admin_area"),
+    tz: text("tz").notNull(),
+    builtYear: integer("built_year"),
+    abandonedYear: integer("abandoned_year"),
+    coverPhotoId: text("cover_photo_id"),
+    visibility: text("visibility", { enum: VISIBILITIES }).notNull().default("private"),
+    friendsLevel: text("friends_level", { enum: FRIENDS_LEVELS }).notNull().default("view"),
+    version: integer("version").notNull().default(1),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    check("locations_status", inList("status", LOCATION_STATUSES)),
+    check("locations_visibility", inList("visibility", VISIBILITIES)),
+    check("locations_friends_level", inList("friends_level", FRIENDS_LEVELS)),
+    index("locations_lat_lon_idx").on(t.lat, t.lon),
+    index("locations_pub_lat_lon_idx").on(t.pubLat, t.pubLon),
+    index("locations_owner_idx").on(t.ownerId),
+    index("locations_category_idx").on(t.categoryId),
+  ],
+);
+
+/**
+ * Per-location grants. `principalId` deliberately has no FK: a grant may
+ * outlive its user/group, and authorization must stay deterministic.
+ */
+export const locationGrants = sqliteTable(
+  "location_grants",
+  {
+    locationId: text("location_id")
+      .notNull()
+      .references(() => locations.id, { onDelete: "cascade" }),
+    principalKind: text("principal_kind", { enum: PRINCIPAL_KINDS }).notNull(),
+    principalId: text("principal_id").notNull(),
+    level: text("level", { enum: LOCATION_GRANT_LEVELS }).notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.locationId, t.principalKind, t.principalId] }),
+    check("location_grants_level", inList("level", LOCATION_GRANT_LEVELS)),
+    index("location_grants_principal_idx").on(t.principalKind, t.principalId),
+  ],
+);
+
+/** Tag names are stored normalized (lower-case, diacritic-free). */
+export const tags = sqliteTable("tags", {
+  id: id(),
+  name: text("name").notNull().unique(),
+});
+
+export const locationTags = sqliteTable(
+  "location_tags",
+  {
+    locationId: text("location_id")
+      .notNull()
+      .references(() => locations.id, { onDelete: "cascade" }),
+    tagId: text("tag_id")
+      .notNull()
+      .references(() => tags.id, { onDelete: "cascade" }),
+  },
+  (t) => [primaryKey({ columns: [t.locationId, t.tagId] })],
+);
+
 // --- Activity ---------------------------------------------------------------
 /**
  * Event log. No FK on entity_id/actor_id on purpose: history outlives deletions.
@@ -240,3 +366,11 @@ export type Event = typeof events.$inferSelect;
 export type NewEvent = typeof events.$inferInsert;
 export type Job = typeof jobs.$inferSelect;
 export type NewJob = typeof jobs.$inferInsert;
+export type Category = typeof categories.$inferSelect;
+export type NewCategory = typeof categories.$inferInsert;
+export type Location = typeof locations.$inferSelect;
+export type NewLocation = typeof locations.$inferInsert;
+export type LocationGrant = typeof locationGrants.$inferSelect;
+export type NewLocationGrant = typeof locationGrants.$inferInsert;
+export type Tag = typeof tags.$inferSelect;
+export type LocationTag = typeof locationTags.$inferSelect;
