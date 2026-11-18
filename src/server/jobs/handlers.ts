@@ -5,6 +5,7 @@
 import { handleReverseGeocode } from "../geocode/handler";
 import { addPhotoJobs } from "../photos/jobs";
 import { getPhotoStore } from "../photos/storage";
+import { addTileJobs } from "../tiles/jobs";
 import { pruneJobs } from "./queue";
 import { nextDailyInBerlin } from "./schedule";
 import { addJobHandler, jobRegistry } from "./worker";
@@ -30,4 +31,7 @@ export function registerAllJobHandlers() {
   });
   // Photo processing runs in the standalone worker; e2e starts one too.
   addPhotoJobs(registry, getPhotoStore);
+  // Tile regions are extracted by the worker only; TILES=off disables all of
+  // them (e2e and tests). Nothing is downloaded by the web process.
+  addTileJobs(registry);
 }

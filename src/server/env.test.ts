@@ -8,7 +8,17 @@ describe("parseEnv", () => {
     expect(e.DATABASE_PATH).toBe("./data/db/app.sqlite");
     expect(e.UPLOAD_DIR).toBe("./data/uploads");
     expect(e.TILES_PATH).toBe("data/tiles/tiles.sqlite");
+    expect(e.TILES).toBe("on");
+    expect(e.PMTILES_BIN).toBeUndefined();
+    expect(e.TILES_BUILD_URL).toBeUndefined();
     expect(parseEnv({ TILES_PATH: "/srv/tiles.sqlite" }).TILES_PATH).toBe("/srv/tiles.sqlite");
+    expect(
+      parseEnv({ TILES: "off", PMTILES_BIN: "/usr/bin/pmtiles", TILES_BUILD_URL: "" }),
+    ).toMatchObject({
+      TILES: "off",
+      PMTILES_BIN: "/usr/bin/pmtiles",
+      TILES_BUILD_URL: undefined,
+    });
     expect(e.BETTER_AUTH_SECRET.length).toBeGreaterThanOrEqual(32);
     expect(e.isProduction).toBe(false);
     expect(e.ANTHROPIC_API_KEY).toBeUndefined();

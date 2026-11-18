@@ -20,8 +20,14 @@ const schema = z.object({
     .transform((v) => new URL(v).origin),
   DATABASE_PATH: z.string().min(1).default("./data/db/app.sqlite"),
   UPLOAD_DIR: z.string().min(1).default("./data/uploads"),
-  /** Read-only MBTiles file for /tiles; defaults to <dir of DATABASE_PATH>/../tiles/tiles.sqlite. */
+  /** MBTiles file for /tiles; defaults to <dir of DATABASE_PATH>/../tiles/tiles.sqlite. */
   TILES_PATH: optional,
+  /** Automatic tile regions; "off" disables enqueueing and extraction (e2e sets this). */
+  TILES: optional.pipe(z.enum(["on", "off"]).default("on")),
+  /** go-pmtiles CLI in the worker image. */
+  PMTILES_BIN: optional,
+  /** Direct URL of one Protomaps build, instead of probing the daily builds. */
+  TILES_BUILD_URL: optional,
   BETTER_AUTH_SECRET: optional,
   SMTP_URL: optional,
   VAPID_PUBLIC_KEY: optional,

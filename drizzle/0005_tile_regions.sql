@@ -1,0 +1,20 @@
+CREATE TABLE `tile_regions` (
+	`id` text PRIMARY KEY NOT NULL,
+	`kind` text DEFAULT 'region' NOT NULL,
+	`min_lat` real NOT NULL,
+	`min_lon` real NOT NULL,
+	`max_lat` real NOT NULL,
+	`max_lon` real NOT NULL,
+	`min_zoom` integer NOT NULL,
+	`max_zoom` integer NOT NULL,
+	`build_date` integer,
+	`bytes` integer,
+	`status` text DEFAULT 'pending' NOT NULL,
+	`error` text,
+	`created_at` integer NOT NULL,
+	`refreshed_at` integer,
+	`empty_since` integer,
+	CONSTRAINT "tile_regions_kind" CHECK(kind IN ('world','region')),
+	CONSTRAINT "tile_regions_status" CHECK(status IN ('pending','extracting','ready','failed')),
+	CONSTRAINT "tile_regions_zoom" CHECK("tile_regions"."min_zoom" <= "tile_regions"."max_zoom")
+);

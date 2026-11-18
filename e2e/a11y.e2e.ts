@@ -30,7 +30,13 @@ test("pages have no axe violations", async ({ adminPage, newUser }) => {
     await audit(adminPage, path);
   }
   const guest = await newUser("guest");
-  for (const path of ["/admin/users", "/admin/invites", "/admin/groups", "/admin/settings"]) {
+  for (const path of [
+    "/admin/users",
+    "/admin/invites",
+    "/admin/groups",
+    "/admin/tiles",
+    "/admin/settings",
+  ]) {
     await guest.page.goto(path);
     await hydrated(guest.page);
     await expect(guest.page.getByText("Seite nicht gefunden.")).toBeVisible();

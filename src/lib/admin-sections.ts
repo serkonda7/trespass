@@ -13,6 +13,7 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
   { to: "/admin/users", label: m.admin_nav_users, roles: ADMIN },
   { to: "/admin/invites", label: m.admin_nav_invites, roles: ADMIN },
   { to: "/admin/groups", label: m.admin_nav_groups, roles: ADMIN },
+  { to: "/admin/tiles", label: m.admin_nav_tiles, roles: ADMIN },
   { to: "/admin/settings", label: m.admin_nav_settings, roles: ADMIN },
 ];
 

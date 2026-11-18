@@ -38,6 +38,9 @@ const runtimeEnv = {
   UPLOAD_DIR: `${E2E_DIR}/uploads`,
   // No outbound Nominatim requests from tests (DESIGN §4).
   GEOCODE: "off",
+  // No tile downloads/extractions from tests (DESIGN §7); the map still
+  // serves whatever tiles.sqlite happens to exist (none in the throwaway DB).
+  TILES: "off",
 };
 
 const child = spawn("bun", ["run", entry], {

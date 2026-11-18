@@ -33,6 +33,8 @@ export const LOCATION_GRANT_LEVELS = ["view", "contribute", "precise", "edit", "
 export const VISIT_ACCESS = ["open", "difficult", "sealed"] as const;
 export const VISIT_CONDITIONS = ["good", "fair", "poor", "collapsing"] as const;
 export const PHOTO_STATUSES = ["processing", "ready", "failed"] as const;
+export const TILE_REGION_KINDS = ["world", "region"] as const;
+export const TILE_REGION_STATUSES = ["pending", "extracting", "ready", "failed"] as const;
 
 const id = () =>
   text("id")
@@ -428,6 +430,43 @@ export const photos = sqliteTable(
   ],
 );
 
+// --- Map tiles --------------------------------------------------------------
+/**
+ * One locally extracted tile region (DESIGN §7/§9). `lat/lon` is the exact box
+ * sent to the extractor; it is never shown at full precision in the UI (the
+ * admin page rounds it). The tiles themselves live in the separate MBTiles
+ * file at TILES_PATH, which only the worker writes. The box may cross the
+ * antimeridian (minLon > maxLon); the extractor splits it in that case.
+ */
+export const tileRegions = sqliteTable(
+  "tile_regions",
+  {
+    id: id(),
+    kind: text("kind", { enum: TILE_REGION_KINDS }).notNull().default("region"),
+    minLat: real("min_lat").notNull(),
+    minLon: real("min_lon").notNull(),
+    maxLat: real("max_lat").notNull(),
+    maxLon: real("max_lon").notNull(),
+    minZoom: integer("min_zoom").notNull(),
+    maxZoom: integer("max_zoom").notNull(),
+    /** Protomaps daily build this region was extracted from ('YYYY-MM-DD'). */
+    buildDate: integer("build_date", { mode: "timestamp_ms" }),
+    /** Approximate size of the tiles written for this region, in bytes. */
+    bytes: integer("bytes"),
+    status: text("status", { enum: TILE_REGION_STATUSES }).notNull().default("pending"),
+    error: text("error"),
+    createdAt: createdAt(),
+    refreshedAt: integer("refreshed_at", { mode: "timestamp_ms" }),
+    /** Set by tiles.prune when no location lies inside any more. */
+    emptySince: integer("empty_since", { mode: "timestamp_ms" }),
+  },
+  (t) => [
+    check("tile_regions_kind", inList("kind", TILE_REGION_KINDS)),
+    check("tile_regions_status", inList("status", TILE_REGION_STATUSES)),
+    check("tile_regions_zoom", sql`${t.minZoom} <= ${t.maxZoom}`),
+  ],
+);
+
 // --- Activity ---------------------------------------------------------------
 /**
  * Event log. No FK on entity_id/actor_id on purpose: history outlives deletions.
@@ -495,3 +534,5 @@ export type VisitPersonRow = typeof visitPeople.$inferSelect;
 export type NewVisitPerson = typeof visitPeople.$inferInsert;
 export type Photo = typeof photos.$inferSelect;
 export type NewPhoto = typeof photos.$inferInsert;
+export type TileRegion = typeof tileRegions.$inferSelect;
+export type NewTileRegion = typeof tileRegions.$inferInsert;

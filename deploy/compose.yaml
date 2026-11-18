@@ -48,6 +48,10 @@ services:
       SMTP_URL: ${SMTP_URL:-}
       NTFY_URL: ${NTFY_URL:-}
       HEALTHCHECK_URL: ${HEALTHCHECK_URL:-}
+      # Tile regions: empty/omitted means automatic downloads enabled.
+      TILES: ${TILES:-on}
+      PMTILES_BIN: ${PMTILES_BIN:-pmtiles}
+      TILES_BUILD_URL: ${TILES_BUILD_URL:-}
     volumes: ["./data:/data"]
     mem_limit: 512m
     restart: unless-stopped
@@ -67,6 +71,9 @@ services:
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       SMTP_URL: ${SMTP_URL:-}
       NTFY_URL: ${NTFY_URL:-}
+      TILES: ${TILES:-on}
+      PMTILES_BIN: ${PMTILES_BIN:-pmtiles}
+      TILES_BUILD_URL: ${TILES_BUILD_URL:-}
     volumes: ["./data:/data"]
     depends_on: [app] # the app migrates the database at startup
     mem_limit: 768m

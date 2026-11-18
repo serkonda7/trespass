@@ -36,6 +36,13 @@
       "when": 1795017032387,
       "tag": "0004_search_fts",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1795018058725,
+      "tag": "0005_tile_regions",
+      "breakpoints": true
     }
   ]
 }

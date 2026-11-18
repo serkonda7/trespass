@@ -1,5 +1,18 @@
-// Admin settings page: the instance singleton and its validation.
+// Admin settings and tile regions pages.
 import { expect, test } from "./fixtures";
+import { hydrated } from "./helpers";
+
+test("admin sees the tile regions page with no regions yet", async ({ adminPage: page }) => {
+  await page.goto("/admin/tiles");
+  await hydrated(page);
+  await expect(page.getByRole("heading", { name: "Kartenregionen" })).toBeVisible();
+  await expect(page.getByText("Noch keine Kartenregionen.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Weltkarte laden" })).toBeVisible();
+  // TILES=off: clicking it must not start a download or create a region.
+  await page.getByRole("button", { name: "Weltkarte laden" }).click();
+  await expect(page.getByText("Auftrag eingereiht.")).toBeVisible();
+  await expect(page.getByText("Noch keine Kartenregionen.")).toBeVisible();
+});
 
 test("admin changes the instance settings", async ({ adminPage: page }) => {
   await page.goto("/admin/settings");

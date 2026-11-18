@@ -72,6 +72,7 @@ import { geocodeEnabled } from "../geocode/reverse";
 import { enqueueJob } from "../jobs/queue";
 import { reindexLocations } from "../search/indexer";
 import { type LocationList, searchLocations } from "../search/query";
+import { enqueueTileEnsure } from "../tiles/service";
 import { conflict, forbidden, LocationsError, notFound, parseInput } from "./errors";
 import { effectiveStatusFor, statusChangeTime } from "./status";
 
@@ -287,6 +288,7 @@ export function createLocation(
       },
     });
     enqueueGeocode(tx, row.id, exact);
+    enqueueTileEnsure(tx, row.id);
     return { id: row.id, version: row.version };
   });
 }
@@ -438,6 +440,7 @@ export function moveLocation(db: AppDb, ctx: AuthCtx, raw: MoveLocationInput): {
       diff: { coords: { from: "changed", to: "changed" } },
     });
     enqueueGeocode(tx, location.id, exact);
+    enqueueTileEnsure(tx, location.id);
     return { version };
   });
 }

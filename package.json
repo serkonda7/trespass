@@ -58,6 +58,7 @@
     "fflate": "0.8.3",
     "maplibre-gl": "6.19.0",
     "marked": "18.2.1",
+    "pmtiles": "4.5.0",
     "sanitize-html": "2.18.2",
     "sharp": "0.35.5",
     "solid-js": "1.9.19",
