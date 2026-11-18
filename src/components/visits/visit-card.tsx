@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/solid-query";
 import { Link } from "@tanstack/solid-router";
 import { createMemo, For, Show } from "solid-js";
 import { ConfirmButton } from "~/components/confirm-dialog";
+import { VisitPhotoThumbs } from "~/components/photos/visit-photos";
 import { Badge } from "~/components/ui/badge";
 import { Card, CardContent } from "~/components/ui/card";
 import { browserTimeZone, formatIsoDay } from "~/lib/format";
@@ -82,6 +83,8 @@ export function VisitCard(props: {
             </For>
           </ul>
         </Show>
+
+        <VisitPhotoThumbs visitId={props.visit.id} />
 
         <Show when={props.visit.journalHtml}>
           <div

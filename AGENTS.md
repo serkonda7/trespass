@@ -110,6 +110,36 @@ journal, photos, trips, research and export come in later stages.
   status filter includes "Besucht". The coordinate warning uses the client-side
   `findCoordinateLikeText` when the location is visible to friends.
 
+## Photos (Stage 5)
+
+- `src/server/authz/photos.ts` holds **all** photo rules: `visiblePhotosWhere(ctx)` (location or
+  visit visible, uploader or admin; unsorted only uploader/admin), `photosAtLeastWhere`, the
+  DTO-redaction helpers and the uploader/attach/edit/delete/cover decisions. Filter photos only
+  in SQL. Invisible/missing → `PHOTO_NOT_FOUND` (404), visible-but-denied → 403.
+- Exact GPS, the GPS-derived suggestion and the original URL are present only for the uploader,
+  admins and callers with `precise` on the photo's location (§3.4 rules 4 & 6); below that the
+  keys are absent. Derivatives are served to everyone who sees the photo. While `processing`,
+  `/files/:id?size=<derivative>` answers **202 + `Retry-After: 1`** (the UI polls); a failed one
+  answers 404. Originals answer 404 for non-uploaders/non-admins.
+- Originals are stored content-addressed at `UPLOAD_DIR/ab/cd/<sha256>`; metadata-free WebP
+  derivatives (400/1600/2560) at `UPLOAD_DIR/derived/<sha256>/<size>.webp`. `src/server/photos/`
+  has `storage.ts`, `process.ts` (EXIF via `exifr` before sharp, `heicSupported()`, all metadata
+  stripped, no `withMetadata()`), `upload.ts`, `serve.ts`, `match.ts`, `jobs.ts`, `gc.ts`,
+  `service.ts` and `functions.ts`. Shared inputs/DTOs/errors/queries live in `src/lib/photos/`.
+- `POST /api/v1/photos` streams one multipart `file` (max 100 MB) to a temp file, hashes it,
+  dedupes into the blob store, inserts a `processing` row and enqueues `photos.process` in the
+  separate worker. `photos.process` extracts EXIF, builds derivatives, sets `taken_at` (naive
+  camera clock interpreted in the matched location's tz), then **suggests** a location (nearest
+  within 300 m using the uploader's visible coordinates) and a visit (same local day) without
+  attaching them. No GPS → unsorted. `photos.gc` only removes blobs/derivatives whose hash has
+  no remaining row; a nightly `photos.sweep` finds cascaded orphans.
+- Journal `![alt](photo:ID)` embeds are resolved in one SQL batch with the photo predicate
+  (`resolvePhotoEmbeds`); invisible or unprocessed embed ids are dropped. UI: `src/components/photos/`
+  (uploader with progress, gallery with cover/caption/delete, visit thumbs/embed picker,
+  unsorted list), the location page's Fotos tab and cover header, `/fotos/unsortiert`, and the
+  Logbuch link to it. `locations.cover_photo_id` has no DB FK (circular Drizzle types); the
+  service validates it and clears it on photo delete.
+
 ## Commands
 `bun run dev` · `build` · `start` · `check` (= `lint` + `typecheck` + `test`) ·
 `format` (Biome, writes) · `db:generate` (after schema edits) · `gen` (route tree

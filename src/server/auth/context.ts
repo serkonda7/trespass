@@ -31,7 +31,7 @@ export function getAuthHandler(): AuthHandler {
 /** Thrown by require* helpers; server routes turn it into a Response (see withAuth). */
 export class HttpError extends Error {
   constructor(
-    public readonly status: 401 | 403 | 404 | 409 | 422 | 429,
+    public readonly status: 400 | 401 | 403 | 404 | 409 | 413 | 415 | 422 | 429,
     message: string,
   ) {
     super(message);

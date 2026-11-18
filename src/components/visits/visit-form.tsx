@@ -2,6 +2,8 @@
 // people are either app users or free names, and the journal is Markdown with a
 // server-rendered preview. Coordinates in free text warn on friends' locations.
 import { createMemo, createSignal, For, type JSX, Show } from "solid-js";
+import { PhotoUploader } from "~/components/photos/uploader";
+import { PhotoEmbedPicker } from "~/components/photos/visit-photos";
 import { Button } from "~/components/ui/button";
 import { Input, inputClass } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -87,6 +89,8 @@ export function VisitForm(props: {
   submitLabel: string;
   /** Warn about coordinate-like text when the location is shared. */
   shared: boolean;
+  /** Present on the edit page: enables photo upload and journal embeds. */
+  visitId?: string;
   onSubmit: (values: VisitFormValues) => Promise<boolean>;
   conflict?: boolean;
   onReload?: () => void;
@@ -263,6 +267,23 @@ export function VisitForm(props: {
             onInput={(e) => set("journalMd", e.currentTarget.value)}
           />
         </Field>
+
+        <Show when={props.visitId}>
+          {(visitId) => (
+            <div class="grid gap-2">
+              <PhotoEmbedPicker
+                visitId={visitId()}
+                onPick={(id) =>
+                  set(
+                    "journalMd",
+                    `${values().journalMd}${values().journalMd ? "\n" : ""}![](photo:${id})`,
+                  )
+                }
+              />
+              <PhotoUploader visitId={visitId()} />
+            </div>
+          )}
+        </Show>
 
         <Show when={leak()}>
           <p class="rounded-md border border-destructive p-3 text-sm text-destructive" role="alert">

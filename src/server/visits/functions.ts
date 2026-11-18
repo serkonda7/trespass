@@ -12,7 +12,8 @@ import {
 } from "~/lib/visits/inputs";
 import { authMiddleware } from "../auth/middleware";
 import { getDb } from "../db/client";
-import { renderJournalMarkdown } from "../markdown";
+import { photoEmbedIds, renderJournalMarkdown } from "../markdown";
+import { resolvePhotoEmbeds } from "../photos/service";
 import {
   createVisit,
   deleteVisit,
@@ -67,8 +68,13 @@ export const getLocationTimelineFn = createServerFn({ method: "POST" })
   .validator(listVisitsInput)
   .handler(({ context: { ctx }, data }) => getLocationTimeline(getDb(), ctx, data.locationId));
 
-/** Markdown preview for the editor; photo embeds are always unresolved here. */
+/** Markdown preview for the editor; only photos visible to the editor appear. */
 export const previewMarkdownFn = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator(previewMarkdownInput)
-  .handler(({ data }) => ({ html: renderJournalMarkdown(data.md) }));
+  .handler(({ context: { ctx }, data }) => {
+    const embeds = resolvePhotoEmbeds(getDb(), ctx, photoEmbedIds(data.md));
+    return {
+      html: renderJournalMarkdown(data.md, { resolvePhoto: (id) => embeds.get(id) ?? null }),
+    };
+  });

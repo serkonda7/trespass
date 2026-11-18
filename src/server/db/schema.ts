@@ -14,6 +14,7 @@ import {
   text,
 } from "drizzle-orm/sqlite-core";
 import type { GeoJsonPolygon, Point } from "../../lib/geo/types";
+import type { PhotoExifData } from "../../lib/photos/types";
 
 export const ROLES = ["admin", "member", "guest"] as const;
 export const PRINCIPAL_KINDS = ["user", "group"] as const;
@@ -31,6 +32,7 @@ export const FRIENDS_LEVELS = ["view", "contribute", "precise"] as const;
 export const LOCATION_GRANT_LEVELS = ["view", "contribute", "precise", "edit", "manage"] as const;
 export const VISIT_ACCESS = ["open", "difficult", "sealed"] as const;
 export const VISIT_CONDITIONS = ["good", "fair", "poor", "collapsing"] as const;
+export const PHOTO_STATUSES = ["processing", "ready", "failed"] as const;
 
 const id = () =>
   text("id")
@@ -258,6 +260,11 @@ export const locations = sqliteTable(
     tz: text("tz").notNull(),
     builtYear: integer("built_year"),
     abandonedYear: integer("abandoned_year"),
+    /**
+     * Cover photo of this location. No FK: the photos table references
+     * locations, and a circular FK would make Drizzle's table types recursive.
+     * The service validates the photo and clears the cover on photo delete.
+     */
     coverPhotoId: text("cover_photo_id"),
     visibility: text("visibility", { enum: VISIBILITIES }).notNull().default("private"),
     friendsLevel: text("friends_level", { enum: FRIENDS_LEVELS }).notNull().default("view"),
@@ -374,6 +381,53 @@ export const visitPeople = sqliteTable(
   ],
 );
 
+// --- Photos -----------------------------------------------------------------
+/**
+ * One uploaded photo (DESIGN §5.3, §9). The original is stored content-addressed
+ * under UPLOAD_DIR; only derivatives are served to other users. EXIF is read by
+ * the worker before stripping and reduced to `exif` (camera/lens/exposure only —
+ * never GPS or serials). `gps_lat/gps_lon` are exact data (DESIGN §3.4 rule 4).
+ * Auto-matching only SUGGESTS a location/visit, it never attaches one.
+ */
+export const photos = sqliteTable(
+  "photos",
+  {
+    id: id(),
+    sha256: text("sha256").notNull(),
+    uploaderId: text("uploader_id")
+      .notNull()
+      .references(() => users.id),
+    locationId: text("location_id").references(() => locations.id, { onDelete: "set null" }),
+    visitId: text("visit_id").references(() => visits.id, { onDelete: "set null" }),
+    takenAt: integer("taken_at", { mode: "timestamp_ms" }),
+    gpsLat: real("gps_lat"),
+    gpsLon: real("gps_lon"),
+    exif: text("exif", { mode: "json" }).$type<PhotoExifData>().notNull().default(sql`'{}'`),
+    width: integer("width").notNull().default(0),
+    height: integer("height").notNull().default(0),
+    mime: text("mime").notNull(),
+    bytes: integer("bytes").notNull(),
+    caption: text("caption"),
+    sort: integer("sort").notNull().default(0),
+    status: text("status", { enum: PHOTO_STATUSES }).notNull().default("processing"),
+    originalName: text("original_name"),
+    suggestedLocationId: text("suggested_location_id").references(() => locations.id, {
+      onDelete: "set null",
+    }),
+    suggestedVisitId: text("suggested_visit_id").references(() => visits.id, {
+      onDelete: "set null",
+    }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    check("photos_status", inList("status", PHOTO_STATUSES)),
+    index("photos_location_idx").on(t.locationId),
+    index("photos_visit_idx").on(t.visitId),
+    index("photos_uploader_idx").on(t.uploaderId),
+    index("photos_sha256_idx").on(t.sha256),
+  ],
+);
+
 // --- Activity ---------------------------------------------------------------
 /**
  * Event log. No FK on entity_id/actor_id on purpose: history outlives deletions.
@@ -439,3 +493,5 @@ export type Visit = typeof visits.$inferSelect;
 export type NewVisit = typeof visits.$inferInsert;
 export type VisitPersonRow = typeof visitPeople.$inferSelect;
 export type NewVisitPerson = typeof visitPeople.$inferInsert;
+export type Photo = typeof photos.$inferSelect;
+export type NewPhoto = typeof photos.$inferInsert;

@@ -3,6 +3,8 @@
 // A feature adds its handlers here (relative imports only: Nitro/standalone
 // bundling may happen outside Vite's `~` alias).
 import { handleReverseGeocode } from "../geocode/handler";
+import { addPhotoJobs } from "../photos/jobs";
+import { getPhotoStore } from "../photos/storage";
 import { pruneJobs } from "./queue";
 import { nextDailyInBerlin } from "./schedule";
 import { addJobHandler, jobRegistry } from "./worker";
@@ -26,4 +28,6 @@ export function registerAllJobHandlers() {
     maxAttempts: 3,
     backoffBaseMs: 10_000,
   });
+  // Photo processing runs in the standalone worker; e2e starts one too.
+  addPhotoJobs(registry, getPhotoStore);
 }

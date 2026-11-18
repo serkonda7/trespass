@@ -78,13 +78,16 @@ function NewVisitPage() {
         <CardContent>
           <Show when={location.data} fallback={<p>{m.common_loading()}</p>}>
             {(data) => (
-              <VisitForm
-                initial={emptyVisitValues(todayInTz(data().location.tz))}
-                principals={principals.data ?? []}
-                shared={data().location.visibility === "friends"}
-                submitLabel={m.visits_add()}
-                onSubmit={onSubmit}
-              />
+              <>
+                <VisitForm
+                  initial={emptyVisitValues(todayInTz(data().location.tz))}
+                  principals={principals.data ?? []}
+                  shared={data().location.visibility === "friends"}
+                  submitLabel={m.visits_add()}
+                  onSubmit={onSubmit}
+                />
+                <p class="pt-3 text-xs text-muted-foreground">{m.photos_upload_after_save()}</p>
+              </>
             )}
           </Show>
         </CardContent>

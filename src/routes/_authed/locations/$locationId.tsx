@@ -4,6 +4,7 @@ import { createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import { ConfirmButton } from "~/components/confirm-dialog";
 import { LocationSharing } from "~/components/locations/location-sharing";
 import { MapView } from "~/components/map/map-view";
+import { PhotoSection } from "~/components/photos/photo-section";
 import { Badge } from "~/components/ui/badge";
 import { Button, buttonVariants } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -26,6 +27,7 @@ import { parseLocationsError } from "~/lib/locations/errors";
 import { locationQuery } from "~/lib/locations/queries";
 import { statusColor, statusLabel } from "~/lib/locations/status";
 import type { SerializedLocation } from "~/lib/locations/types";
+import { photoUrl } from "~/lib/photos/rules";
 import { runAction } from "~/lib/run-action";
 import { m } from "~/paraglide/messages";
 import { deleteLocationFn, moveLocationFn } from "~/server/locations/functions";
@@ -159,6 +161,16 @@ function LocationView(props: { location: SerializedLocation; meId: string; canAd
             {[loc().category?.name, loc().country, loc().adminArea].filter(Boolean).join(" · ")}
             <Show when={localTime()}> · {m.location_local_time({ time: localTime()! })}</Show>
           </p>
+          <Show when={loc().coverPhotoId}>
+            {(id) => (
+              <img
+                src={photoUrl(id(), 1600)}
+                alt={m.photos_cover()}
+                class="max-h-64 w-full rounded-md object-cover"
+                data-testid="location-cover-photo"
+              />
+            )}
+          </Show>
         </CardHeader>
         <CardContent class="grid gap-4">
           <div class="h-64 overflow-hidden rounded-md border">
@@ -276,9 +288,11 @@ function LocationView(props: { location: SerializedLocation; meId: string; canAd
           <LocationTimeline locationId={loc().id} tz={loc().tz} canAdd={props.canAddVisit} />
         </TabsContent>
         <TabsContent value="photos">
-          <Card>
-            <CardContent class="pt-4">{m.location_soon()}</CardContent>
-          </Card>
+          <PhotoSection
+            locationId={loc().id}
+            canContribute={props.canAddVisit}
+            canSetCover={loc().permissions.canEdit}
+          />
         </TabsContent>
       </Tabs>
 

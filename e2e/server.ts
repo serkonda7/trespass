@@ -23,31 +23,55 @@ if (process.env.E2E_SKIP_BUILD !== "1" || !existsSync(entry)) {
 rmSync(E2E_DIR, { recursive: true, force: true });
 mkdirSync(E2E_DIR, { recursive: true });
 
+// The web process never runs jobs (DESIGN §10). E2E starts the standalone
+// worker against the same throwaway DB so photos.process really runs. The
+// worker uses the TypeScript sources; only the web app is built.
+const runtimeEnv = {
+  ...process.env,
+  NODE_ENV: "production",
+  // Test-only secret; production requires a real one (deploy/.env BETTER_AUTH_SECRET).
+  BETTER_AUTH_SECRET: "e2e-only-secret-0123456789abcdefghijklmnopqrstuv",
+  ORIGIN: E2E_ORIGIN,
+  PORT: String(E2E_PORT),
+  HOST: "127.0.0.1",
+  DATABASE_PATH: E2E_DB,
+  UPLOAD_DIR: `${E2E_DIR}/uploads`,
+  // No outbound Nominatim requests from tests (DESIGN §4).
+  GEOCODE: "off",
+};
+
 const child = spawn("bun", ["run", entry], {
-  env: {
-    ...process.env,
-    NODE_ENV: "production",
-    // Test-only secret; production requires a real one (deploy/.env BETTER_AUTH_SECRET).
-    BETTER_AUTH_SECRET: "e2e-only-secret-0123456789abcdefghijklmnopqrstuv",
-    ORIGIN: E2E_ORIGIN,
-    PORT: String(E2E_PORT),
-    HOST: "127.0.0.1",
-    DATABASE_PATH: E2E_DB,
-    UPLOAD_DIR: `${E2E_DIR}/uploads`,
-    // No outbound Nominatim requests from tests (DESIGN §4).
-    GEOCODE: "off",
-  },
+  env: runtimeEnv,
   stdio: ["ignore", "pipe", "inherit"],
 });
+
+let worker: ReturnType<typeof spawn> | undefined;
+function startWorker() {
+  if (worker) return;
+  worker = spawn("bun", ["run", "scripts/worker.ts"], {
+    env: runtimeEnv,
+    stdio: ["ignore", "pipe", "inherit"],
+  });
+  worker.stdout.on("data", (chunk: Buffer) => process.stdout.write(`[worker] ${chunk}`));
+}
 
 child.stdout.on("data", (chunk: Buffer) => {
   const text = chunk.toString();
   process.stdout.write(text);
   const link = text.match(/\[bootstrap\] (http\S+\/invite\/\S+)/)?.[1];
   if (link) writeFileSync(BOOTSTRAP_LINK_FILE, link);
+  // The bootstrap line is printed after migrations, so the worker can safely
+  // open the same database from here on.
+  if (text.includes("[bootstrap]")) startWorker();
 });
 
-const stop = () => child.kill("SIGTERM");
+const stop = () => {
+  child.kill("SIGTERM");
+  worker?.kill("SIGTERM");
+};
 process.on("SIGTERM", stop);
 process.on("SIGINT", stop);
-child.on("exit", (code) => process.exit(code ?? 0));
+child.on("exit", (code) => {
+  worker?.kill("SIGTERM");
+  process.exit(code ?? 0);
+});

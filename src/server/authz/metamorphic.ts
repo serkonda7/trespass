@@ -7,6 +7,7 @@ import { bboxAround } from "../../lib/geo/distance";
 import type { Point } from "../../lib/geo/types";
 import type { AppDb } from "../db/client";
 import { findDuplicates, getLocation, listLocations } from "../locations/service";
+import { getPhoto, listPhotos } from "../photos/service";
 import {
   getLocationTimeline,
   listFeed,
@@ -31,6 +32,19 @@ export const visitProbes: ExtraProbe = (db, ctx, locationId) => ({
   yearReview: yearReview(db, ctx, { year: new Date().getUTCFullYear() }),
   getLocationTimeline: getLocationTimeline(db, ctx, locationId),
 });
+
+/**
+ * Stage 5 probes for a photo on the location. Pass `photoProbes(photoId)` as
+ * `extra`; the photo's GPS (set to the exact point in the test) must never show
+ * up for a viewer below `precise`, and moving the exact point must not change
+ * any response byte.
+ */
+export const photoProbes =
+  (photoId: string): ExtraProbe =>
+  (db, ctx, locationId) => ({
+    listPhotos: listPhotos(db, ctx, { locationId }),
+    getPhoto: getPhoto(db, ctx, { id: photoId }),
+  });
 
 /** Captures one JSON string per endpoint, keyed by a stable name. */
 export async function captureLocationResponses(

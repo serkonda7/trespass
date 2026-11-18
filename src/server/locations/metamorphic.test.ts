@@ -4,10 +4,10 @@
 import { describe, expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
 import type { AuthCtx, Role } from "../authz/ctx";
-import { runMetamorphicPrivacyCheck, visitProbes } from "../authz/metamorphic";
+import { photoProbes, runMetamorphicPrivacyCheck, visitProbes } from "../authz/metamorphic";
 import { ctxFor, seed } from "../authz/test-fixtures";
 import type { AppDb } from "../db/client";
-import { locations } from "../db/schema";
+import { locations, photos } from "../db/schema";
 import { createTestDb } from "../db/test-db";
 import { createVisit } from "../visits/service";
 import { createLocation, getLocation, setLocationGrant } from "./service";
@@ -83,6 +83,21 @@ describe("metamorphic coordinate privacy", () => {
         journalMd: "**Besuch** im Tagebuch",
         people: [],
       });
+      // A photo whose GPS equals the exact point: it must not leak below precise.
+      const photo = db
+        .insert(photos)
+        .values({
+          sha256: "a".repeat(64),
+          uploaderId: ADMIN,
+          locationId: id,
+          gpsLat: EXACT.lat,
+          gpsLon: EXACT.lon,
+          mime: "image/jpeg",
+          bytes: 1,
+          status: "ready",
+        })
+        .returning({ id: photos.id })
+        .get();
       const before = getLocation(db, c.ctx, id);
       expect(before.location.exact).toBe(false);
       expect(before.location.level === "view" || before.location.level === "contribute").toBe(true);
@@ -94,7 +109,10 @@ describe("metamorphic coordinate privacy", () => {
         NEW_EXACT,
         {
           exact: EXACT,
-          extra: visitProbes,
+          extra: async (probeDb, probeCtx, locationId) => ({
+            ...visitProbes(probeDb, probeCtx, locationId),
+            ...photoProbes(photo.id)(probeDb, probeCtx, locationId),
+          }),
         },
       );
       expect(Object.keys(snapshots).sort()).toEqual([
@@ -103,8 +121,10 @@ describe("metamorphic coordinate privacy", () => {
         "findDuplicates",
         "getLocation",
         "getLocationTimeline",
+        "getPhoto",
         "list",
         "listFeed",
+        "listPhotos",
         "listVisitsForLocation",
         "nearExact",
         "yearReview",

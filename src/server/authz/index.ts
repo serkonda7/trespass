@@ -37,6 +37,22 @@ export {
   withLevels,
 } from "./load";
 export {
+  canAttachPhotoToLocation,
+  canAttachPhotoToVisit,
+  canDeletePhoto,
+  canEditPhoto,
+  canSeePhotoGps,
+  canSeePhotoOriginal,
+  canSetCoverPhoto,
+  canUploadPhoto,
+  type PhotosTableLike,
+  photoLocationVisibleWhere,
+  photosAtLeastWhere,
+  photoVisitVisibleWhere,
+  visiblePhotoIdsWhere,
+  visiblePhotosWhere,
+} from "./photos";
+export {
   type LocationsTableLike,
   locationsAtLeastWhere,
   preciseWhere,

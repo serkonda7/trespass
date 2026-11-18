@@ -1,19 +1,26 @@
 // Journal Markdown -> sanitized HTML. Never render untrusted text without this.
-// `photo:ID` embeds are resolved by the caller (always null until photos land in
-// Stage 5); an unresolved embed disappears entirely.
+// `photo:ID` embeds are resolved by the caller with a batch SQL visibility check
+// (photos/resolvePhotoEmbeds); an unresolved embed disappears entirely.
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 
 export type MarkdownOptions = {
   /** Return a URL for a photo embed, or null to drop the image. */
-  resolvePhoto: (id: string) => string | null;
+  resolvePhoto?: (id: string) => string | null;
 };
 
 const PHOTO_EMBED = /!\[([^\]]*)\]\(\s*photo:([A-Za-z0-9_-]+)\s*\)/g;
 
+/** Distinct photo ids referenced by a Markdown text (for one batch SQL check). */
+export function photoEmbedIds(md: string): string[] {
+  return [...md.matchAll(PHOTO_EMBED)]
+    .map((m) => m[2]!)
+    .filter((id, i, all) => all.indexOf(id) === i);
+}
+
 function resolveEmbeds(md: string, resolvePhoto: MarkdownOptions["resolvePhoto"]): string {
   const withPhotos = md.replace(PHOTO_EMBED, (_match, alt: string, id: string) => {
-    const url = resolvePhoto(id);
+    const url = resolvePhoto?.(id) ?? null;
     return url ? `![${alt}](${url})` : "";
   });
   // Marked leaves links with schemes it cannot parse as plain text; drop those
@@ -88,9 +95,9 @@ export function renderMarkdown(md: string, opts: MarkdownOptions): string {
   return sanitizeHtml(raw, SANITIZE_OPTIONS);
 }
 
-/** Journals in this stage have no photos; the hook is kept for Stage 5. */
-export const renderJournalMarkdown = (md: string): string =>
-  renderMarkdown(md, { resolvePhoto: () => null });
+/** Journal Markdown with visible `photo:ID` embeds resolved by the caller. */
+export const renderJournalMarkdown = (md: string, opts?: MarkdownOptions): string =>
+  renderMarkdown(md, opts ?? { resolvePhoto: () => null });
 
 /** Plain-text preview of a journal, truncated for the feed. */
 export function journalExcerpt(md: string, max = 200): string {

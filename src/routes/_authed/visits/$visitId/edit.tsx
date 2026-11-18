@@ -126,6 +126,7 @@ function EditForm(props: {
               initial={values}
               principals={props.principals}
               shared={props.shared}
+              visitId={props.visit.id}
               submitLabel={m.common_save()}
               conflict={conflict()}
               onReload={() => void reload()}

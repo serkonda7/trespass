@@ -60,6 +60,43 @@ export function todayInTz(tz: string, now: Date | string | number = new Date()):
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
+/**
+ * Interprets a naive local wall time ("YYYY-MM-DDTHH:MM:SS", as read from a
+ * camera clock) in an IANA time zone and returns the corresponding UTC instant.
+ * DST is handled by probing the zone's offset at the candidate instant.
+ */
+export function localDateTimeToUtc(local: string, tz: string): Date {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/.exec(local);
+  if (!match) return new Date(Number.NaN);
+  const [, y, mo, d, h, mi, s] = match;
+  const asUtc = new Date(`${y}-${mo}-${d}T${h}:${mi}:${s}Z`);
+  if (Number.isNaN(asUtc.getTime())) return asUtc;
+  let guess = asUtc;
+  for (let i = 0; i < 3; i++) {
+    const next = new Date(asUtc.getTime() - tzOffsetMs(tz, guess));
+    if (next.getTime() === guess.getTime()) break;
+    guess = next;
+  }
+  return guess;
+}
+
+function tzOffsetMs(tz: string, at: Date): number {
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      timeZoneName: "longOffset",
+    }).formatToParts(at);
+    const name = parts.find((p) => p.type === "timeZoneName")?.value ?? "GMT";
+    const match = /^GMT([+-])(\d{1,2})(?::(\d{2}))?$/.exec(name);
+    if (!match) return 0;
+    const [, sign, hours, minutes] = match;
+    const total = Number(hours) * 60 + Number(minutes ?? 0);
+    return (sign === "-" ? -total : total) * 60_000;
+  } catch {
+    return 0;
+  }
+}
+
 /** Adds whole calendar days to a 'YYYY-MM-DD' string (noon UTC avoids DST). */
 export function addDays(day: string, days: number): string {
   const at = new Date(`${day}T12:00:00Z`);

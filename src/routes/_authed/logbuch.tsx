@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/solid-query";
-import { createFileRoute } from "@tanstack/solid-router";
+import { createFileRoute, Link } from "@tanstack/solid-router";
 import { createMemo, createSignal, For, Show } from "solid-js";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -31,7 +31,12 @@ function LogbookPage() {
 
   return (
     <div class="mx-auto grid max-w-3xl gap-4">
-      <h1 class="text-2xl font-semibold">{m.logbook_title()}</h1>
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h1 class="text-2xl font-semibold">{m.logbook_title()}</h1>
+        <Link to="/fotos/unsortiert" class="text-sm text-primary underline underline-offset-4">
+          {m.photos_unsorted()}
+        </Link>
+      </div>
 
       <Card>
         <CardHeader>

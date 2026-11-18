@@ -40,7 +40,8 @@ import type { AppDb, DbOrTx } from "../db/client";
 import { events, locations, type NewVisitPerson, users, visitPeople, visits } from "../db/schema";
 import { forbidden, notFound } from "../locations/errors";
 import { visitCreateTime } from "../locations/status";
-import { journalExcerpt, renderJournalMarkdown } from "../markdown";
+import { journalExcerpt, photoEmbedIds, renderJournalMarkdown } from "../markdown";
+import { resolvePhotoEmbeds } from "../photos/service";
 import {
   conflict,
   invalidDate,
@@ -138,6 +139,9 @@ type VisitRow = {
 };
 
 function serializeRow(db: DbOrTx, ctx: AuthCtx, row: VisitRow, level: Level): SerializedVisit {
+  // Batch-check embedded photo ids in SQL with the photo visibility predicate;
+  // a photo the viewer cannot see is dropped rather than linked.
+  const embeds = resolvePhotoEmbeds(asDb(db), ctx, photoEmbedIds(row.visit.journalMd));
   const canEdit = canMutateVisit(ctx, row.visit, level, "edit");
   const canDelete = canMutateVisit(ctx, row.visit, level, "delete");
   const out: SerializedVisit = {
@@ -157,7 +161,9 @@ function serializeRow(db: DbOrTx, ctx: AuthCtx, row: VisitRow, level: Level): Se
         .get()?.name ?? "",
     visitedOn: row.visit.visitedOn,
     conditions: row.visit.conditions,
-    journalHtml: renderJournalMarkdown(row.visit.journalMd),
+    journalHtml: renderJournalMarkdown(row.visit.journalMd, {
+      resolvePhoto: (id) => embeds.get(id) ?? null,
+    }),
     excerpt: journalExcerpt(row.visit.journalMd),
     people: peopleFor(db, row.visit.id),
     permissions: { canEdit, canDelete },

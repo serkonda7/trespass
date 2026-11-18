@@ -22,6 +22,13 @@
       "when": 1795012131945,
       "tag": "0002_visits",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1795014885168,
+      "tag": "0003_photos",
+      "breakpoints": true
     }
   ]
 }
