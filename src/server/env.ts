@@ -1,3 +1,4 @@
+import { dirname, join } from "node:path";
 import { z } from "zod";
 
 // Server configuration (DESIGN §8.2). Read once, validated with Zod.
@@ -19,6 +20,8 @@ const schema = z.object({
     .transform((v) => new URL(v).origin),
   DATABASE_PATH: z.string().min(1).default("./data/db/app.sqlite"),
   UPLOAD_DIR: z.string().min(1).default("./data/uploads"),
+  /** Read-only MBTiles file for /tiles; defaults to <dir of DATABASE_PATH>/../tiles/tiles.sqlite. */
+  TILES_PATH: optional,
   BETTER_AUTH_SECRET: optional,
   SMTP_URL: optional,
   VAPID_PUBLIC_KEY: optional,
@@ -32,8 +35,10 @@ const schema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
 });
 
-export type Env = Omit<z.output<typeof schema>, "BETTER_AUTH_SECRET"> & {
+export type Env = Omit<z.output<typeof schema>, "BETTER_AUTH_SECRET" | "TILES_PATH"> & {
   BETTER_AUTH_SECRET: string;
+  /** Always resolved to a concrete path; the MBTiles file itself is optional. */
+  TILES_PATH: string;
   isProduction: boolean;
 };
 
@@ -55,7 +60,8 @@ export function parseEnv(source: Record<string, string | undefined>): Env {
   if (isProduction && secret.length < 32) {
     throw new Error("BETTER_AUTH_SECRET must be at least 32 characters.");
   }
-  return { ...e, BETTER_AUTH_SECRET: secret, isProduction };
+  const tilesPath = e.TILES_PATH ?? join(dirname(e.DATABASE_PATH), "..", "tiles", "tiles.sqlite");
+  return { ...e, TILES_PATH: tilesPath, BETTER_AUTH_SECRET: secret, isProduction };
 }
 
 let cached: Env | undefined;

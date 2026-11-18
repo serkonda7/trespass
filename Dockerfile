@@ -4,6 +4,8 @@ WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 COPY . .
+# Self-hosted glyphs/sprites and MapLibre's CSP worker (public/map/ is gitignored).
+RUN bun run map-assets
 RUN bun run build
 
 FROM oven/bun:1.4.4-slim

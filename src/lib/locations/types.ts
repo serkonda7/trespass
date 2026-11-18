@@ -100,3 +100,13 @@ export type DuplicateMatch = {
   point: Point;
   reason: "nearby" | "similar_name";
 };
+
+/** A user or group that can receive a location grant. */
+export type PrincipalOption = {
+  kind: PrincipalKind;
+  id: string;
+  name: string;
+  detail: string;
+  /** Users only; groups may contain members of any role. */
+  role?: "admin" | "member" | "guest";
+};

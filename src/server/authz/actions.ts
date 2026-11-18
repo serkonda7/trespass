@@ -1,28 +1,15 @@
-// App-level actions (DESIGN §3.5): what a role may do outside of one location.
-// Location-level permissions will live in their own module when locations land.
+// App-level actions (DESIGN §3.5). The table and `can` live in lib/ so pages
+// can use the same check as the server without importing server modules.
 import { HttpError } from "../auth/context";
-import type { AuthCtx, Role } from "./ctx";
+import type { AuthCtx } from "./ctx";
 
-export const APP_ACTIONS = {
-  /** Invite users and change roles. */
-  inviteUsers: ["admin"],
-  manageGroups: ["admin"],
-  createLocation: ["admin", "member"],
-  createTrip: ["admin", "member"],
-  ownEquipment: ["admin", "member"],
-  /** Run research jobs and review the inbox. */
-  research: ["admin"],
-  manageTiles: ["admin"],
-  manageSettings: ["admin"],
-  /** Admins export everything; members their own and everything visible to them. */
-  export: ["admin", "member"],
-} as const satisfies Record<string, readonly Role[]>;
+export {
+  APP_ACTIONS,
+  type AppAction,
+  can,
+} from "../../lib/app-actions";
 
-export type AppAction = keyof typeof APP_ACTIONS;
-
-export function can(ctx: AuthCtx, action: AppAction): boolean {
-  return (APP_ACTIONS[action] as readonly Role[]).includes(ctx.role);
-}
+import { type AppAction, can } from "../../lib/app-actions";
 
 /** Throws HttpError(403) unless ctx may perform the action. */
 export function requireCan(ctx: AuthCtx, action: AppAction): AuthCtx {

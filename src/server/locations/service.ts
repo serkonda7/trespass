@@ -7,7 +7,7 @@
 // visibleLonExpr; rows are never filtered in JS. Every response is serialized
 // by serializeLocation. Invisible locations are LOCATION_NOT_FOUND (404),
 // never LOCATION_FORBIDDEN (DESIGN §3.4).
-import { and, asc, eq, inArray, or, type SQL, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, or, type SQL, sql } from "drizzle-orm";
 import { diffFields } from "../../lib/diff";
 import { haversineMeters, splitBbox } from "../../lib/geo/distance";
 import type { GeoJsonPolygon, Point } from "../../lib/geo/types";
@@ -38,6 +38,7 @@ import type {
   LocationCategoryRef,
   LocationDetail,
   LocationListItem,
+  PrincipalOption,
 } from "../../lib/locations/types";
 import { normalizeSearchText } from "../../lib/normalize";
 import { recordEvent } from "../audit";
@@ -670,6 +671,32 @@ export function listLocations(db: AppDb, ctx: AuthCtx, raw: ListLocationsInput):
     });
   }
   return { rows: out, nextCursor };
+}
+
+// --- Principals for the sharing picker -------------------------------------------
+
+/** Active users and groups a manager can grant a location to (no secrets). */
+export function listPrincipals(db: AppDb): PrincipalOption[] {
+  const people = db
+    .select({ id: users.id, name: users.displayName, username: users.username, role: users.role })
+    .from(users)
+    .where(isNull(users.disabledAt))
+    .orderBy(asc(users.displayName))
+    .all()
+    .map((u) => ({
+      kind: "user" as const,
+      id: u.id,
+      name: u.name,
+      detail: `@${u.username}`,
+      role: u.role,
+    }));
+  const teams = db
+    .select({ id: groups.id, name: groups.name })
+    .from(groups)
+    .orderBy(asc(groups.name))
+    .all()
+    .map((g) => ({ kind: "group" as const, id: g.id, name: g.name, detail: "" }));
+  return [...teams, ...people];
 }
 
 // --- Duplicates -----------------------------------------------------------------

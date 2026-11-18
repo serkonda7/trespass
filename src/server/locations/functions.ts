@@ -15,7 +15,7 @@ import {
   setVisibilityInput,
   updateLocationInput,
 } from "~/lib/locations/inputs";
-import { authMiddleware } from "../auth/middleware";
+import { authMiddleware, roleMiddleware } from "../auth/middleware";
 import { getDb } from "../db/client";
 import { listCategories } from "./categories";
 import {
@@ -25,6 +25,7 @@ import {
   getLocation,
   listLocationGrants,
   listLocations,
+  listPrincipals,
   moveLocation,
   removeLocationGrant,
   setLocationGrant,
@@ -105,3 +106,8 @@ export const findDuplicatesFn = createServerFn({ method: "POST" })
 export const listCategoriesFn = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
   .handler(() => listCategories(getDb()));
+
+/** Active users and groups for the sharing picker (admin/member). */
+export const listPrincipalsFn = createServerFn({ method: "GET" })
+  .middleware([roleMiddleware("admin", "member")])
+  .handler(() => listPrincipals(getDb()));

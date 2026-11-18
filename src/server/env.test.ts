@@ -7,6 +7,8 @@ describe("parseEnv", () => {
     expect(e.ORIGIN).toBe("http://localhost:3000");
     expect(e.DATABASE_PATH).toBe("./data/db/app.sqlite");
     expect(e.UPLOAD_DIR).toBe("./data/uploads");
+    expect(e.TILES_PATH).toBe("data/tiles/tiles.sqlite");
+    expect(parseEnv({ TILES_PATH: "/srv/tiles.sqlite" }).TILES_PATH).toBe("/srv/tiles.sqlite");
     expect(e.BETTER_AUTH_SECRET.length).toBeGreaterThanOrEqual(32);
     expect(e.isProduction).toBe(false);
     expect(e.ANTHROPIC_API_KEY).toBeUndefined();

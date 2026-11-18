@@ -80,11 +80,16 @@ export function httpErrorResponse(err: HttpError): Response {
  */
 export function withAuth<A extends { request: Request }>(
   handler: (args: A, ctx: AuthCtx) => Response | Promise<Response>,
-  opts: { roles?: Role[] } = {},
+  opts: {
+    roles?: Role[];
+    /** Test seam: defaults to the request's Better Auth session. */
+    resolve?: (request: Request) => Promise<AuthCtx | null>;
+  } = {},
 ): (args: A) => Promise<Response> {
+  const resolve = opts.resolve ?? authCtxFromRequest;
   return async (args) => {
     try {
-      const ctx = await authCtxFromRequest(args.request);
+      const ctx = await resolve(args.request);
       if (!ctx) throw new HttpError(401, "Not authenticated");
       if (opts.roles) requireRole(ctx, ...opts.roles);
       return await handler(args, ctx);

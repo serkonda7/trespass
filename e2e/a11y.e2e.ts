@@ -3,7 +3,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
-import { hydrated } from "./helpers";
+import { createLocation, hydrated, token } from "./helpers";
 
 async function audit(page: Page, path: string) {
   await page.goto(path);
@@ -23,8 +23,12 @@ async function audit(page: Page, path: string) {
   expect(overflow, `${path} overflows horizontally`).toBeLessThanOrEqual(0);
 }
 
-test("foundation pages have no axe violations", async ({ adminPage, newUser }) => {
-  for (const path of ["/", "/account"]) await audit(adminPage, path);
+test("pages have no axe violations", async ({ adminPage, newUser }) => {
+  for (const path of ["/", "/account", "/locations/new"]) await audit(adminPage, path);
+  const url = await createLocation(adminPage, `A11y ${token()}`);
+  for (const path of [new URL(url).pathname, `${new URL(url).pathname}/edit`]) {
+    await audit(adminPage, path);
+  }
   const guest = await newUser("guest");
   for (const path of ["/admin/users", "/admin/invites", "/admin/groups", "/admin/settings"]) {
     await guest.page.goto(path);

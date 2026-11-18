@@ -1,5 +1,6 @@
 import { E2E_ORIGIN } from "./env";
 import { acceptInvite, expect, signIn, submitLogin, test, uniqueName, userMenu } from "./fixtures";
+import { hydrated } from "./helpers";
 
 test("admin invites a member, who has no admin access", async ({ adminPage, page }) => {
   await adminPage.goto("/admin/invites");
@@ -110,6 +111,7 @@ test("register a passkey and sign in with it (virtual authenticator)", async ({ 
 test("a disabled user is thrown out and cannot sign in", async ({ adminPage, newUser }) => {
   const u = await newUser("member", `Ben ${uniqueName("b").slice(-5)}`);
   await adminPage.goto("/admin/users");
+  await hydrated(adminPage);
   const card = adminPage.getByRole("listitem").filter({ hasText: `@${u.username}` });
   await card.getByRole("button", { name: "Deaktivieren" }).click();
   await adminPage.getByRole("alertdialog").getByRole("button", { name: "Deaktivieren" }).click();
@@ -136,6 +138,7 @@ test("admin manages groups and sets a password", async ({ adminPage, newUser }) 
   const u = await newUser("member");
   const name = `Garage ${uniqueName("g").slice(-6)}`;
   await adminPage.goto("/admin/groups");
+  await hydrated(adminPage);
   await adminPage.getByLabel("Name der neuen Gruppe").fill(name);
   await adminPage.getByRole("button", { name: "Gruppe anlegen" }).click();
   const group = adminPage.getByRole("listitem").filter({ hasText: name }).first();
@@ -143,7 +146,9 @@ test("admin manages groups and sets a password", async ({ adminPage, newUser }) 
     .getByLabel(`Person für ${name} wählen`)
     .selectOption({ label: `${u.displayName} (@${u.username})` });
   await group.getByRole("button", { name: "Hinzufügen" }).click();
-  await expect(group.getByText(u.displayName)).toBeVisible();
+  await expect(
+    group.getByRole("button", { name: `${u.displayName} aus ${name} entfernen` }),
+  ).toBeVisible();
 
   await group.getByRole("button", { name: `${u.displayName} aus ${name} entfernen` }).click();
   await expect(group.getByText("Noch keine Mitglieder.")).toBeVisible();

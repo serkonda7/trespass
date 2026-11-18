@@ -14,3 +14,4 @@ deploy/ts-state/
 src/paraglide/
 test-results/
 playwright-report/
+public/map/
