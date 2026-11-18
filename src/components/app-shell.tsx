@@ -15,16 +15,17 @@ import { m } from "~/paraglide/messages";
 import type { SessionUser } from "~/server/auth/functions";
 
 type NavItem = {
-  to: "/" | "/logbuch" | "/admin";
+  to: "/" | "/logbuch" | "/suche" | "/admin";
   label: () => string;
   icon: string;
   roles?: SessionUser["role"][];
 };
 
-// Later stages add Suche (search), Touren and Ausrüstung.
+// Later stages add Touren and Ausrüstung.
 const NAV: NavItem[] = [
   { to: "/", label: m.nav_map, icon: "⌂" },
   { to: "/logbuch", label: m.nav_logbook, icon: "▤" },
+  { to: "/suche", label: m.nav_search, icon: "⌕" },
   { to: "/admin", label: m.nav_admin, icon: "⚙", roles: ["admin"] },
 ];
 
@@ -72,7 +73,7 @@ export function AppShell(props: { user: SessionUser; children: JSX.Element }) {
               <DropdownMenuContent>
                 <DropdownMenuLabel>@{props.user.username}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {/* Later: Logbuch, Suche, Touren, Ausrüstung. */}
+                {/* Later: Touren, Ausrüstung. */}
                 <DropdownMenuItem onSelect={() => navigate({ to: "/account" })}>
                   {m.account_nav()}
                 </DropdownMenuItem>

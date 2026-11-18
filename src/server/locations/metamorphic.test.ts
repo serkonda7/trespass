@@ -4,7 +4,12 @@
 import { describe, expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
 import type { AuthCtx, Role } from "../authz/ctx";
-import { photoProbes, runMetamorphicPrivacyCheck, visitProbes } from "../authz/metamorphic";
+import {
+  photoProbes,
+  runMetamorphicPrivacyCheck,
+  searchProbes,
+  visitProbes,
+} from "../authz/metamorphic";
 import { ctxFor, seed } from "../authz/test-fixtures";
 import type { AppDb } from "../db/client";
 import { locations, photos } from "../db/schema";
@@ -112,6 +117,7 @@ describe("metamorphic coordinate privacy", () => {
           extra: async (probeDb, probeCtx, locationId) => ({
             ...visitProbes(probeDb, probeCtx, locationId),
             ...photoProbes(photo.id)(probeDb, probeCtx, locationId),
+            ...searchProbes(probeDb, probeCtx, locationId),
           }),
         },
       );
@@ -127,6 +133,7 @@ describe("metamorphic coordinate privacy", () => {
         "listPhotos",
         "listVisitsForLocation",
         "nearExact",
+        "search",
         "yearReview",
       ]);
       for (const key of Object.keys(snapshots)) {

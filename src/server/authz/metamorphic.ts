@@ -3,11 +3,14 @@
 // exact lat/lon in the database; all responses for a viewer below `precise`
 // must stay byte-identical. Later stages can add endpoints via `extra`.
 // This is test-only code; no app module imports it.
+import { eq } from "drizzle-orm";
 import { bboxAround } from "../../lib/geo/distance";
 import type { Point } from "../../lib/geo/types";
 import type { AppDb } from "../db/client";
+import { locations } from "../db/schema";
 import { findDuplicates, getLocation, listLocations } from "../locations/service";
 import { getPhoto, listPhotos } from "../photos/service";
+import { searchLocations } from "../search/query";
 import {
   getLocationTimeline,
   listFeed,
@@ -45,6 +48,18 @@ export const photoProbes =
     listPhotos: listPhotos(db, ctx, { locationId }),
     getPhoto: getPhoto(db, ctx, { id: photoId }),
   });
+
+/**
+ * Stage 6 probe: a full-text search for the location's own name. The index
+ * holds only view-level fields, so moving the exact point must not change a
+ * byte of this response (not even its ordering or cursor).
+ */
+export const searchProbes: ExtraProbe = (db, ctx, locationId) => {
+  const name =
+    db.select({ name: locations.name }).from(locations).where(eq(locations.id, locationId)).get()
+      ?.name ?? "";
+  return { search: searchLocations(db, ctx, { q: name, limit: 100 }) };
+};
 
 /** Captures one JSON string per endpoint, keyed by a stable name. */
 export async function captureLocationResponses(

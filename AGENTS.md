@@ -140,6 +140,14 @@ journal, photos, trips, research and export come in later stages.
   Logbuch link to it. `locations.cover_photo_id` has no DB FK (circular Drizzle types); the
   service validates it and clears it on photo delete.
 
+## Search (Stage 6)
+
+- `drizzle/0004_search_fts.sql` creates the FTS5 table `locations_fts` (`location_id UNINDEXED, name, description, history, tags, place`, `tokenize='trigram remove_diacritics 1'`). The Drizzle handle lives in `src/server/search/fts.ts` — never in `db/schema.ts`, so drizzle-kit cannot manage the virtual table. `history` stays empty until history entries exist.
+- **Only view-level text is indexed** (§3.4): name, description, tag names, place (country + admin_area). Never index access/danger notes, parking, coordinates, fuzz radius or photo/visit data, or search becomes a precise-data oracle. Index text and query use `normalizeSearchText`.
+- `src/server/search/indexer.ts`: `reindexLocations(tx, ids)` runs inside the same transaction as every write to indexed fields — `createLocation`, `updateLocation` (tag edits included), `deleteLocation` and the `geocode.reverse` handler. `ensureSearchIndex(db)` backfills/repairs idempotently at startup and once per DB before the first search.
+- `src/server/search/query.ts`: `searchLocations(db, ctx, input)` uses FTS MATCH for words ≥ 3 chars (every word a quoted phrase, so FTS operators are plain text) and `name_sort LIKE` for 1–2 chars, always ANDs `visibleLocationsWhere(ctx)` in SQL, and returns `visibleLatExpr/visibleLonExpr` coordinates through the same row mapper as `listLocations`. `listLocations` simply delegates here, so the map box and `/suche` share one path.
+- `/suche` (debounced `q` in the URL) lists name, category, status, country and an "ungefähr" badge; `searchProbes` in `authz/metamorphic.ts` checks that search responses stay byte-identical when only exact coordinates change.
+
 ## Commands
 `bun run dev` · `build` · `start` · `check` (= `lint` + `typecheck` + `test`) ·
 `format` (Biome, writes) · `db:generate` (after schema edits) · `gen` (route tree

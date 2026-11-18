@@ -9,6 +9,7 @@ import {
   listLocationsFn,
   listPrincipalsFn,
 } from "~/server/locations/functions";
+import { searchLocationsFn } from "~/server/search/functions";
 import type { FindDuplicatesInput, ListLocationsInput } from "./inputs";
 
 export const locationQuery = (id: string) =>
@@ -23,6 +24,14 @@ export const locationListQuery = (input: ListLocationsInput) =>
     queryFn: () => listLocationsFn({ data: input }),
     // The map's bbox query already refetches on moveend; a window-focus
     // refetch would otherwise cause surprise requests (and 401 redirects).
+    refetchOnWindowFocus: false,
+  });
+
+/** Full-text search results for the Suche page (same row shape as the map list). */
+export const locationSearchQuery = (input: ListLocationsInput) =>
+  queryOptions({
+    queryKey: ["locations", "search", input],
+    queryFn: () => searchLocationsFn({ data: input }),
     refetchOnWindowFocus: false,
   });
 

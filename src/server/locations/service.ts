@@ -9,19 +9,17 @@
 // never LOCATION_FORBIDDEN (DESIGN §3.4).
 import { and, asc, eq, inArray, isNull, or, type SQL, sql } from "drizzle-orm";
 import { diffFields } from "../../lib/diff";
-import { haversineMeters, splitBbox } from "../../lib/geo/distance";
+import { haversineMeters } from "../../lib/geo/distance";
 import type { GeoJsonPolygon, Point } from "../../lib/geo/types";
 import {
   type CreateLocationInput,
   createLocationInput,
-  DEFAULT_PAGE_SIZE,
   DUPLICATE_RADIUS_M,
   type FindDuplicatesInput,
   findDuplicatesInput,
   type GrantInput,
   grantInput,
   type ListLocationsInput,
-  listLocationsInput,
   type MoveLocationInput,
   moveLocationInput,
   type RemoveGrantInput,
@@ -37,8 +35,6 @@ import type {
   GrantRow,
   LocationCategoryRef,
   LocationDetail,
-  LocationListItem,
-  LocationStatus,
   PrincipalOption,
 } from "../../lib/locations/types";
 import { normalizeSearchText } from "../../lib/normalize";
@@ -46,11 +42,9 @@ import { recordEvent } from "../audit";
 import {
   atLeast,
   can,
-  canSeeExact,
   type Level,
   levelRank,
   loadLocationForCtx,
-  locationLevels,
   ROLE_CEILING,
   serializeLocation,
   visibleLatExpr,
@@ -76,8 +70,10 @@ import { fuzzPoint } from "../geo/fuzz";
 import { timeZoneForPoint } from "../geo/tz";
 import { geocodeEnabled } from "../geocode/reverse";
 import { enqueueJob } from "../jobs/queue";
+import { reindexLocations } from "../search/indexer";
+import { type LocationList, searchLocations } from "../search/query";
 import { conflict, forbidden, LocationsError, notFound, parseInput } from "./errors";
-import { effectiveStatusExpr, effectiveStatusFor, statusChangeTime } from "./status";
+import { effectiveStatusFor, statusChangeTime } from "./status";
 
 const asDb = (db: DbOrTx) => db as unknown as AppDb;
 
@@ -279,6 +275,7 @@ export function createLocation(
       .returning()
       .get();
     replaceLocationTags(tx, row.id, tagRefs);
+    reindexLocations(tx, [row.id]);
     const snapshot = pick(row, CREATE_DIFF_KEYS);
     recordEvent(tx, {
       actorId: ctx.userId,
@@ -381,6 +378,8 @@ export function updateLocation(
     if (next.name !== undefined) next.nameSort = normalizeSearchText(String(next.name));
     const version = writeVersioned(tx, location.id, location.version, next as Partial<NewLocation>);
     if (tagIds) replaceLocationTags(tx, location.id, tagIds);
+    // name, description and tag names are indexed; do it in this transaction.
+    reindexLocations(tx, [location.id]);
     recordEvent(tx, {
       actorId: ctx.userId,
       entityId: location.id,
@@ -549,162 +548,18 @@ export function deleteLocation(db: AppDb, ctx: AuthCtx, id: string): void {
     const { location } = requireLocation(tx, ctx, id, "manage");
     recordEvent(tx, { actorId: ctx.userId, entityId: location.id, action: "location.deleted" });
     tx.delete(locations).where(eq(locations.id, location.id)).run();
+    reindexLocations(tx, [location.id]); // removes the row; the select finds nothing
   });
 }
 
 // --- List -----------------------------------------------------------------------
 
-type Cursor = { id: string; dist?: number };
-
-function decodeCursor(raw: string | undefined): Cursor | null {
-  if (!raw) return null;
-  try {
-    const value = JSON.parse(Buffer.from(raw, "base64url").toString("utf8")) as unknown;
-    if (
-      value &&
-      typeof value === "object" &&
-      typeof (value as Cursor).id === "string" &&
-      ((value as Cursor).dist === undefined || typeof (value as Cursor).dist === "number")
-    ) {
-      return value as Cursor;
-    }
-  } catch {
-    // Fall through to the explicit error.
-  }
-  throw new LocationsError(422, "CURSOR_INVALID");
-}
-
-function encodeCursor(cursor: Cursor): string {
-  return Buffer.from(JSON.stringify(cursor), "utf8").toString("base64url");
-}
-
-export type LocationList = { rows: LocationListItem[]; nextCursor: string | null };
+// The FTS-aware list/search query lives in ../search/query.ts so the map and
+// the Suche page share one implementation and one row mapper.
+export type { LocationList } from "../search/query";
 
 export function listLocations(db: AppDb, ctx: AuthCtx, raw: ListLocationsInput): LocationList {
-  const input = parseInput(listLocationsInput, raw);
-  const limit = input.limit ?? DEFAULT_PAGE_SIZE;
-  const cursor = decodeCursor(input.cursor);
-  const conditions: SQL[] = [visibleLocationsWhere(ctx)];
-  if (input.status?.length) {
-    // Filter the EFFECTIVE status in SQL, so `visited` works and no JS pass
-    // over the rows can disagree with the returned status (DESIGN §2).
-    const eff = effectiveStatusExpr();
-    conditions.push(
-      sql`${eff} in (${sql.join(
-        input.status.map((s) => sql`${s}`),
-        sql`, `,
-      )})`,
-    );
-  }
-  if (input.categoryId?.length) conditions.push(inArray(locations.categoryId, input.categoryId));
-  if (input.country?.length) conditions.push(inArray(locations.country, input.country));
-  if (input.tag?.length) {
-    const names = input.tag.map(normalizeSearchText);
-    conditions.push(
-      sql`exists (select 1 from ${locationTags} inner join ${tags} on ${eq(
-        tags.id,
-        locationTags.tagId,
-      )} where ${eq(locationTags.locationId, locations.id)} and ${inArray(tags.name, names)})`,
-    );
-  }
-  if (input.q)
-    conditions.push(sql`${locations.nameSort} like ${`%${normalizeSearchText(input.q)}%`}`);
-
-  const latExpr = visibleLatExpr(ctx);
-  const lonExpr = visibleLonExpr(ctx);
-  if (input.bbox) {
-    const boxes = splitBbox(input.bbox);
-    const boxConditions = boxes.map(
-      (b) =>
-        and(
-          sql`${latExpr} between ${b.minLat} and ${b.maxLat}`,
-          sql`${lonExpr} between ${b.minLon} and ${b.maxLon}`,
-        ) as SQL,
-    );
-    conditions.push(or(...boxConditions) as SQL);
-  }
-
-  // Equirectangular approximation in SQL, over the VISIBLE coordinates only:
-  // a distance sort must not leak the exact point (DESIGN §3.4 rule 2).
-  let distSq: SQL | null = null;
-  if (input.near) {
-    const metersPerLon = 111_320 * Math.cos((input.near.lat * Math.PI) / 180);
-    const dx = sql`((${lonExpr} - ${input.near.lon}) * ${metersPerLon})`;
-    const dy = sql`((${latExpr} - ${input.near.lat}) * ${111_320})`;
-    distSq = sql`(${dx} * ${dx} + ${dy} * ${dy})`;
-    if (cursor?.dist !== undefined) {
-      conditions.push(
-        sql`(${distSq} > ${cursor.dist} or (${distSq} = ${cursor.dist} and ${locations.id} > ${cursor.id}))`,
-      );
-    } else if (cursor) {
-      conditions.push(sql`${locations.id} > ${cursor.id}`);
-    }
-  } else if (cursor) {
-    conditions.push(sql`${locations.id} > ${cursor.id}`);
-  }
-
-  const rows = db
-    .select({
-      id: locations.id,
-      name: locations.name,
-      categoryId: locations.categoryId,
-      status: locations.status,
-      effectiveStatus: sql<LocationStatus>`${effectiveStatusExpr()}`.as("effective_status"),
-      country: locations.country,
-      ownerId: locations.ownerId,
-      visibility: locations.visibility,
-      friendsLevel: locations.friendsLevel,
-      visibleLat: sql<number>`${latExpr}`.as("visible_lat"),
-      visibleLon: sql<number>`${lonExpr}`.as("visible_lon"),
-      visibleDistSq: distSq
-        ? sql<number>`${distSq}`.as("visible_dist_sq")
-        : sql<number>`NULL`.as("visible_dist_sq"),
-    })
-    .from(locations)
-    .where(and(...conditions))
-    .orderBy(...(distSq ? [sql`${distSq} asc`, asc(locations.id)] : [asc(locations.id)]))
-    .limit(limit + 1)
-    .all();
-
-  const page = rows.slice(0, limit);
-  const levels = locationLevels(db, ctx, page);
-  const catRows = db
-    .select({
-      id: categories.id,
-      key: categories.key,
-      icon: categories.icon,
-    })
-    .from(categories)
-    .all();
-  const catById = new Map(catRows.map((c) => [c.id, c]));
-  const out: LocationListItem[] = [];
-  for (const row of page) {
-    const level = levels.get(row.id);
-    if (level === undefined || level === "none") continue; // safety net, not a filter
-    const cat = catById.get(row.categoryId);
-    out.push({
-      id: row.id,
-      name: row.name,
-      categoryKey: cat?.key ?? "",
-      categoryIcon: cat?.icon ?? "",
-      status: row.effectiveStatus,
-      storedStatus: row.status,
-      point: { lat: row.visibleLat, lon: row.visibleLon },
-      exact: canSeeExact(level),
-      level: level as VisibleLevel,
-      country: row.country,
-    });
-  }
-  let nextCursor: string | null = null;
-  if (rows.length > limit && page.length > 0) {
-    const last = page[page.length - 1];
-    const lastRow = rows[page.length - 1];
-    nextCursor = encodeCursor({
-      id: last.id,
-      ...(distSq && lastRow.visibleDistSq != null ? { dist: lastRow.visibleDistSq } : {}),
-    });
-  }
-  return { rows: out, nextCursor };
+  return searchLocations(db, ctx, raw);
 }
 
 // --- Principals for the sharing picker -------------------------------------------

@@ -24,7 +24,7 @@ async function audit(page: Page, path: string) {
 }
 
 test("pages have no axe violations", async ({ adminPage, newUser }) => {
-  for (const path of ["/", "/account", "/locations/new"]) await audit(adminPage, path);
+  for (const path of ["/", "/suche", "/account", "/locations/new"]) await audit(adminPage, path);
   const url = await createLocation(adminPage, `A11y ${token()}`);
   for (const path of [new URL(url).pathname, `${new URL(url).pathname}/edit`]) {
     await audit(adminPage, path);

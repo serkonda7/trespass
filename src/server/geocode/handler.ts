@@ -3,6 +3,7 @@
 import { eq } from "drizzle-orm";
 import { locations } from "../db/schema";
 import type { JobContext } from "../jobs/worker";
+import { reindexLocations } from "../search/indexer";
 import { geocodeEnabled, reverseGeocode } from "./reverse";
 
 export type ReverseGeocodePayload = { locationId: string; lat: number; lon: number };
@@ -47,5 +48,7 @@ export async function handleReverseGeocode(payload: unknown, ctx: JobContext): P
       })
       .where(eq(locations.id, payload.locationId))
       .run();
+    // `place` (country + admin_area) is indexed; reindex in the same transaction.
+    reindexLocations(tx, [payload.locationId]);
   });
 }

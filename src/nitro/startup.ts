@@ -10,6 +10,7 @@ import { bootstrapInviteAtStartup } from "../server/auth/invites";
 import { getDb } from "../server/db/client";
 import { getEnv } from "../server/env";
 import { seedCategories } from "../server/locations/categories";
+import { ensureSearchIndex } from "../server/search/indexer";
 import { installGracefulShutdown } from "../server/shutdown";
 
 export default definePlugin((nitroApp) => {
@@ -21,6 +22,9 @@ export default definePlugin((nitroApp) => {
     // The ten categories are seeded idempotently at startup, so admin edits to
     // their names/icons survive while fresh installations get the defaults.
     seedCategories(db);
+    // Backfill/repair the FTS index (DESIGN §5.9) after migrations and restores.
+    // Idempotent; writes keep it in step afterwards.
+    if (ensureSearchIndex(db)) console.log("[search] index was out of step; rebuilt");
     // First admin (README "First admin"): while there are no users at all,
     // print a fresh one-time admin invite link. Nothing is printed afterwards.
     const link = bootstrapInviteAtStartup(db, env.ORIGIN);
