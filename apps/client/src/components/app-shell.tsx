@@ -75,6 +75,11 @@ export function AppShell(props: { user: SessionUser; children: JSX.Element }) {
               <DropdownMenuContent>
                 <DropdownMenuLabel>@{props.user.username}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <Show when={can(props.user, "research")}>
+                  <DropdownMenuItem onSelect={() => navigate({ to: "/recherche" })}>
+                    {m.nav_research()}
+                  </DropdownMenuItem>
+                </Show>
                 <Show when={can(props.user, "ownEquipment")}>
                   <DropdownMenuItem onSelect={() => navigate({ to: "/ausruestung" })}>
                     {m.nav_equipment()}

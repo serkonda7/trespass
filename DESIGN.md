@@ -617,14 +617,19 @@ checkins        (id PK, trip_id, user_id, location_id NULL, in_at, due_back_at,
 
 -- Research -----------------------------------------------------------------------
 search_areas    (id PK, name, geom JSON, lang, created_by)
-research_runs   (id PK, kind, params JSON, status, stats JSON, cost_cents, started_at, finished_at)
-candidates      (id PK, run_id, kind CHECK IN ('new_location','fact','status_change'),
-                 location_id NULL, lat NULL, lon NULL, name NULL, payload JSON,
-                 evidence JSON,                          -- [{url, quote, verified: bool}]
+research_runs   (id PK, kind, area_id NULL, location_id NULL, status, stats JSON, summary NULL,
+                 error NULL, cost_cents REAL, created_by, started_at, finished_at)
+candidates      (id PK, run_id, area_id NULL, kind CHECK IN ('new_location','fact','status_change'),
+                 location_id NULL,                       -- subject of a fact/status change
+                 result_location_id NULL,                -- created or merged into
+                 lat NULL, lon NULL, name NULL, source_key NULL, payload JSON,
+                 evidence JSON,                          -- [{url, quote, verified: bool, source}]
                  confidence REAL,
                  status CHECK IN ('inbox','accepted','merged','rejected'),
                  decided_by NULL, decided_at NULL)
-http_cache      (url_hash PK, url, status, etag NULL, fetched_at, body_path)  -- body on disk in data/cache
+http_cache      (url_hash PK, url, status, etag NULL, last_modified NULL, fetched_at,
+                 body_path)                              -- body on disk in data/cache/http
+research_watch  (location_id PK, checked_at)             -- watch: oldest first
 
 -- Map ----------------------------------------------------------------------------
 tile_regions    (id PK, min_lat, min_lon, max_lat, max_lon, min_zoom, max_zoom,
@@ -708,7 +713,7 @@ Watch-outs, on top of Hausmeister's:
 | **MVP**      | Login (password + passkey), invites, roles, groups · locations with exact and fuzzed coordinates, map, pins, filters · visibility, `friends_level`, grants, coordinate privacy + metamorphic tests · visits and journal · photos (EXIF, derivatives, auto-matching) · search · automatic tile regions · export |
 | **v1.1**     | History + sources (archive.org) · comments · equipment, packing templates, trips · route preview                                                                                                                                                           |
 | **v1.2**     | Web Push · safety check-in with emergency contact (push, email, ntfy) · offline pack per trip · offline capture queue                                                                                                                                       |
-| **v1.3**     | Research: search areas, `scan.overpass`, `scan.wikidata` → inbox · then `search.web` + `fetch` + `extract` with quote checks, budget · then `watch`                                                                                                        |
+| **v1.3** ✓   | Research: search areas, `scan.overpass`, `scan.wikidata` → inbox · then `search.web` + `fetch` + `extract` with quote checks, budget · then `watch` (its Web Push follows with v1.2) |
 | **Later**    | Before/after slider · historical imagery and old-map overlays (after checking terms) · single-location HTML export · video |
 
 As in Hausmeister, Phase 0 comes first. The second sidecar, the second delegation and

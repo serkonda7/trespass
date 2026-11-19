@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/solid-router";
 import { deleteLocationFn, moveLocationFn } from "@trespass/server/locations/functions";
+import { startEnrichFn } from "@trespass/server/research/functions";
 import { can } from "@trespass/shared/app-actions";
 import { formatCoordinates, parseCoordinates } from "@trespass/shared/geo/parse-coords";
 import { parseLocationsError } from "@trespass/shared/locations/errors";
@@ -331,6 +332,19 @@ function LocationView(props: {
         <Show when={can({ role: props.role }, "createTrip")}>
           <Button variant="outline" onClick={() => setTripOpen(true)} data-testid="add-to-trip">
             {m.trips_add_to()}
+          </Button>
+        </Show>
+        <Show when={can({ role: props.role }, "research")}>
+          <Button
+            variant="outline"
+            data-testid="start-research"
+            onClick={() =>
+              void runAction(() => startEnrichFn({ data: { locationId: loc().id } }), {
+                success: m.research_started(),
+              })
+            }
+          >
+            {m.research_start()}
           </Button>
         </Show>
         <Show when={loc().permissions.canEdit}>

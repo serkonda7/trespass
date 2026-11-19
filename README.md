@@ -6,7 +6,9 @@ research inbox. Design: [DESIGN.md](DESIGN.md). Current phase: **MVP implemented
 public points, grants and coordinate privacy; map with self-hosted tiles and automatic
 tile regions; visits and journal; photos; search; ZIP export. **v1.1 implemented**:
 history with sources and archive.org copies, comments, equipment and packing templates,
-trips with a route preview. Next: Phase 0 on the VPS, then v1.2. The infra runbook is [docs/PHASE0.md](docs/PHASE0.md).
+trips with a route preview. **v1.3 implemented**: research with search areas,
+OpenStreetMap/Wikidata scans, web enrichment with checked quotes and a monthly LLM
+budget, and a weekly watch, all into a review inbox. Next: Phase 0 on the VPS, then v1.2. The infra runbook is [docs/PHASE0.md](docs/PHASE0.md).
 
 Infra and stack follow [Hausmeister](https://github.com/serkonda7/hausmeister)
 (Bun + TanStack Start, SQLite, Better Auth, Tailscale sidecar + Caddy DNS-01 via deSEC,

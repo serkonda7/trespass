@@ -32,6 +32,9 @@ test("pages have no axe violations", async ({ adminPage, newUser }) => {
     "/touren",
     "/touren/new",
     "/ausruestung",
+    "/recherche",
+    "/recherche/gebiete",
+    "/recherche/laeufe",
   ])
     await audit(adminPage, path);
   const url = await createLocation(adminPage, `A11y ${token()}`);
@@ -56,6 +59,7 @@ test("pages have no axe violations", async ({ adminPage, newUser }) => {
     "/admin/groups",
     "/admin/tiles",
     "/admin/settings",
+    "/recherche",
   ]) {
     await guest.page.goto(path);
     await hydrated(guest.page);

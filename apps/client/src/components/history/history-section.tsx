@@ -78,7 +78,7 @@ const sourcesPayload = (rows: SourceRow[]) =>
     }));
 
 /** Input type for one precision: date, month or a four-digit year. */
-function DateInput(props: {
+export function DateInput(props: {
   id: string;
   precision: HistoryPrecision;
   value: string;

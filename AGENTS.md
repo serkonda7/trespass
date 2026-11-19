@@ -9,8 +9,9 @@ exactly: add one with `bun add --exact`, only on purpose.
 The MVP (DESIGN §12) is in place: identity, admin and jobs, locations with
 coordinate privacy, map and tile regions, visits/journal, photos, search and
 export. v1.1 is in place too: history + sources (archive.org), comments,
-equipment and packing templates, trips with a route preview. Push, check-in,
-offline and research are later versions (v1.2+).
+equipment and packing templates, trips with a route preview. v1.3 (research)
+is in place as well; v1.2 (push, check-in, offline) is not yet, so `watch`
+creates inbox entries without a Web Push.
 
 ## Workspaces
 Bun workspaces driven by Turborepo (`turbo.json`). One hoisted `node_modules`
@@ -235,6 +236,59 @@ whichever workspace a command runs in.
   `/touren/new?location=`, `/touren/$tripId`, `/touren/$tripId/edit`; "Zur
   Tour hinzufügen" on the location page. The emergency contact is stored and
   shown; alerts come with the v1.2 check-in.
+
+## Research (v1.3, DESIGN §6)
+
+- Admin only (`can(ctx, "research")`, server functions with
+  `roleMiddleware("admin")`, `/recherche` 404s for everyone else, entry in the
+  user menu). **The inbox (`candidates`) is the only output**: no job changes a
+  location. `server/research/inbox.ts` applies decisions — accept
+  (`researched` location via `createLocation`, which queues the tile region),
+  later (`idea`), merge (facts → approved history on the target), reject
+  (kept, never suggested again); facts become approved history with their
+  evidence as sources (`history.candidate_id`, no FK: adding one would rebuild
+  `history` and cascade-delete `sources`); status changes go through
+  `updateLocation`. Audits carry ids and the decision only.
+- Code in `apps/server/src/research/`: `areas.ts` (search areas: drawn
+  polygon or circle around a pin, ≤ 5000 km², simple ring), `jobs.ts` (job
+  handlers + `executeRun`), `overpass.ts`, `wikidata.ts`, `websearch.ts`
+  (Wikipedia first, then SearXNG), `http.ts` (polite fetcher), `robots.ts`,
+  `text.ts` (Readability + linkedom), `extract.ts` (prompts, schema, server
+  checks), `llm.ts` (Claude via `@anthropic-ai/sdk`, structured output, no
+  tools, metered), `budget.ts`, `store.ts` (dedupe), `runs.ts`, `categories.ts`.
+  Shared: `shared/research/` (inputs, types, `quote.ts`, `languages.ts`,
+  `text.ts`), `shared/geo/polygon.ts`.
+- Jobs (worker only): `scan.overpass`, `scan.wikidata`, `research.enrich`
+  (payload `{runId}`; a `research_runs` row is created when requested) and
+  `research.watch` (weekly, Monday 04:00 Berlin, 5 locations per job, at most
+  15 per week, continues by re-enqueueing itself). `maxAttempts: 2`: failures
+  are recorded on the run (`failed`/`budget`/`skipped`) instead of retried.
+  `RESEARCH=off` (e2e) finishes runs as `skipped` without any request.
+- **Untrusted text**: the LLM gets page text fenced in `<document>`, has no
+  tools and returns schema JSON; `verifyExtraction` keeps a fact only if its
+  quote is found verbatim (`quoteAppearsIn`, normalized) and its date fits
+  the precision. Never send coordinates to the LLM or to search; scans send
+  only the area polygon (Overpass) or its bbox (Wikidata).
+- **Polite crawling**: robots.txt (5xx = disallow), ≥ 5 s per host, generic
+  UA, `http_cache` + bodies under `CACHE_DIR` (default `data/cache/http`, not
+  backed up), ETag/Last-Modified revalidation, blocklist
+  (`DEFAULT_BLOCKLIST` + `RESEARCH_BLOCKLIST`), no private/tailnet hosts, text
+  types only, Wayback fallback for failed pages. Every dependency (fetch,
+  LLM, sleep, cache dir) is injectable; tests never touch the network.
+- **Budget**: `settings.research_budget_cents` per Berlin month over
+  `research_runs.cost_cents`; 0 = no LLM use. `meteredLlm` checks before and
+  books after each call.
+- **Dedupe** (`store.ts`): same source key, ≤ 200 m from any candidate or
+  known location, or a similar name within 5 km → evidence is attached
+  instead of a new row. It compares exact stored coordinates; that is fine
+  only because research is admin-only — never reuse it for other roles.
+- **The worker has no Paraglide**: it is run by Bun directly, outside Vite,
+  so nothing it imports may import `@trespass/shared/paraglide/messages`
+  (the import fails at startup). Store markers (`FactPayload.template`,
+  `name: null` for unnamed OSM features) and render German text in the web
+  process or UI (`shared/research/text.ts`). The research e2e test waits for
+  the worker to finish a run, which catches this.
+- Not exported (working data; see `docs/export-format.md`).
 
 ## Commands
 Run from the repo root; turbo fans out to the workspaces and caches results

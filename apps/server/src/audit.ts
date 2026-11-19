@@ -45,7 +45,12 @@ export type AuditAction =
   | "trip.created"
   | "trip.updated"
   | "trip.deleted"
-  | "trip.stops";
+  | "trip.stops"
+  | "research.area_created"
+  | "research.area_updated"
+  | "research.area_deleted"
+  | "research.run_requested"
+  | "research.candidate_decided";
 
 /** Keys that look like secrets. Matched case-insensitively at any depth. */
 const SECRET_KEY = /pass(word)?|token|hash|secret|credential/i;

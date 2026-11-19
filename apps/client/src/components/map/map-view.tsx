@@ -62,6 +62,10 @@ export function MapView(props: {
   circle?: { point: Point; radiusM: number } | null;
   /** Straight lines between consecutive points (trip route preview). */
   route?: readonly Point[] | null;
+  /** Outlines such as research search areas; rings in GeoJSON [lon, lat] order. */
+  polygons?: readonly (readonly (readonly [number, number])[])[] | null;
+  /** Link target of a pin's popup (default: the location page). */
+  pinHref?: (id: string) => string;
   /** Fit to this box whenever it changes (e.g. after the first data load). */
   fit?: MapBbox | null;
   class?: string;
@@ -180,6 +184,29 @@ export function MapView(props: {
         source: "fuzz",
         paint: { "line-color": "#38bdf8", "line-dasharray": [2, 2], "line-width": 2 },
       });
+      m.addSource("areas", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+      m.addLayer(
+        {
+          id: "areas-fill",
+          type: "fill",
+          source: "areas",
+          filter: ["==", ["geometry-type"], "Polygon"],
+          paint: { "fill-color": "#a855f7", "fill-opacity": 0.12 },
+        },
+        "clusters",
+      );
+      m.addLayer(
+        {
+          id: "areas-line",
+          type: "line",
+          source: "areas",
+          paint: { "line-color": "#a855f7", "line-width": 2 },
+        },
+        "clusters",
+      );
       m.addSource("route", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
@@ -219,7 +246,8 @@ export function MapView(props: {
       const coords = (f.geometry as { coordinates: unknown }).coordinates as [number, number];
       const content = document.createElement("div");
       const a = document.createElement("a");
-      a.href = `/locations/${String(f.properties?.id ?? "")}`;
+      const pinId = String(f.properties?.id ?? "");
+      a.href = props.pinHref ? props.pinHref(pinId) : `/locations/${pinId}`;
       a.className = "font-semibold text-primary underline underline-offset-4";
       a.textContent = String(f.properties?.name ?? "");
       content.append(a);
@@ -318,6 +346,30 @@ export function MapView(props: {
               },
             ]
           : [],
+    });
+  });
+
+  createEffect(() => {
+    const polygons = props.polygons ?? [];
+    if (!ready() || !map) return;
+    const source = map.getSource("areas") as import("maplibre-gl").GeoJSONSource | undefined;
+    source?.setData({
+      type: "FeatureCollection",
+      features: polygons
+        .filter((ring) => ring.length >= 2)
+        .map((ring) => {
+          const coords = ring.map(([lon, lat]) => [lon, lat]);
+          const first = coords[0]!;
+          const last = coords[coords.length - 1]!;
+          const closed = coords.length >= 4 && first[0] === last[0] && first[1] === last[1];
+          return {
+            type: "Feature" as const,
+            geometry: closed
+              ? { type: "Polygon" as const, coordinates: [coords] }
+              : { type: "LineString" as const, coordinates: coords },
+            properties: {},
+          };
+        }),
     });
   });
 

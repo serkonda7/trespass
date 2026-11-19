@@ -146,6 +146,12 @@ Never in any export: password hashes, accounts, sessions, passkeys,
 verifications, invite token hashes, `auth_email`, `email_verified`, `image`,
 jobs, settings secrets or notifications.
 
+Research working data (v1.3) is not exported either: `search_areas`,
+`research_runs`, `candidates`, `research_watch` and `http_cache` (a crawler
+cache). What research produces only becomes data once the admin accepts it,
+and then it is a location or a history entry with sources, which are
+exported as above. `history.json` keeps `candidateId` as a plain id.
+
 ## Tickets and limits
 
 At most two exports run at once (one per user). `/admin/export` reserves a slot

@@ -6,6 +6,7 @@ import { handleReverseGeocode } from "../geocode/handler";
 import { ARCHIVE_MAX_ATTEMPTS, handleArchiveSource } from "../history/archive";
 import { addPhotoJobs } from "../photos/jobs";
 import { getPhotoStore } from "../photos/storage";
+import { addResearchJobs } from "../research/jobs";
 import { addTileJobs } from "../tiles/jobs";
 import { pruneJobs } from "./queue";
 import { nextDailyInBerlin } from "./schedule";
@@ -41,4 +42,7 @@ export function registerAllJobHandlers() {
   // Tile regions are extracted by the worker only; TILES=off disables all of
   // them (e2e and tests). Nothing is downloaded by the web process.
   addTileJobs(registry);
+  // Research (DESIGN §6): scans, enrich and the weekly watch. RESEARCH=off
+  // finishes runs as skipped without any outbound request.
+  addResearchJobs(registry);
 }

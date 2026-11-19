@@ -5,6 +5,7 @@
 
 import type { GeoJsonPolygon, Point } from "@trespass/shared/geo/types";
 import type { PhotoExifData } from "@trespass/shared/photos/types";
+import type { CandidatePayload, Evidence, ResearchRunStats } from "@trespass/shared/research/types";
 import { sql } from "drizzle-orm";
 import {
   type AnySQLiteColumn,
@@ -50,6 +51,17 @@ export const EQUIPMENT_CATEGORIES = [
   "other",
 ] as const;
 export const TRIP_STATUSES = ["planned", "active", "done", "cancelled"] as const;
+export const RESEARCH_RUN_KINDS = ["scan.overpass", "scan.wikidata", "enrich", "watch"] as const;
+export const RESEARCH_RUN_STATUSES = [
+  "pending",
+  "running",
+  "done",
+  "failed",
+  "budget",
+  "skipped",
+] as const;
+export const CANDIDATE_KINDS = ["new_location", "fact", "status_change"] as const;
+export const CANDIDATE_STATUSES = ["inbox", "accepted", "merged", "rejected"] as const;
 
 const id = () =>
   text("id")
@@ -467,7 +479,10 @@ export const history = sqliteTable(
     datePrecision: text("date_precision", { enum: HISTORY_PRECISIONS }).notNull(),
     text: text("text").notNull(),
     status: text("status", { enum: HISTORY_STATUSES }).notNull().default("approved"),
-    /** Research candidate this entry came from (v1.3); no FK yet. */
+    /**
+     * Research candidate this entry came from (v1.3). No FK: adding one would
+     * rebuild `history`, and the rebuild's DROP would cascade into `sources`.
+     */
     candidateId: text("candidate_id"),
     createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
     version: integer("version").notNull().default(1),
@@ -716,6 +731,108 @@ export const tileRegions = sqliteTable(
   ],
 );
 
+// --- Research (DESIGN §6, admin only) ----------------------------------------
+/** A drawn polygon (or a circle around a pin, stored as a polygon) to scan. */
+export const searchAreas = sqliteTable("search_areas", {
+  id: id(),
+  name: text("name").notNull(),
+  geom: text("geom", { mode: "json" }).$type<GeoJsonPolygon>().notNull(),
+  /** Language hint for search templates ('de', 'nl', …). */
+  lang: text("lang").notNull().default("de"),
+  createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+/** One research job run. `cost_cents` is the LLM spend (fractional cents). */
+export const researchRuns = sqliteTable(
+  "research_runs",
+  {
+    id: id(),
+    kind: text("kind", { enum: RESEARCH_RUN_KINDS }).notNull(),
+    areaId: text("area_id").references(() => searchAreas.id, { onDelete: "set null" }),
+    locationId: text("location_id").references(() => locations.id, { onDelete: "set null" }),
+    status: text("status", { enum: RESEARCH_RUN_STATUSES }).notNull().default("pending"),
+    stats: text("stats", { mode: "json" }).$type<ResearchRunStats>().notNull().default(sql`'{}'`),
+    /** German summary of the verified facts (enrich only). */
+    summary: text("summary"),
+    error: text("error"),
+    costCents: real("cost_cents").notNull().default(0),
+    createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+    startedAt: integer("started_at", { mode: "timestamp_ms" }),
+    finishedAt: integer("finished_at", { mode: "timestamp_ms" }),
+  },
+  (t) => [
+    check("research_runs_kind", inList("kind", RESEARCH_RUN_KINDS)),
+    check("research_runs_status", inList("status", RESEARCH_RUN_STATUSES)),
+    index("research_runs_created_idx").on(t.createdAt),
+  ],
+);
+
+/**
+ * Something research found, waiting in the inbox. Rejected rows are kept so the
+ * same thing is never suggested again. `location_id` is the subject of a fact
+ * or status change (cascade); `result_location_id` the location a new_location
+ * candidate was accepted as or merged into. `source_key` identifies the source
+ * record ('osm:way/123', 'wd:Q42', 'web:<hash>') for deduplication.
+ */
+export const candidates = sqliteTable(
+  "candidates",
+  {
+    id: id(),
+    runId: text("run_id").references(() => researchRuns.id, { onDelete: "set null" }),
+    areaId: text("area_id").references(() => searchAreas.id, { onDelete: "set null" }),
+    kind: text("kind", { enum: CANDIDATE_KINDS }).notNull(),
+    locationId: text("location_id").references(() => locations.id, { onDelete: "cascade" }),
+    resultLocationId: text("result_location_id").references(() => locations.id, {
+      onDelete: "set null",
+    }),
+    lat: real("lat"),
+    lon: real("lon"),
+    name: text("name"),
+    nameSort: text("name_sort"),
+    sourceKey: text("source_key"),
+    payload: text("payload", { mode: "json" }).$type<CandidatePayload>().notNull(),
+    evidence: text("evidence", { mode: "json" }).$type<Evidence[]>().notNull().default(sql`'[]'`),
+    confidence: real("confidence").notNull().default(0.5),
+    status: text("status", { enum: CANDIDATE_STATUSES }).notNull().default("inbox"),
+    decidedBy: text("decided_by").references(() => users.id, { onDelete: "set null" }),
+    decidedAt: integer("decided_at", { mode: "timestamp_ms" }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    check("candidates_kind", inList("kind", CANDIDATE_KINDS)),
+    check("candidates_status", inList("status", CANDIDATE_STATUSES)),
+    check("candidates_subject", sql`(${t.kind} = 'new_location') OR (${t.locationId} IS NOT NULL)`),
+    index("candidates_status_idx").on(t.status, t.createdAt),
+    index("candidates_source_idx").on(t.sourceKey),
+    index("candidates_lat_lon_idx").on(t.lat, t.lon),
+    index("candidates_location_idx").on(t.locationId),
+  ],
+);
+
+/** Polite crawler cache (ETag / Last-Modified); bodies live on disk in CACHE_DIR. */
+export const httpCache = sqliteTable("http_cache", {
+  urlHash: text("url_hash").primaryKey(),
+  url: text("url").notNull(),
+  status: integer("status").notNull(),
+  etag: text("etag"),
+  lastModified: text("last_modified"),
+  contentType: text("content_type"),
+  fetchedAt: integer("fetched_at", { mode: "timestamp_ms" }).notNull(),
+  bodyPath: text("body_path"),
+});
+
+/** When `watch` last looked for news about a location (oldest first). */
+export const researchWatch = sqliteTable("research_watch", {
+  locationId: text("location_id")
+    .primaryKey()
+    .references(() => locations.id, { onDelete: "cascade" }),
+  checkedAt: integer("checked_at", { mode: "timestamp_ms" }).notNull(),
+});
+
 // --- Activity ---------------------------------------------------------------
 /**
  * Event log. No FK on entity_id/actor_id on purpose: history outlives deletions.
@@ -796,5 +913,9 @@ export type NewTrip = typeof trips.$inferInsert;
 export type TripStopRow = typeof tripStops.$inferSelect;
 export type TripPersonRow = typeof tripPeople.$inferSelect;
 export type TripChecklistRow = typeof tripChecklist.$inferSelect;
+export type SearchAreaRow = typeof searchAreas.$inferSelect;
+export type ResearchRunRow = typeof researchRuns.$inferSelect;
+export type CandidateRow = typeof candidates.$inferSelect;
+export type NewCandidate = typeof candidates.$inferInsert;
 export type TileRegion = typeof tileRegions.$inferSelect;
 export type NewTileRegion = typeof tileRegions.$inferInsert;

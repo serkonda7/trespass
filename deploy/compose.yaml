@@ -52,6 +52,13 @@ services:
       TILES: ${TILES:-on}
       PMTILES_BIN: ${PMTILES_BIN:-pmtiles}
       TILES_BUILD_URL: ${TILES_BUILD_URL:-}
+      # Research (DESIGN §6): RESEARCH=off disables all outbound research.
+      # SEARXNG_URL is set when the `research` profile runs SearXNG.
+      RESEARCH: ${RESEARCH:-on}
+      SEARXNG_URL: ${SEARXNG_URL:-}
+      OVERPASS_URL: ${OVERPASS_URL:-}
+      WIKIDATA_SPARQL_URL: ${WIKIDATA_SPARQL_URL:-}
+      RESEARCH_BLOCKLIST: ${RESEARCH_BLOCKLIST:-}
     volumes: ["./data:/data"]
     mem_limit: 512m
     restart: unless-stopped
@@ -74,6 +81,13 @@ services:
       TILES: ${TILES:-on}
       PMTILES_BIN: ${PMTILES_BIN:-pmtiles}
       TILES_BUILD_URL: ${TILES_BUILD_URL:-}
+      # Research (DESIGN §6): RESEARCH=off disables all outbound research.
+      # SEARXNG_URL is set when the `research` profile runs SearXNG.
+      RESEARCH: ${RESEARCH:-on}
+      SEARXNG_URL: ${SEARXNG_URL:-}
+      OVERPASS_URL: ${OVERPASS_URL:-}
+      WIKIDATA_SPARQL_URL: ${WIKIDATA_SPARQL_URL:-}
+      RESEARCH_BLOCKLIST: ${RESEARCH_BLOCKLIST:-}
     volumes: ["./data:/data"]
     depends_on: [app] # the app migrates the database at startup
     mem_limit: 768m

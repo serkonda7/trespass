@@ -39,8 +39,19 @@ const schema = z.object({
   GEOCODE: optional.pipe(z.enum(["on", "off"]).default("on")),
   /** Wayback Machine copies of history sources; "off" sends nothing to archive.org (e2e sets this). */
   ARCHIVE: optional.pipe(z.enum(["on", "off"]).default("on")),
-  /** Optional integrations used by later stages (research, notifications, healthchecks.io). */
+  /** Research jobs (DESIGN §6); "off" sends nothing to Overpass, Wikidata, search or crawled sites (e2e sets this). */
+  RESEARCH: optional.pipe(z.enum(["on", "off"]).default("on")),
+  /** Claude API key for `extract`/`enrich`/`watch`; without it only the scans run. */
   ANTHROPIC_API_KEY: optional,
+  OVERPASS_URL: optional.pipe(z.url().default("https://overpass-api.de/api/interpreter")),
+  WIKIDATA_SPARQL_URL: optional.pipe(z.url().default("https://query.wikidata.org/sparql")),
+  /** Self-hosted SearXNG (JSON format enabled). Without it, enrich reads Wikipedia only and watch is skipped. */
+  SEARXNG_URL: optional.pipe(z.url().optional()),
+  /** Comma-separated extra hosts research never fetches (subdomains included). */
+  RESEARCH_BLOCKLIST: optional,
+  /** Crawler cache bodies; default <dir of DATABASE_PATH>/../cache/http. Not backed up. */
+  CACHE_DIR: optional,
+  /** Optional integrations used by later stages (notifications, healthchecks.io). */
   NTFY_URL: optional,
   HEALTHCHECK_URL: optional,
   PORT: z.coerce.number().int().positive().default(3000),
@@ -48,8 +59,9 @@ const schema = z.object({
 
 export type Env = Omit<
   z.output<typeof schema>,
-  "BETTER_AUTH_SECRET" | "TILES_PATH" | "DATABASE_PATH" | "UPLOAD_DIR"
+  "BETTER_AUTH_SECRET" | "TILES_PATH" | "DATABASE_PATH" | "UPLOAD_DIR" | "CACHE_DIR"
 > & {
+  CACHE_DIR: string;
   BETTER_AUTH_SECRET: string;
   DATABASE_PATH: string;
   UPLOAD_DIR: string;
@@ -85,8 +97,10 @@ export function parseEnv(
   const databasePath = e.DATABASE_PATH ?? join(root, "data", "db", "app.sqlite");
   const uploadDir = e.UPLOAD_DIR ?? join(root, "data", "uploads");
   const tilesPath = e.TILES_PATH ?? join(dirname(databasePath), "..", "tiles", "tiles.sqlite");
+  const cacheDir = e.CACHE_DIR ?? join(dirname(databasePath), "..", "cache", "http");
   return {
     ...e,
+    CACHE_DIR: cacheDir,
     DATABASE_PATH: databasePath,
     UPLOAD_DIR: uploadDir,
     TILES_PATH: tilesPath,

@@ -39,3 +39,15 @@ export function nextDailyInBerlin(now: Date, hour: number, minute = 0): Date {
   const at = berlinTime(today, hour, minute);
   return at > now ? at : berlinTime(addDays(today, 1), hour, minute);
 }
+
+/** The next `weekday` (0 = Sunday … 6 = Saturday) at `hour:minute` Berlin time after `now`. */
+export function nextWeeklyInBerlin(now: Date, weekday: number, hour: number, minute = 0): Date {
+  const today = isoDayInBerlin(now);
+  for (let i = 0; i <= 7; i++) {
+    const day = addDays(today, i);
+    if (new Date(`${day}T12:00:00Z`).getUTCDay() !== weekday) continue;
+    const at = berlinTime(day, hour, minute);
+    if (at > now) return at;
+  }
+  return berlinTime(addDays(today, 7), hour, minute);
+}
