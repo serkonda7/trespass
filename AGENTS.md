@@ -321,6 +321,15 @@ imports; add a dependency with `bun add --exact <pkg> --cwd <workspace>`.
 - Jobs: `enqueueJob(db, kind, payload, { runAt? })` in `server/jobs/queue.ts`.
   Add handlers with `addJobHandler(registry, kind, fn, opts)` in
   `server/jobs/handlers.ts`. They must be idempotent (a crash re-runs them).
+  Job-kind constants live in a side-effect-free `kinds.ts` per domain
+  (`photos/`, `tiles/`, `research/`); web-side code imports them from there,
+  never from `*/jobs.ts`, so handlers and their deps (crawler, LLM SDK, tile
+  writer, pmtiles) stay out of the web bundle.
+- Bundle size: browser-only libraries (maplibre-gl, `@protomaps/basemaps`) are
+  imported dynamically behind `import.meta.env.SSR` so the server build drops
+  them. Nitro does not copy sharp into `.output` (`traceDeps: ["!sharp"]` +
+  `rolldownConfig.external` in `vite.config.ts`); it resolves from the hoisted
+  root `node_modules`, which the runtime image installs with `--production`.
 
 ## Hardening & gotchas
 - CSP (production only): every inline script needs the request nonce. Zod and
