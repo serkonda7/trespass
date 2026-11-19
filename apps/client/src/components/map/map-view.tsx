@@ -6,7 +6,6 @@ import type { Point } from "@trespass/shared/geo/types";
 import type { LocationStatus } from "@trespass/shared/locations/types";
 import { createEffect, createSignal, type JSX, onCleanup, onMount } from "solid-js";
 import { statusColor } from "~/lib/locations/status";
-import { buildMapStyle } from "~/lib/map/style";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 export type MapPoint = {
@@ -91,9 +90,16 @@ export function MapView(props: {
   };
 
   onMount(async () => {
+    // Everything below is browser-only. Vite replaces import.meta.env.SSR with
+    // a constant, so in the SSR build the early return makes Rollup drop the
+    // dynamic imports — and with them maplibre-gl and @protomaps/basemaps —
+    // from the server bundle. The CSS import at module scope is just an asset.
+    if (import.meta.env.SSR) return;
     // CSP: MapLibre's default worker is a blob URL. Serve the package's own
     // standalone worker from our origin instead (see scripts/fetch-map-assets.ts).
-    lib = await import("maplibre-gl");
+    const [maplibre, style] = await Promise.all([import("maplibre-gl"), import("~/lib/map/style")]);
+    lib = maplibre;
+    const { buildMapStyle } = style;
     if (!container || !lib) return;
     lib.setWorkerUrl("/map/maplibre-gl-worker.mjs");
 
