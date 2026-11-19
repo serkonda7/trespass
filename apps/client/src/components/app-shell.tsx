@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "@tanstack/solid-router";
+import { Link, useLocation, useNavigate, useRouterState } from "@tanstack/solid-router";
 import type { SessionUser } from "@trespass/server/auth/functions";
 import { can } from "@trespass/shared/app-actions";
 import { m } from "@trespass/shared/paraglide/messages";
@@ -12,7 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
-import { authClient } from "~/lib/auth-client";
 import { cn } from "~/lib/cn";
 
 type NavItem = {
@@ -32,8 +31,24 @@ const NAV: NavItem[] = [
 ];
 
 export async function logout() {
+  // Loaded on demand: Better Auth's client is only needed here, so it stays
+  // out of the JavaScript every signed-in page downloads.
+  const { authClient } = await import("~/lib/auth-client");
   await authClient.signOut();
   window.location.assign("/login");
+}
+
+/** A thin bar at the top while a navigation waits for its route chunk or data. */
+function NavProgress() {
+  const pending = useRouterState({ select: (s) => s.status === "pending" });
+  return (
+    <Show when={pending()}>
+      <div
+        aria-hidden="true"
+        class="tr-nav-progress pointer-events-none fixed inset-x-0 top-0 z-50 h-0.5 bg-primary"
+      />
+    </Show>
+  );
 }
 
 /** Phone-first layout: top bar, content, bottom tab bar (side links from `md`). */
@@ -46,6 +61,7 @@ export function AppShell(props: { user: SessionUser; children: JSX.Element }) {
 
   return (
     <div class="flex min-h-dvh flex-col">
+      <NavProgress />
       <header class="sticky top-0 z-40 border-b bg-background/95 backdrop-blur print:hidden">
         <div class="mx-auto flex h-14 max-w-5xl items-center gap-4 px-4">
           <Link to="/" class="text-lg font-semibold">

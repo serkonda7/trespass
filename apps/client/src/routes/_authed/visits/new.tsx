@@ -12,6 +12,7 @@ import {
   type VisitFormValues,
   visitPayload,
 } from "~/components/visits/visit-form";
+import { allInOrder } from "~/lib/all-in-order";
 import { locationQuery, principalsQuery } from "~/lib/locations/queries";
 import { runAction } from "~/lib/run-action";
 
@@ -28,13 +29,15 @@ export const Route = createFileRoute("/_authed/visits/new")({
     return { locationId: search.location };
   },
   loader: async ({ context }) => {
-    await context.queryClient
-      .ensureQueryData(locationQuery(context.locationId))
-      .catch((err: unknown) => {
-        if (parseLocationsError(err).code === "LOCATION_NOT_FOUND") throw notFound();
-        throw err;
-      });
-    await context.queryClient.ensureQueryData(principalsQuery());
+    await allInOrder(
+      context.queryClient
+        .ensureQueryData(locationQuery(context.locationId))
+        .catch((err: unknown) => {
+          if (parseLocationsError(err).code === "LOCATION_NOT_FOUND") throw notFound();
+          throw err;
+        }),
+      context.queryClient.ensureQueryData(principalsQuery()),
+    );
   },
   head: () => ({ meta: [{ title: `${m.visit_new_title()} · ${m.app_name()}` }] }),
   component: NewVisitPage,

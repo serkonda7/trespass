@@ -11,8 +11,12 @@ import appCss from "~/styles/app.css?url";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   // Every route can read `context.user` (SessionUser | null).
+  // A cached session is used right away (refreshed in the background once
+  // stale), so client navigations never wait for a session round trip first.
+  // A session that ended meanwhile still surfaces: every server function
+  // answers 401 and the router's onError goes to /login.
   beforeLoad: async ({ context }) => ({
-    user: await context.queryClient.fetchQuery(sessionQuery()),
+    user: await context.queryClient.ensureQueryData({ ...sessionQuery(), revalidateIfStale: true }),
   }),
   head: () => ({
     meta: [
@@ -21,7 +25,12 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { name: "theme-color", content: "#15181d" },
       { title: m.app_name() },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      // No favicon yet: an empty data URL stops every browser from requesting
+      // /favicon.ico, which would render a full 404 page on the server.
+      { rel: "icon", href: "data:," },
+    ],
   }),
   notFoundComponent: () => (
     <main class="mx-auto grid max-w-3xl justify-items-start gap-3 p-4">

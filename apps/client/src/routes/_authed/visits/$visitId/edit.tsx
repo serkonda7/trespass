@@ -13,6 +13,7 @@ import {
   valuesFromVisit,
   visitPayload,
 } from "~/components/visits/visit-form";
+import { allInOrder } from "~/lib/all-in-order";
 import { locationQuery, principalsQuery } from "~/lib/locations/queries";
 import { runAction } from "~/lib/run-action";
 import { visitQuery } from "~/lib/visits/queries";
@@ -22,13 +23,13 @@ export const Route = createFileRoute("/_authed/visits/$visitId/edit")({
     if (params.visitId.length > 64) throw notFound();
   },
   loader: async ({ context, params }) => {
-    const visit = await context.queryClient
-      .ensureQueryData(visitQuery(params.visitId))
-      .catch((err: unknown) => {
+    const [visit] = await allInOrder(
+      context.queryClient.ensureQueryData(visitQuery(params.visitId)).catch((err: unknown) => {
         if (parseVisitsError(err).code === "VISIT_NOT_FOUND") throw notFound();
         throw err;
-      });
-    await context.queryClient.ensureQueryData(principalsQuery());
+      }),
+      context.queryClient.ensureQueryData(principalsQuery()),
+    );
     if (visit.location) await context.queryClient.ensureQueryData(locationQuery(visit.location.id));
     return visit;
   },

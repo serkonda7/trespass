@@ -1,10 +1,11 @@
 // Must stay the first import: configures Zod before any schema is built.
 import "./lib/zod-config";
-import { MutationCache, QueryCache, QueryClient } from "@tanstack/solid-query";
+import { hashKey, MutationCache, QueryCache, QueryClient } from "@tanstack/solid-query";
 import { createRouter } from "@tanstack/solid-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/solid-router-ssr-query";
 import { currentCspNonce } from "@trespass/shared/csp-nonce";
 import { goToLogin, isSignedOutError } from "@trespass/shared/error-text";
+import { sessionQuery } from "./lib/session-query";
 import { routeTree } from "./routeTree.gen";
 
 export type RouterContext = { queryClient: QueryClient };
@@ -39,7 +40,37 @@ export function getRouter() {
   // Dehydrates queries fetched during SSR, hydrates them in the browser and
   // wraps the app in <QueryClientProvider>.
   setupRouterSsrQueryIntegration({ router, queryClient });
+  if (typeof window !== "undefined") rerunGuardsOnSessionChange(router, queryClient);
   return router;
+}
+
+/**
+ * The root beforeLoad serves the cached session and refreshes it in the
+ * background once stale. When that refresh finds a different user (signed
+ * out, disabled, role changed elsewhere), re-run every beforeLoad so the
+ * _authed redirect and the role guards see it right away. Structural sharing
+ * keeps the data reference stable while nothing changed.
+ */
+function rerunGuardsOnSessionChange(
+  router: { invalidate: () => Promise<void> },
+  queryClient: QueryClient,
+) {
+  const key = sessionQuery().queryKey;
+  const hash = hashKey(key);
+  let last: unknown = queryClient.getQueryData(key);
+  queryClient.getQueryCache().subscribe((event) => {
+    if (event.query.queryHash !== hash) return;
+    // SSR hydration fills the query via "added"/setState, not "success":
+    // remember every value, but only a fetched change re-runs the guards.
+    if (event.type !== "added" && event.type !== "updated") return;
+    const data = event.query.state.data;
+    if (data === undefined) return;
+    const changed = last !== undefined && data !== last;
+    last = data;
+    if (changed && event.type === "updated" && event.action.type === "success") {
+      void router.invalidate();
+    }
+  });
 }
 
 declare module "@tanstack/solid-router" {

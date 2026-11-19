@@ -60,7 +60,9 @@ function ProfileCard() {
     });
     setPending(false);
     if (ok) {
-      await qc.invalidateQueries({ queryKey: sessionQuery().queryKey });
+      // refetchType "all": the session query has no observer, and the root
+      // beforeLoad would otherwise keep showing the stale name until it refreshes.
+      await qc.invalidateQueries({ queryKey: sessionQuery().queryKey, refetchType: "all" });
       await router.invalidate();
     }
   }

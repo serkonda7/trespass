@@ -14,6 +14,13 @@ export default defineConfig({
   resolve: { alias: { "~": fileURLToPath(new URL("./src", import.meta.url)) } },
   environments: {
     client: {
+      // Dev only: vite-plugin-solid keeps packages with a `solid` export
+      // condition out of dependency pre-bundling, so the browser would fetch
+      // better-auth's client as ~170 separate modules on every page load.
+      // It ships plain JS (no JSX), so pre-bundling it is safe.
+      optimizeDeps: {
+        include: ["better-auth/client", "better-auth/client/plugins", "better-auth/solid"],
+      },
       build: {
         rolldownOptions: {
           output: {
@@ -38,6 +45,15 @@ export default defineConfig({
     nitro({
       preset: "bun",
       plugins: ["./src/nitro/startup.ts"],
+      // Map glyphs and sprites (public/map, from `bun run map-assets`) are
+      // unhashed but only change with a new basemaps-assets download: cache
+      // them for a week instead of revalidating every PBF on each map load.
+      // The MapLibre worker is not listed: it must match the bundled library
+      // version, so it keeps the default ETag revalidation.
+      routeRules: {
+        "/map/fonts/**": { headers: { "cache-control": "public, max-age=604800" } },
+        "/map/sprites/**": { headers: { "cache-control": "public, max-age=604800" } },
+      },
       // Nitro traces `sharp` as a native package and copies it plus @img/* (~19 MB)
       // into .output. The hoisted root node_modules (bunfig.toml) already ships it,
       // and both `bun run start` and Docker resolve bare imports from there.

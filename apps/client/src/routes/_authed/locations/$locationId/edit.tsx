@@ -11,6 +11,7 @@ import {
   valuesFromLocation,
 } from "~/components/locations/location-form";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { allInOrder } from "~/lib/all-in-order";
 import { categoriesQuery, locationQuery } from "~/lib/locations/queries";
 import { runAction } from "~/lib/run-action";
 
@@ -19,13 +20,15 @@ export const Route = createFileRoute("/_authed/locations/$locationId/edit")({
     if (params.locationId.length > 64) throw notFound();
   },
   loader: async ({ context, params }) => {
-    const location = await context.queryClient
-      .ensureQueryData(locationQuery(params.locationId))
-      .catch((err: unknown) => {
-        if (parseLocationsError(err).code === "LOCATION_NOT_FOUND") throw notFound();
-        throw err;
-      });
-    await context.queryClient.ensureQueryData(categoriesQuery());
+    const [location] = await allInOrder(
+      context.queryClient
+        .ensureQueryData(locationQuery(params.locationId))
+        .catch((err: unknown) => {
+          if (parseLocationsError(err).code === "LOCATION_NOT_FOUND") throw notFound();
+          throw err;
+        }),
+      context.queryClient.ensureQueryData(categoriesQuery()),
+    );
     return location;
   },
   head: () => ({ meta: [{ title: `${m.location_edit_title()} · ${m.app_name()}` }] }),

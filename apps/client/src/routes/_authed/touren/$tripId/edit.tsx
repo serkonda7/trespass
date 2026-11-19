@@ -22,6 +22,10 @@ export const Route = createFileRoute("/_authed/touren/$tripId/edit")({
     if (params.tripId.length > 64) throw notFound();
   },
   loader: async ({ context, params }) => {
+    // Both requests run at once; principals may fail with 403 for people who
+    // cannot edit, so its outcome is only looked at after the trip checks.
+    const principals = context.queryClient.ensureQueryData(principalsQuery());
+    principals.catch(() => {});
     const trip = await context.queryClient
       .ensureQueryData(tripQuery(params.tripId))
       .catch((err: unknown) => {
@@ -29,7 +33,7 @@ export const Route = createFileRoute("/_authed/touren/$tripId/edit")({
         throw err;
       });
     if (!trip.permissions.canEdit) throw notFound();
-    await context.queryClient.ensureQueryData(principalsQuery());
+    await principals;
   },
   head: () => ({ meta: [{ title: `${m.trips_edit()} · ${m.app_name()}` }] }),
   component: EditTripPage,

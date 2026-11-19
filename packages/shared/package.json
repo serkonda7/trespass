@@ -8,8 +8,8 @@
     "./*": "./src/*.ts"
   },
   "scripts": {
-    "gen": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy baseLocale --silent",
-    "dev": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy baseLocale --silent --watch",
+    "gen": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy baseLocale --output-structure locale-modules --silent",
+    "dev": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy baseLocale --output-structure locale-modules --silent --watch",
     "typecheck": "tsc --noEmit",
     "test": "bun test"
   },

@@ -1,5 +1,5 @@
-// Solid wrapper around MapLibre GL. The library is imported dynamically in
-// onMount so SSR never touches WebGL/window. Pins come from the server's
+// Solid wrapper around MapLibre GL. The library is imported dynamically
+// (browser only, see loadMapLibs) so SSR never touches WebGL/window. Pins come from the server's
 // already-serialized data; this component never computes visibility.
 
 import type { Point } from "@trespass/shared/geo/types";
@@ -28,6 +28,24 @@ export type MapBbox = {
 type MapLibre = typeof import("maplibre-gl");
 type MapInstance = import("maplibre-gl").Map;
 type MarkerInstance = import("maplibre-gl").Marker;
+
+// Browser-only, memoized. Called as soon as this module is evaluated (with the
+// route chunk, before hydration, or when a link to a map page is preloaded),
+// so the ~300 kB MapLibre download overlaps hydration instead of starting
+// after mount. Vite replaces import.meta.env.SSR with a constant, so the SSR
+// build drops these dynamic imports — and with them maplibre-gl and
+// @protomaps/basemaps — from the server bundle.
+let mapLibs: Promise<[MapLibre, typeof import("~/lib/map/style")]> | undefined;
+function loadMapLibs() {
+  mapLibs ??= Promise.all([import("maplibre-gl"), import("~/lib/map/style")]);
+  return mapLibs;
+}
+if (!import.meta.env.SSR) {
+  // A failure here resurfaces (and is handled) when onMount awaits it.
+  loadMapLibs().catch(() => {
+    mapLibs = undefined;
+  });
+}
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
@@ -90,14 +108,12 @@ export function MapView(props: {
   };
 
   onMount(async () => {
-    // Everything below is browser-only. Vite replaces import.meta.env.SSR with
-    // a constant, so in the SSR build the early return makes Rollup drop the
-    // dynamic imports — and with them maplibre-gl and @protomaps/basemaps —
-    // from the server bundle. The CSS import at module scope is just an asset.
+    // Everything below is browser-only (see loadMapLibs). The CSS import at
+    // module scope is just an asset.
     if (import.meta.env.SSR) return;
     // CSP: MapLibre's default worker is a blob URL. Serve the package's own
     // standalone worker from our origin instead (see scripts/fetch-map-assets.ts).
-    const [maplibre, style] = await Promise.all([import("maplibre-gl"), import("~/lib/map/style")]);
+    const [maplibre, style] = await loadMapLibs();
     lib = maplibre;
     const { buildMapStyle } = style;
     if (!container || !lib) return;

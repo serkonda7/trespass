@@ -105,10 +105,31 @@
 .tr-animate-slide[data-opened] {
   animation: tr-slide-in 150ms ease-out;
 }
+/* Navigation progress bar (app-shell). The delay keeps it invisible for
+   navigations that finish quickly; slow ones (data over the VPN) show it. */
+@keyframes tr-nav-progress {
+  from {
+    opacity: 1;
+    transform: scaleX(0.08);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(0.92);
+  }
+}
+.tr-nav-progress {
+  opacity: 0;
+  transform-origin: left;
+  animation: tr-nav-progress 6s cubic-bezier(0.1, 0.8, 0.2, 1) 120ms forwards;
+}
 @media (prefers-reduced-motion: reduce) {
   .tr-animate-fade,
   .tr-animate-zoom,
   .tr-animate-slide {
     animation: none;
+  }
+  .tr-nav-progress {
+    transform: none;
+    animation: tr-fade-in 1ms linear 120ms forwards;
   }
 }

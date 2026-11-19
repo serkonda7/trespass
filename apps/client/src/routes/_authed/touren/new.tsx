@@ -24,10 +24,13 @@ export const Route = createFileRoute("/_authed/touren/new")({
   },
   loaderDeps: ({ search }) => ({ location: search.location }),
   loader: async ({ context, deps }) => {
-    await context.queryClient.ensureQueryData(principalsQuery());
     const location = deps.location;
-    if (location)
-      await context.queryClient.ensureQueryData(locationQuery(location)).catch(() => null);
+    await Promise.all([
+      context.queryClient.ensureQueryData(principalsQuery()),
+      location
+        ? context.queryClient.ensureQueryData(locationQuery(location)).catch(() => null)
+        : null,
+    ]);
   },
   head: () => ({ meta: [{ title: `${m.trips_new()} · ${m.app_name()}` }] }),
   component: NewTripPage,
