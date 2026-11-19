@@ -10,7 +10,6 @@
 // only stored as its SHA-256; an `invite.created` event with actor NULL).
 // The app must have started once so that migrations created the tables.
 import { Database } from "bun:sqlite";
-import { createHash, randomBytes } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
@@ -22,8 +21,8 @@ export function createInviteRow(
   opts: { role: Role; hours: number; now?: number },
 ): { token: string; expiresAt: Date } {
   const now = opts.now ?? Date.now();
-  const token = randomBytes(32).toString("base64url");
-  const tokenHash = createHash("sha256").update(token).digest("hex");
+  const token = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString("base64url");
+  const tokenHash = new Bun.CryptoHasher("sha256").update(token).digest("hex");
   const id = Bun.randomUUIDv7();
   const expiresAt = now + opts.hours * 60 * 60 * 1000;
   db.transaction(() => {

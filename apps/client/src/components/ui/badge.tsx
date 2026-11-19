@@ -1,23 +1,22 @@
-import { cva, type VariantProps } from "class-variance-authority";
 import { type ComponentProps, splitProps } from "solid-js";
 import { cn } from "~/lib/cn";
 
-export const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold",
-  {
-    variants: {
-      variant: {
-        default: "border-transparent bg-primary text-primary-foreground",
-        secondary: "border-transparent bg-secondary text-secondary-foreground",
-        destructive: "border-transparent bg-destructive text-destructive-foreground",
-        outline: "text-foreground",
-      },
-    },
-    defaultVariants: { variant: "default" },
-  },
-);
+export type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
+export type BadgeVariantsProps = { variant?: BadgeVariant | null };
 
-export function Badge(props: ComponentProps<"span"> & VariantProps<typeof badgeVariants>) {
+const BASE = "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold";
+const VARIANTS: Record<BadgeVariant, string> = {
+  default: "border-transparent bg-primary text-primary-foreground",
+  secondary: "border-transparent bg-secondary text-secondary-foreground",
+  destructive: "border-transparent bg-destructive text-destructive-foreground",
+  outline: "text-foreground",
+};
+
+export function badgeVariants({ variant = "default" }: BadgeVariantsProps = {}) {
+  return `${BASE} ${VARIANTS[variant ?? "default"]}`;
+}
+
+export function Badge(props: ComponentProps<"span"> & BadgeVariantsProps) {
   const [local, others] = splitProps(props, ["class", "variant"]);
   return <span class={cn(badgeVariants({ variant: local.variant }), local.class)} {...others} />;
 }

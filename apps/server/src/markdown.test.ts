@@ -66,3 +66,73 @@ describe("renderMarkdown", () => {
     expect(journalExcerpt("![](photo:abc)")).toBe("");
   });
 });
+
+describe("renderMarkdown (constructive allowlist)", () => {
+  test("XSS vectors cannot emit a tag, an event handler or a dangerous scheme", () => {
+    const html = renderJournalMarkdown(
+      [
+        '<script>alert("x")</script>',
+        '<img src="x" onerror="alert(1)">',
+        '<a href="javascript:alert(1)">böse</a>',
+        "![x](data:image/svg+xml;base64,PHN2Zz4=)",
+        '<iframe src="javascript:alert(1)">evil</iframe>',
+        "<style>body{display:none}</style>",
+        "**sicher**",
+      ].join("\n"),
+    );
+    for (const needle of [
+      "<script",
+      "alert",
+      "onerror",
+      "javascript:",
+      "data:",
+      "<iframe",
+      "<style",
+    ])
+      expect({ html, needle, found: html.includes(needle) }).toEqual({
+        html,
+        needle,
+        found: false,
+      });
+    expect(html).toContain("<strong>sicher</strong>");
+  });
+
+  test("attribute breakout via quotes is escaped in href, src and alt", () => {
+    const link = renderJournalMarkdown('[x](https://example.org/?a="><script>alert(1)</script>)');
+    expect(link).toContain('href="https://example.org/?a=&quot;&gt;"');
+    expect(link).not.toContain("<script");
+    const image = renderMarkdown('![a "q" & b](photo:abc)', {
+      resolvePhoto: () => "/files/a&b/400.webp",
+    });
+    expect(image).toContain('src="/files/a&amp;b/400.webp"');
+    expect(image).toContain('alt="a &quot;q&quot; &amp; b"');
+  });
+
+  test("entities are decoded once, not double-escaped", () => {
+    expect(renderJournalMarkdown("A &amp; B &lt;x&gt;")).toBe("<p>A &amp; B &lt;x&gt;</p>");
+    expect(
+      renderMarkdown("![a & b](photo:abc)", { resolvePhoto: () => "/files/abc.webp" }),
+    ).toContain('alt="a &amp; b"');
+  });
+
+  test("constructs from the old allowlist still render", () => {
+    expect(renderJournalMarkdown("# h1\n## h2\n### h3\n#### h4\n##### h5\n###### h6")).toBe(
+      "<p>h1</p><h2>h2</h2><h3>h3</h3><h4>h4</h4><p>h5</p><p>h6</p>",
+    );
+    expect(renderJournalMarkdown("3. three\n4. four")).toBe(
+      '<ol start="3"><li>three</li><li>four</li></ol>',
+    );
+    expect(renderJournalMarkdown("- [x] done\n- [ ] todo")).toBe(
+      "<ul><li>done</li><li>todo</li></ul>",
+    );
+    expect(renderJournalMarkdown("| a | b |\n| :- | -: |\n| 1 | 2 |")).toContain(
+      '<th align="left">a</th>',
+    );
+    expect(renderJournalMarkdown("```js\nconst x = 1 < 2 && 3 > 2;\n```")).toContain(
+      "<pre><code>const x = 1 &lt; 2 &amp;&amp; 3 &gt; 2;",
+    );
+    expect(renderJournalMarkdown("[ok](https://example.org) mail a@b.de")).toContain(
+      'href="mailto:a@b.de"',
+    );
+  });
+});

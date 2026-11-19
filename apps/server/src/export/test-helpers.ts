@@ -1,11 +1,11 @@
 // Test-only helpers: run an export into memory and read it back.
 
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
-import { strFromU8, unzipSync } from "fflate";
 import type { AppDb } from "../db/client";
 import type { PhotoStore } from "../photos/storage";
 import { type ExportOptions, writeExport } from "./build";
 import { createProducerStream } from "./stream";
+import { unzipSync } from "./unzip";
 
 // biome-ignore lint/suspicious/noExplicitAny: test-only, shapes are asserted by the tests
 export type Json = any;
@@ -22,6 +22,7 @@ export type ReadArchive = {
 
 export function readArchive(raw: Uint8Array): ReadArchive {
   const files = unzipSync(raw);
+  const decode = new TextDecoder();
   return {
     raw,
     files,
@@ -29,12 +30,12 @@ export function readArchive(raw: Uint8Array): ReadArchive {
     json: (p) => {
       const f = files[p];
       if (!f) throw new Error(`missing ${p}`);
-      return JSON.parse(strFromU8(f));
+      return JSON.parse(decode.decode(f));
     },
     text: (p) => {
       const f = files[p];
       if (!f) throw new Error(`missing ${p}`);
-      return strFromU8(f);
+      return decode.decode(f);
     },
   };
 }

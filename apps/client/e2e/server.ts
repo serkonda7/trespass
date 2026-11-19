@@ -2,7 +2,7 @@
 // own output dir (never the shared .output), wipes the throwaway data dir,
 // starts the production server against it and records the bootstrap invite
 // link the app prints at startup. The production build avoids dev-server
-// full reloads (e.g. Paraglide recompiling) that make dev-mode e2e flaky.
+// full reloads that make dev-mode e2e flaky.
 // E2E_SKIP_BUILD=1 reuses the previous e2e build for quick reruns.
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
@@ -16,9 +16,6 @@ if (process.env.E2E_SKIP_BUILD !== "1" || !existsSync(entry)) {
     stdio: ["ignore", "ignore", "inherit"],
   });
   if (build.status !== 0) process.exit(build.status ?? 1);
-  // The build leaves src/paraglide in Vite's virtual-module form; regenerate
-  // the plain files so `bun test` keeps working afterwards.
-  spawnSync("bun", ["run", "gen"], { stdio: "ignore" });
 }
 
 rmSync(E2E_DIR, { recursive: true, force: true });

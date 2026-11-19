@@ -2,7 +2,6 @@
 // what never does, and byte-identical output when the exact point moves.
 import { describe, expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
-import { strFromU8 } from "fflate";
 import { recordEvent } from "../audit";
 import { ctxFor, seed } from "../authz/test-fixtures";
 import { createComment } from "../comments/service";
@@ -35,6 +34,7 @@ const SECRETS = {
 const admin = ctxFor("adm", "admin");
 const anna = ctxFor("ann", "member");
 const guest = ctxFor("gue", "guest");
+const decode = new TextDecoder();
 
 const ORIGINAL = new TextEncoder().encode("SENTINEL-anna-original-photo-bytes-1234");
 const OTHER_ORIGINAL = new TextEncoder().encode("SENTINEL-ben-original-photo-bytes-9876");
@@ -386,7 +386,7 @@ describe("export contents", () => {
 
     const a = await exportToMemory(w.db, anna, w.store.store);
     const text = Object.values(a.files)
-      .map((f) => strFromU8(f))
+      .map((f) => decode.decode(f))
       .join("\n");
     for (const hidden of [
       "SENTINEL-draft-history",
@@ -424,9 +424,9 @@ describe("export contents", () => {
   test("journals: raw markdown only where the exporter may edit", async () => {
     const w = await world();
     const a = await exportToMemory(w.db, anna, w.store.store);
-    const own = strFromU8(a.files["journals/2026-10-02-vertrautenort-vis-2.md"]!);
+    const own = decode.decode(a.files["journals/2026-10-02-vertrautenort-vis-2.md"]!);
     expect(own).toContain("SENTINEL-anna-journal-text");
-    const other = strFromU8(a.files["journals/2026-10-01-freundesort-vis-1.md"]!);
+    const other = decode.decode(a.files["journals/2026-10-01-freundesort-vis-1.md"]!);
     expect(other).toContain('date: "2026-10-01"');
     expect(other).not.toContain("SENTINEL-ben-journal-text");
     w.store.cleanup();

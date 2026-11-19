@@ -1,6 +1,6 @@
 // Admin downloads the ZIP export from /admin/export (DESIGN §5.10).
 import { readFileSync } from "node:fs";
-import { strFromU8, unzipSync } from "fflate";
+import { unzipSync } from "@trespass/server/export/unzip";
 import { expect, test } from "./fixtures";
 
 test("admin downloads a ZIP with the documented files", async ({ adminPage: page }) => {
@@ -19,10 +19,11 @@ test("admin downloads a ZIP with the documented files", async ({ adminPage: page
   const names = Object.keys(files);
   expect(names).toContain("locations.geojson");
   expect(names).toContain("manifest.json");
-  const manifest = JSON.parse(strFromU8(files["manifest.json"]!));
+  const decode = new TextDecoder();
+  const manifest = JSON.parse(decode.decode(files["manifest.json"]!));
   expect(manifest.formatVersion).toBe(1);
   expect(manifest.scope).toBe("all");
-  const geojson = JSON.parse(strFromU8(files["locations.geojson"]!));
+  const geojson = JSON.parse(decode.decode(files["locations.geojson"]!));
   expect(geojson.type).toBe("FeatureCollection");
   expect(Array.isArray(geojson.features)).toBe(true);
 });

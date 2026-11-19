@@ -3,7 +3,6 @@
 // link can be shown exactly once. Accepting claims the invite and creates the
 // user in one synchronous SQLite transaction: the conditional UPDATE makes
 // single use and expiry atomic, so two simultaneous accepts cannot both win.
-import { createHash, randomBytes } from "node:crypto";
 import type { AuthCtx, Role } from "@trespass/shared/authz/ctx";
 import { and, asc, eq, gt, isNull } from "drizzle-orm";
 import { recordEvent } from "../audit";
@@ -27,11 +26,11 @@ export class InviteInvalidError extends Error {
 }
 
 export function generateInviteToken(): string {
-  return randomBytes(32).toString("base64url");
+  return Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString("base64url");
 }
 
 export function hashInviteToken(token: string): string {
-  return createHash("sha256").update(token).digest("hex");
+  return new Bun.CryptoHasher("sha256").update(token).digest("hex");
 }
 
 export function inviteUrl(origin: string, token: string): string {

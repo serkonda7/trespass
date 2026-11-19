@@ -1,5 +1,4 @@
 import { fileURLToPath } from "node:url";
-import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/solid-start/plugin/vite";
 import { nitro } from "nitro/vite";
@@ -34,12 +33,6 @@ export default defineConfig({
     },
   },
   plugins: [
-    // Messages live in the shared workspace; the plugin recompiles them there on change.
-    paraglideVitePlugin({
-      project: "../../packages/shared/project.inlang",
-      outdir: "../../packages/shared/src/paraglide",
-      strategy: ["baseLocale"],
-    }),
     tailwindcss(),
     tanstackStart(),
     nitro({

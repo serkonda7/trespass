@@ -292,10 +292,12 @@ whichever workspace a command runs in.
 
 ## Commands
 Run from the repo root; turbo fans out to the workspaces and caches results
-(`.turbo/`, gitignored). `bun run dev` (client Vite dev server) · `build` ·
+(`.turbo/`, gitignored). `bun run dev` (client Vite dev server plus the
+Paraglide compiler in watch mode) · `build` ·
 `start` · `check` (= `lint` + `typecheck` + `test`) · `format` (Biome, writes,
 one root config) · `db:generate` (after schema edits) · `gen` (Paraglide in
-shared, route tree in client; `typecheck` and `test` run it first) · `worker`
+shared — the only compile path, Vite has no Paraglide plugin — and the route
+tree in client; `typecheck`, `test` and `build` run it first) · `worker`
 (standalone job worker) · `e2e` (Playwright, not part of `check`) ·
 `create-admin-invite`. A single workspace: `bunx turbo run test --filter=@trespass/server`,
 or `bun test` inside it. Each workspace's `package.json` lists only what it

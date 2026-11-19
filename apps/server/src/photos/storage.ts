@@ -4,7 +4,6 @@
 //   <root>/tmp/                            in-flight writes, renamed into place
 // Writes are atomic (temp file, fsync, rename), so a reader never sees half a
 // file. Deleting blobs is the job of gc.ts, which checks references first.
-import { createHash } from "node:crypto";
 import {
   closeSync,
   existsSync,
@@ -26,7 +25,7 @@ const SHA_RE = /^[0-9a-f]{64}$/;
 export const isSha256 = (s: string) => SHA_RE.test(s);
 
 export function sha256Hex(bytes: Uint8Array): string {
-  return createHash("sha256").update(bytes).digest("hex");
+  return new Bun.CryptoHasher("sha256").update(bytes).digest("hex");
 }
 
 export type PhotoStore = ReturnType<typeof createPhotoStore>;

@@ -3,7 +3,6 @@
 // retry per file. Permission is checked before the body is read; the file is
 // then streamed to a temp file while hashing, moved atomically into the blob
 // store and inserted as a `processing` row with a `photos.process` job.
-import { createHash } from "node:crypto";
 import { closeSync, fsyncSync, rmSync, writeSync } from "node:fs";
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
 import { uploadFieldsInput } from "@trespass/shared/photos/inputs";
@@ -105,7 +104,7 @@ export async function handleUploadRequest(
     // Stream the blob to disk while hashing; the body is never kept as one
     // contiguous JS buffer after this point.
     const { path: tmp, fd } = store.createTmp();
-    const hash = createHash("sha256");
+    const hash = new Bun.CryptoHasher("sha256");
     let bytes = 0;
     try {
       const reader = file.stream().getReader();
