@@ -6,7 +6,7 @@ import { roleMiddleware } from "../auth/middleware";
 import { getDb } from "../db/client";
 import { getEnv } from "../env";
 import { enqueueJob } from "../jobs/queue";
-import { DELETE_JOB, EXTRACT_JOB, WORLD_JOB } from "./jobs";
+import { DELETE_JOB, EXTRACT_JOB, WORLD_JOB } from "./kinds";
 import { listAdminTileRegions } from "./service";
 
 const admin = roleMiddleware("admin");

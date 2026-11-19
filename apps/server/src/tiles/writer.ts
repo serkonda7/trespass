@@ -4,9 +4,11 @@
 // app without a restart. Transactions are short (<= 1000 rows) because
 // bun:sqlite is synchronous and the worker shares the database with the app.
 import { Database } from "bun:sqlite";
-import { existsSync, mkdirSync, statSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import type { TileEntry } from "./types";
+
+export { tilesFileSize } from "./file-size";
 
 export const BATCH_SIZE = 1000;
 
@@ -119,13 +121,4 @@ export function openTileWriter(path: string): TileWriter {
       db.close(true);
     },
   };
-}
-
-/** File size of the MBTiles file including its WAL (conservative for budgets). */
-export function tilesFileSize(path: string): number {
-  let total = 0;
-  for (const p of [path, `${path}-wal`]) {
-    if (existsSync(p)) total += statSync(p).size;
-  }
-  return total;
 }

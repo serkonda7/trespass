@@ -39,6 +39,7 @@ import {
   FetchRefused,
   type PoliteFetcher,
 } from "./http";
+import { ENRICH_JOB, OVERPASS_JOB, WATCH_JOB, WIKIDATA_JOB } from "./kinds";
 import { createAnthropicLlm, type Llm, meteredLlm } from "./llm";
 import { buildOverpassQuery, parseOverpass, SCAN_MAX_NEW } from "./overpass";
 import { createRun, finishRun, saveRunStats, startRun } from "./runs";
@@ -47,10 +48,7 @@ import { extractText } from "./text";
 import { enrichQueries, type SearchHit, searxngHits, watchQuery, wikipediaHits } from "./websearch";
 import { buildWikidataQuery, parseWikidata } from "./wikidata";
 
-export const OVERPASS_JOB = "scan.overpass";
-export const WIKIDATA_JOB = "scan.wikidata";
-export const ENRICH_JOB = "research.enrich";
-export const WATCH_JOB = "research.watch";
+export { ENRICH_JOB, OVERPASS_JOB, WATCH_JOB, WIKIDATA_JOB } from "./kinds";
 
 export const ENRICH_MAX_PAGES = 8;
 export const WATCH_MAX_LOCATIONS = 15;

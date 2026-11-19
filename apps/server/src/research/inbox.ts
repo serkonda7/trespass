@@ -56,7 +56,7 @@ import { enqueueJob } from "../jobs/queue";
 import { createLocation, updateLocation } from "../locations/service";
 import { requireArea, requireResearch } from "./areas";
 import { researchBudget } from "./budget";
-import { ENRICH_JOB, OVERPASS_JOB, WIKIDATA_JOB } from "./jobs";
+import { ENRICH_JOB, OVERPASS_JOB, WIKIDATA_JOB } from "./kinds";
 import { createRun, listRuns } from "./runs";
 
 const asDb = (db: DbOrTx) => db as unknown as AppDb;

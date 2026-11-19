@@ -23,7 +23,7 @@ import { photos, visits } from "../db/schema";
 import { enqueueJob } from "../jobs/queue";
 import { kickJobWorker } from "../jobs/worker";
 import { PhotoError, photoErrorResponse, photoForbidden, photoNotFound, tooLarge } from "./errors";
-import { PROCESS_JOB } from "./jobs";
+import { PROCESS_JOB } from "./kinds";
 import { sniffPhotoMime, verifyImage } from "./process";
 import type { PhotoStore } from "./storage";
 

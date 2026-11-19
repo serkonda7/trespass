@@ -11,10 +11,10 @@ import { eq } from "drizzle-orm";
 import type { DbOrTx } from "../db/client";
 import { photos } from "../db/schema";
 import { enqueueJob } from "../jobs/queue";
+import { GC_JOB } from "./kinds";
 import { isSha256, type PhotoStore } from "./storage";
 
-export const GC_JOB = "photos.gc";
-export const SWEEP_JOB = "photos.sweep";
+export { GC_JOB, SWEEP_JOB } from "./kinds";
 
 export function isBlobReferenced(db: DbOrTx, sha256: string): boolean {
   return !!db

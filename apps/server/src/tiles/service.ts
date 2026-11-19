@@ -9,9 +9,10 @@ import type { AppDb, DbOrTx } from "../db/client";
 import { locations, settings, type TileRegion, tileRegions } from "../db/schema";
 import { getEnv } from "../env";
 import { enqueueJob } from "../jobs/queue";
+import { tilesFileSize } from "./file-size";
 import { boxSizeKm, defaultRng, mergeBoxes, needsRegion, newRegionBox, type Rng } from "./regions";
 import { exclusiveTileKeys } from "./tiles";
-import { type TileWriter, tilesFileSize } from "./writer";
+import type { TileWriter } from "./writer";
 
 const MB = 1024 * 1024;
 

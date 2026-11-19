@@ -9,6 +9,8 @@ import { enqueueJob, hasPendingJob } from "../jobs/queue";
 import { nextDailyInBerlin } from "../jobs/schedule";
 import { addJobHandler, type JobRegistry } from "../jobs/worker";
 import { getSettings } from "../settings/service";
+import { tilesFileSize } from "./file-size";
+import { DELETE_JOB, ENSURE_JOB, EXTRACT_JOB, PRUNE_JOB, REFRESH_JOB, WORLD_JOB } from "./kinds";
 import { createPmTilesExtractor } from "./pmtiles-extractor";
 import type { Rng } from "./regions";
 import {
@@ -24,14 +26,16 @@ import {
   tilesEnabled,
 } from "./service";
 import type { TileEntry, TileExtractor } from "./types";
-import { BATCH_SIZE, openTileWriter, type TileWriter, tilesFileSize } from "./writer";
+import { BATCH_SIZE, openTileWriter, type TileWriter } from "./writer";
 
-export const ENSURE_JOB = "tiles.ensure";
-export const EXTRACT_JOB = "tiles.extract";
-export const WORLD_JOB = "tiles.world";
-export const PRUNE_JOB = "tiles.prune";
-export const REFRESH_JOB = "tiles.refresh";
-export const DELETE_JOB = "tiles.delete";
+export {
+  DELETE_JOB,
+  ENSURE_JOB,
+  EXTRACT_JOB,
+  PRUNE_JOB,
+  REFRESH_JOB,
+  WORLD_JOB,
+} from "./kinds";
 
 export type TileJobDeps = {
   extractor?: TileExtractor;

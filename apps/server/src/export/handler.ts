@@ -10,7 +10,7 @@
 
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
 import { EXPORT_FORMAT } from "@trespass/shared/export/types";
-import pkg from "../../package.json" with { type: "json" };
+import { version } from "../../package.json" with { type: "json" };
 import { recordEvent } from "../audit";
 import { exportScope } from "../authz";
 import type { AppDb } from "../db/client";
@@ -19,7 +19,7 @@ import { type ExportResult, writeExport } from "./build";
 import { type ExportRegistry, type ExportSlot, getExportRegistry } from "./registry";
 import { createProducerStream, ExportAborted } from "./stream";
 
-export const APP_VERSION: string = pkg.version;
+export const APP_VERSION: string = version;
 
 export type ExportHandlerDeps = {
   registry?: ExportRegistry;

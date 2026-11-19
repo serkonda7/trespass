@@ -8,12 +8,13 @@ import { z } from "zod";
 import { locations, photos } from "../db/schema";
 import { nextDailyInBerlin } from "../jobs/schedule";
 import { addJobHandler, type JobRegistry } from "../jobs/worker";
-import { collectBlobIfUnreferenced, GC_JOB, SWEEP_JOB, sweepOrphanBlobs } from "./gc";
+import { collectBlobIfUnreferenced, sweepOrphanBlobs } from "./gc";
+import { GC_JOB, PROCESS_JOB, SWEEP_JOB } from "./kinds";
 import { suggestPhotoMatches } from "./match";
 import { extractExif, makeDerivatives, resolveTakenAt } from "./process";
 import type { PhotoStore } from "./storage";
 
-export const PROCESS_JOB = "photos.process";
+export { PROCESS_JOB } from "./kinds";
 
 const photoPayload = z.object({ photoId: z.string().min(1) });
 const shaPayload = z.object({ sha256: z.string().regex(/^[0-9a-f]{64}$/) });
