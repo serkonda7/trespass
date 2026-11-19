@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { listLocationsInput } from "./inputs";
 import {
   activeFilterCount,
   cleanLocationSearch,
@@ -66,6 +67,8 @@ describe("map URL filters", () => {
       bbox,
     });
     expect(toListInput({}).limit).toBe(2000);
+    // The server schema must accept what the map sends.
+    expect(listLocationsInput.safeParse(toListInput({})).success).toBe(true);
   });
 
   test("counts active filters but not the search text", () => {

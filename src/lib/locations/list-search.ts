@@ -2,7 +2,7 @@
 // The route's `validateSearch` is `parseLocationSearch`, every control calls
 // `navigate({ search: (s) => patchLocationSearch(s, {...}) })`, and
 // `toListInput` maps the URL state to the server function's input.
-import { effectiveStatusSchema, type ListLocationsInput } from "./inputs";
+import { effectiveStatusSchema, type ListLocationsInput, MAP_LIMIT_MAX } from "./inputs";
 import type { LocationStatus } from "./types";
 
 export type LocationSearch = {
@@ -78,7 +78,7 @@ export function toListInput(
   s: LocationSearch,
   opts: { bbox?: ListLocationsInput["bbox"]; limit?: number } = {},
 ): ListLocationsInput {
-  const input: ListLocationsInput = { limit: opts.limit ?? 2000 };
+  const input: ListLocationsInput = { limit: opts.limit ?? MAP_LIMIT_MAX };
   if (s.q) input.q = s.q;
   if (s.status?.length) input.status = s.status;
   if (s.category?.length) input.categoryId = s.category;

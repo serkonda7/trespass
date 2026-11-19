@@ -7,6 +7,8 @@ export const TEXT_MAX = 5000;
 export const TAG_NAME_MAX = 40;
 export const MAX_TAGS = 30;
 export const PAGE_MAX = 200;
+// The map loads every visible pin in the box in one request (clustered client-side).
+export const MAP_LIMIT_MAX = 2000;
 export const DEFAULT_PAGE_SIZE = 50;
 export const DUPLICATE_RADIUS_M = 200;
 
@@ -124,7 +126,7 @@ export const listLocationsInput = z.object({
   bbox: bboxSchema.optional(),
   near: pointSchema.optional(),
   q: z.string().trim().max(200).optional(),
-  limit: z.number().int().min(1).max(PAGE_MAX).optional(),
+  limit: z.number().int().min(1).max(MAP_LIMIT_MAX).optional(),
   cursor: z.string().max(500).optional(),
 });
 export type ListLocationsInput = z.input<typeof listLocationsInput>;
