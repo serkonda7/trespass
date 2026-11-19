@@ -13,6 +13,21 @@ RUN bun run map-assets
 # turbo: Paraglide messages (packages/shared), then the client build (apps/client/.output).
 RUN bun run build
 
+# Production-only install: the runtime needs the web bundle's externals and the
+# worker's server/shared dependencies, but none of the build/test tools. A separate
+# stage keeps `build`'s dev install (turbo, vite, Paraglide compiler) intact.
+FROM oven/bun:1.4.4 AS deps
+WORKDIR /app
+# Workspace manifests first, so the install layer survives source edits.
+COPY package.json bun.lock bunfig.toml ./
+COPY apps/client/package.json apps/client/
+COPY apps/server/package.json apps/server/
+COPY packages/shared/package.json packages/shared/
+# --production skips every workspace's devDependencies but still creates the
+# @trespass/* links with the hoisted linker (bunfig.toml); all three workspaces
+# are installed so the web bundle's externals resolve alongside the worker's.
+RUN bun install --frozen-lockfile --production
+
 FROM oven/bun:1.4.4-slim
 # go-pmtiles CLI for the worker (DESIGN §7/§10). Pinned release; the tarball's
 # sha256 was computed from the pinned Linux_x86_64 asset on 2026-11-18 (that
@@ -35,8 +50,9 @@ COPY --from=build /app/apps/client/scripts/healthcheck.ts ./apps/client/scripts/
 # Paraglide messages, so both workspaces ship as source.
 COPY --from=build /app/apps/server ./apps/server
 COPY --from=build /app/packages/shared ./packages/shared
-# Hoisted dependency tree (bunfig.toml), including the @trespass/* workspace links.
-COPY --from=build /app/node_modules ./node_modules
+# Production-only hoisted dependency tree (bunfig.toml), including the
+# @trespass/* workspace links needed by the worker; no dev tools ship.
+COPY --from=deps /app/node_modules ./node_modules
 # Smoke test: sharp's native binaries work in the runtime image.
 RUN bun -e 'const s = require("sharp"); await s({ create: { width: 2, height: 2, channels: 3, background: "#fff" } }).webp().toBuffer(); console.log("sharp", s.versions.sharp, "ok")'
 ENV NODE_ENV=production PORT=3000 HOST=0.0.0.0
