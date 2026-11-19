@@ -45,6 +45,14 @@ export default defineConfig({
     nitro({
       preset: "bun",
       plugins: ["./src/nitro/startup.ts"],
+      // Nitro traces `sharp` as a native package and copies it plus @img/* (~19 MB)
+      // into .output. The hoisted root node_modules (bunfig.toml) already ships it,
+      // and both `bun run start` and Docker resolve bare imports from there.
+      // `!sharp` stops tracing; the trace pattern also drives externalization, so
+      // `rolldownConfig.external` keeps the import bare instead of bundling sharp.
+      // Not `builtinModules`: that is only for modules the runtime provides.
+      traceDeps: ["!sharp"],
+      rolldownConfig: { external: ["sharp"] },
       ...(outDir ? { output: { dir: outDir }, buildDir: `${outDir}/.nitro` } : {}),
     }),
     viteSolid({ ssr: true }),
