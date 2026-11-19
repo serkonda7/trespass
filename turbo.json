@@ -1,0 +1,15 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "ui": "stream",
+  "envMode": "loose",
+  "tasks": {
+    "//#lint": {},
+    "transit": { "dependsOn": ["^transit"] },
+    "gen": { "dependsOn": ["^gen"], "cache": false },
+    "typecheck": { "dependsOn": ["transit", "gen", "^gen"] },
+    "test": { "dependsOn": ["transit", "gen", "^gen"] },
+    "build": { "dependsOn": ["transit", "^gen"], "outputs": [".output/**"] },
+    "dev": { "dependsOn": ["^gen"], "cache": false, "persistent": true },
+    "e2e": { "dependsOn": ["gen", "^gen"], "cache": false }
+  }
+}

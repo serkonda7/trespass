@@ -8,12 +8,13 @@
   "files": {
     "includes": [
       "**",
-      "!src/routeTree.gen.ts",
-      "!src/paraglide",
-      "!drizzle/meta",
-      "!.output",
-      "!.nitro",
-      "!.tanstack"
+      "!apps/client/src/routeTree.gen.ts",
+      "!packages/shared/src/paraglide",
+      "!apps/server/drizzle/meta",
+      "!**/.output",
+      "!**/.nitro",
+      "!**/.tanstack",
+      "!**/.turbo"
     ]
   },
   "formatter": {

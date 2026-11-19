@@ -12,5 +12,7 @@ Infra and stack follow [Hausmeister](https://github.com/serkonda7/hausmeister)
 Litestream + restic to B2). Both apps run on the same VPS as separate stacks, on separate
 subdomains and separate tailnet nodes.
 
-`bun install && bun run check && bun run build` builds and tests the app (`bun run e2e` for Playwright). See
+Bun workspaces managed by Turborepo: `apps/client` (TanStack Start app), `apps/server`
+(server code, worker, migrations) and `packages/shared` (contract types and i18n).
+`bun install && bun run check && bun run build` builds and tests everything (`bun run e2e` for Playwright). See
 [AGENTS.md](AGENTS.md) for the layout and conventions.

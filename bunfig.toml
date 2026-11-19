@@ -1,0 +1,4 @@
+[install]
+# One node_modules at the root: the client build bundles the server workspace,
+# so both must resolve the same copies of shared packages (solid-js, TanStack).
+linker = "hoisted"

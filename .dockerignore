@@ -1,7 +1,8 @@
-node_modules
-.output
-.nitro
-.tanstack
+**/node_modules
+**/.output
+**/.nitro
+**/.tanstack
+**/.turbo
 .git
 deploy
 data
