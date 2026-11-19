@@ -28,6 +28,11 @@ data/visits.json           visit DTOs (people, conditions, sanitized HTML)
 data/photos.json           photo DTOs (no GPS below precise)
 data/grants.json           grants of managed locations
 data/users.json            { id, displayName } of referenced users only
+data/history.json          history entries with their sources
+data/comments.json         comments on visible locations, visits and photos
+data/trips.json            visible trips (stops at the exporter's level)
+data/equipment.json        equipment (own; admin: everyone's)
+data/pack-templates.json   packing templates (own; admin: everyone's)
 journals/<date>-<slug>-<visit-id>.md   one Markdown file per visit
 photos/<photo-id>.<ext>    original (admin / own) or 2560 px WebP derivative
 ```
@@ -45,14 +50,17 @@ photos/<photo-id>.<ext>    original (admin / own) or 2560 px WebP derivative
   "snapshot": true,
   "counts": {
     "locations": 0, "categories": 0, "tags": 0, "visits": 0, "journals": 0,
-    "photos": 0, "photoFiles": 0, "skippedPhotos": 0, "grants": 0, "users": 0
+    "photos": 0, "photoFiles": 0, "skippedPhotos": 0, "grants": 0, "users": 0,
+    "history": 0, "comments": 0, "trips": 0, "equipment": 0, "packTemplates": 0
   },
   "files": {
     "geojson": "locations.geojson", "manifest": "manifest.json",
     "locations": "data/locations.json", "categories": "data/categories.json",
     "tags": "data/tags.json", "visits": "data/visits.json",
     "photos": "data/photos.json", "grants": "data/grants.json",
-    "users": "data/users.json"
+    "users": "data/users.json", "history": "data/history.json",
+    "comments": "data/comments.json", "trips": "data/trips.json",
+    "equipment": "data/equipment.json", "packTemplates": "data/pack-templates.json"
   },
   "skippedPhotos": [{ "id": "…", "reason": "processing | failed | missing" }]
 }
@@ -80,8 +88,21 @@ visit dates are `YYYY-MM-DD` in the location's time zone.
 - **grants**: `locationId`, `principalKind`, `principalId`, `level` — only for
   locations the exporter manages.
 - **users**: `{ id, displayName }` of the users referenced by the other files
-  (owners, authors, people, uploaders, grantees, exporter). No e-mail, role or
-  auth fields.
+  (owners, authors, people, uploaders, grantees, commenters, trip people and
+  contacts, exporter). No e-mail, role or auth fields.
+- **history**: the DTOs of `src/server/history/service.ts` with their
+  `sources` (URL, title, retrieval day, excerpt, Wayback copy). Approved
+  entries of visible locations; drafts only where the exporter has `edit`.
+- **comments**: the DTOs of `src/server/comments/service.ts` (`targetKind`,
+  `targetId`, `parentId`, sanitized `bodyHtml`; `bodyMd` only for the
+  author). Deleted comments keep their row with an empty body.
+- **trips**: the DTOs of `src/server/trips/service.ts` for trips the exporter
+  owns or is listed on (admin: all). `stops` holds only locations visible to
+  the exporter, each serialized with `serializeLocation` at the exporter's
+  level. `emergencyContact`, `people`, the packing list (`checklist`) and the
+  report are included; `reportMd` only for editors.
+- **equipment / pack-templates**: personal gear and templates
+  (`equipmentIds`). Members export their own, admins everyone's (`ownerId`).
 
 `locations.geojson` has one `Point` Feature per location. Its geometry comes
 from `visibleLatExpr` / `visibleLonExpr` in SQL: exact at `precise` and above,
@@ -111,11 +132,13 @@ missing on disk, have no entry; their ids and reasons are in
 
 Scope follows `exportScope(ctx)` (DESIGN §3.5):
 
-- **all** (admin): every location, visit, photo, grant, category and tag;
-  only the referenced users' names.
+- **all** (admin): every location, visit, photo, grant, category, tag,
+  history entry, comment, trip and all equipment; only the referenced users'
+  names.
 - **own_and_visible** (member): exactly the rows of
-  `visibleLocationsWhere`, `visibleVisitsWhere` and `visiblePhotosWhere`.
-  Grants only on managed locations.
+  `visibleLocationsWhere`, `visibleVisitsWhere`, `visiblePhotosWhere`,
+  `visibleHistoryWhere`, `visibleCommentsWhere` and `visibleTripsWhere`.
+  Grants only on managed locations; equipment and templates only their own.
 - **none** (guest): no export; the endpoint answers 404. Signed-out callers
   get 401.
 

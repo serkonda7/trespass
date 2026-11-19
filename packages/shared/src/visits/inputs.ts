@@ -17,7 +17,7 @@ export const conditionsSchema = z.object({
 });
 export type ConditionsInput = z.input<typeof conditionsSchema>;
 
-const isoDay = z
+export const isoDay = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "DATE_FORMAT")
   .refine((day) => {
@@ -42,6 +42,8 @@ export const createVisitInput = z.object({
   conditions: conditionsSchema.default({}),
   journalMd: journal,
   people,
+  /** The trip this visit was part of; it must be visible to the author. */
+  tripId: idSchema.nullable().optional(),
 });
 export type CreateVisitInput = z.input<typeof createVisitInput>;
 
@@ -52,6 +54,7 @@ export const updateVisitInput = z.object({
   conditions: conditionsSchema.optional(),
   journalMd: z.string().max(JOURNAL_MAX).optional(),
   people: z.array(visitPersonSchema).max(MAX_PEOPLE).optional(),
+  tripId: idSchema.nullable().optional(),
 });
 export type UpdateVisitInput = z.input<typeof updateVisitInput>;
 

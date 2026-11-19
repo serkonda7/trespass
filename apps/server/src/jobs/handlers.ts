@@ -3,6 +3,7 @@
 // A feature adds its handlers here (relative imports only: Nitro/standalone
 // bundling may happen outside Vite's `~` alias).
 import { handleReverseGeocode } from "../geocode/handler";
+import { ARCHIVE_MAX_ATTEMPTS, handleArchiveSource } from "../history/archive";
 import { addPhotoJobs } from "../photos/jobs";
 import { getPhotoStore } from "../photos/storage";
 import { addTileJobs } from "../tiles/jobs";
@@ -28,6 +29,12 @@ export function registerAllJobHandlers() {
   addJobHandler(registry, "geocode.reverse", handleReverseGeocode, {
     maxAttempts: 3,
     backoffBaseMs: 10_000,
+  });
+  // Wayback Machine copies of history sources; ARCHIVE=off marks them skipped.
+  addJobHandler(registry, "sources.archive", (payload, ctx) => handleArchiveSource(payload, ctx), {
+    maxAttempts: ARCHIVE_MAX_ATTEMPTS,
+    backoffBaseMs: 60_000,
+    timeoutMs: 120_000,
   });
   // Photo processing runs in the standalone worker; e2e starts one too.
   addPhotoJobs(registry, getPhotoStore);

@@ -4,8 +4,9 @@ Private log of abandoned places: map, journal, photos, history, trip planning an
 research inbox. Design: [DESIGN.md](DESIGN.md). Current phase: **MVP implemented**
 (DESIGN §12): login with passkeys, invites, roles and groups; locations with fuzzed
 public points, grants and coordinate privacy; map with self-hosted tiles and automatic
-tile regions; visits and journal; photos; search; ZIP export. Next: Phase 0 on the
-VPS, then v1.1. The infra runbook is [docs/PHASE0.md](docs/PHASE0.md).
+tile regions; visits and journal; photos; search; ZIP export. **v1.1 implemented**:
+history with sources and archive.org copies, comments, equipment and packing templates,
+trips with a route preview. Next: Phase 0 on the VPS, then v1.2. The infra runbook is [docs/PHASE0.md](docs/PHASE0.md).
 
 Infra and stack follow [Hausmeister](https://github.com/serkonda7/hausmeister)
 (Bun + TanStack Start, SQLite, Better Auth, Tailscale sidecar + Caddy DNS-01 via deSEC,

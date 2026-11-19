@@ -1,4 +1,5 @@
 // Output shapes of the visit/journal server functions. No server-only imports.
+import type { SerializedHistory } from "../history/types";
 import type { ConditionsInput, VisitPersonInput } from "./inputs";
 
 export type VisitAccess = "open" | "difficult" | "sealed";
@@ -52,7 +53,9 @@ export type TimelineStatusEntry = {
   from: string | null;
   to: string | null;
 };
-export type TimelineEntry = TimelineVisitEntry | TimelineStatusEntry;
+/** An approved history entry (drafts too for editors); `date` is its ISO prefix. */
+export type TimelineHistoryEntry = { kind: "history"; date: string; history: SerializedHistory };
+export type TimelineEntry = TimelineVisitEntry | TimelineStatusEntry | TimelineHistoryEntry;
 
 export type YearReview = {
   year: number;

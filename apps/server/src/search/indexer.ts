@@ -7,13 +7,15 @@
 // `view` — name, description, tag names and place (country + admin area).
 // access_notes, danger_notes, parking, coordinates, fuzz radius and all photo
 // / visit text are deliberately never indexed: otherwise a search box would
-// become an oracle for precise-only data. `history` stays empty for now.
+// become an oracle for precise-only data. `history` holds the text of APPROVED
+// history entries only (drafts need `edit` and must not be findable).
 // Index text and query both go through the same normalizeSearchText helper.
 
 import { normalizeSearchText } from "@trespass/shared/normalize";
 import { eq, inArray, sql } from "drizzle-orm";
 import type { AppDb, DbOrTx } from "../db/client";
 import { type Location, locations, locationTags, tags } from "../db/schema";
+import { approvedHistoryTexts } from "../history/texts";
 import { locationsFts } from "./fts";
 
 const CHUNK = 400;
@@ -36,11 +38,12 @@ export type SearchDocument = {
 export function searchDocument(
   loc: Pick<Location, "name" | "description" | "country" | "adminArea">,
   tagNames: readonly string[],
+  historyTexts: readonly string[] = [],
 ): SearchDocument {
   return {
     name: normalizeSearchText(loc.name),
     description: normalizeSearchText(loc.description ?? ""),
-    history: "", // no history entries exist yet; the column is reserved
+    history: normalizeSearchText(historyTexts.join(" ")),
     tags: normalizeSearchText(tagNames.join(" ")),
     place: normalizeSearchText([loc.country, loc.adminArea].filter(Boolean).join(" ")),
   };
@@ -71,10 +74,14 @@ export function reindexLocations(db: DbOrTx, ids: readonly string[]): void {
     const tagsOf = new Map<string, string[]>();
     for (const t of tagRows)
       tagsOf.set(t.locationId, [...(tagsOf.get(t.locationId) ?? []), t.name]);
+    const historyOf = approvedHistoryTexts(db, part);
     db.delete(locationsFts).where(inArray(locationsFts.locationId, part)).run();
     for (const loc of rows) {
       db.insert(locationsFts)
-        .values({ locationId: loc.id, ...searchDocument(loc, tagsOf.get(loc.id) ?? []) })
+        .values({
+          locationId: loc.id,
+          ...searchDocument(loc, tagsOf.get(loc.id) ?? [], historyOf.get(loc.id) ?? []),
+        })
         .run();
     }
   }

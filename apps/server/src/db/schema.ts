@@ -7,6 +7,7 @@ import type { GeoJsonPolygon, Point } from "@trespass/shared/geo/types";
 import type { PhotoExifData } from "@trespass/shared/photos/types";
 import { sql } from "drizzle-orm";
 import {
+  type AnySQLiteColumn,
   check,
   index,
   integer,
@@ -35,6 +36,20 @@ export const VISIT_CONDITIONS = ["good", "fair", "poor", "collapsing"] as const;
 export const PHOTO_STATUSES = ["processing", "ready", "failed"] as const;
 export const TILE_REGION_KINDS = ["world", "region"] as const;
 export const TILE_REGION_STATUSES = ["pending", "extracting", "ready", "failed"] as const;
+export const HISTORY_PRECISIONS = ["day", "month", "year", "decade", "circa"] as const;
+export const HISTORY_STATUSES = ["draft", "approved"] as const;
+/** `skipped`: ARCHIVE=off when the source was saved; nothing was sent to archive.org. */
+export const ARCHIVE_STATUSES = ["pending", "done", "failed", "skipped"] as const;
+export const EQUIPMENT_CATEGORIES = [
+  "light",
+  "protection",
+  "photo",
+  "navigation",
+  "first_aid",
+  "tools",
+  "other",
+] as const;
+export const TRIP_STATUSES = ["planned", "active", "done", "cancelled"] as const;
 
 const id = () =>
   text("id")
@@ -354,7 +369,10 @@ export const visits = sqliteTable(
       .notNull()
       .default(sql`'{}'`),
     journalMd: text("journal_md").notNull().default(""),
-    /** No trips table yet; a plain nullable reference for the later stage. */
+    /**
+     * The trip this visit belonged to. No DB FK (added before the trips table
+     * existed); the trip service validates it and clears it on trip delete.
+     */
     tripId: text("trip_id"),
     version: integer("version").notNull().default(1),
     createdAt: createdAt(),
@@ -428,6 +446,237 @@ export const photos = sqliteTable(
     index("photos_uploader_idx").on(t.uploaderId),
     index("photos_sha256_idx").on(t.sha256),
   ],
+);
+
+// --- History and sources ---------------------------------------------------
+/**
+ * Dated facts about a location (DESIGN §5.4). `date_from`/`date_to` hold as many
+ * ISO parts as the precision needs: 'YYYY-MM-DD' (day), 'YYYY-MM' (month) or
+ * 'YYYY' (year, decade, circa), so they sort lexicographically. Drafts are
+ * visible only at `edit`; approved entries at `view` (and are searchable).
+ */
+export const history = sqliteTable(
+  "history",
+  {
+    id: id(),
+    locationId: text("location_id")
+      .notNull()
+      .references(() => locations.id, { onDelete: "cascade" }),
+    dateFrom: text("date_from").notNull(),
+    dateTo: text("date_to"),
+    datePrecision: text("date_precision", { enum: HISTORY_PRECISIONS }).notNull(),
+    text: text("text").notNull(),
+    status: text("status", { enum: HISTORY_STATUSES }).notNull().default("approved"),
+    /** Research candidate this entry came from (v1.3); no FK yet. */
+    candidateId: text("candidate_id"),
+    createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
+    version: integer("version").notNull().default(1),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    check("history_precision", inList("date_precision", HISTORY_PRECISIONS)),
+    check("history_status", inList("status", HISTORY_STATUSES)),
+    index("history_location_idx").on(t.locationId, t.dateFrom),
+  ],
+);
+
+/**
+ * A source backing one history entry. Sources belong to exactly one entry (no
+ * join table): a source never needs its own visibility rule, it simply inherits
+ * the entry's. `archived_url` is the Wayback Machine copy requested on save.
+ */
+export const sources = sqliteTable(
+  "sources",
+  {
+    id: id(),
+    historyId: text("history_id")
+      .notNull()
+      .references(() => history.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    title: text("title"),
+    /** Local day ('YYYY-MM-DD') the source was read. */
+    retrievedOn: text("retrieved_on").notNull(),
+    excerpt: text("excerpt"),
+    archivedUrl: text("archived_url"),
+    archiveStatus: text("archive_status", { enum: ARCHIVE_STATUSES }).notNull().default("pending"),
+    sort: integer("sort").notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    check("sources_archive_status", inList("archive_status", ARCHIVE_STATUSES)),
+    index("sources_history_idx").on(t.historyId),
+  ],
+);
+
+// --- Comments ---------------------------------------------------------------
+/**
+ * Threaded comments on a location, a visit or a photo (DESIGN §5.4). Exactly one
+ * target column is set; FKs cascade so a deleted target takes its comments with
+ * it. A deleted comment keeps its row (replies stay attached) with an empty body.
+ */
+export const comments = sqliteTable(
+  "comments",
+  {
+    id: id(),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => users.id),
+    locationId: text("location_id").references(() => locations.id, { onDelete: "cascade" }),
+    visitId: text("visit_id").references(() => visits.id, { onDelete: "cascade" }),
+    photoId: text("photo_id").references(() => photos.id, { onDelete: "cascade" }),
+    parentId: text("parent_id").references((): AnySQLiteColumn => comments.id, {
+      onDelete: "cascade",
+    }),
+    bodyMd: text("body_md").notNull(),
+    editedAt: integer("edited_at", { mode: "timestamp_ms" }),
+    deletedAt: integer("deleted_at", { mode: "timestamp_ms" }),
+    deletedBy: text("deleted_by"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    check(
+      "comments_one_target",
+      sql`((location_id IS NOT NULL) + (visit_id IS NOT NULL) + (photo_id IS NOT NULL)) = 1`,
+    ),
+    index("comments_location_idx").on(t.locationId, t.createdAt),
+    index("comments_visit_idx").on(t.visitId, t.createdAt),
+    index("comments_photo_idx").on(t.photoId, t.createdAt),
+    index("comments_parent_idx").on(t.parentId),
+  ],
+);
+
+// --- Equipment and trips ----------------------------------------------------
+/** Personal gear (DESIGN §5.5). Private to its owner. */
+export const equipment = sqliteTable(
+  "equipment",
+  {
+    id: id(),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    category: text("category", { enum: EQUIPMENT_CATEGORIES }).notNull().default("other"),
+    weightG: integer("weight_g"),
+    needsCharging: integer("needs_charging", { mode: "boolean" }).notNull().default(false),
+    notes: text("notes"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    check("equipment_category", inList("category", EQUIPMENT_CATEGORIES)),
+    index("equipment_owner_idx").on(t.ownerId),
+  ],
+);
+
+export const packTemplates = sqliteTable(
+  "pack_templates",
+  {
+    id: id(),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("pack_templates_owner_idx").on(t.ownerId)],
+);
+
+export const packTemplateItems = sqliteTable(
+  "pack_template_items",
+  {
+    templateId: text("template_id")
+      .notNull()
+      .references(() => packTemplates.id, { onDelete: "cascade" }),
+    equipmentId: text("equipment_id")
+      .notNull()
+      .references(() => equipment.id, { onDelete: "cascade" }),
+  },
+  (t) => [primaryKey({ columns: [t.templateId, t.equipmentId] })],
+);
+
+/** Emergency contact of a trip: an app user, or someone outside with e-mail or ntfy. */
+export type EmergencyContact =
+  | { userId: string }
+  | { name: string; email?: string | null; ntfyTopic?: string | null };
+
+/**
+ * A planned or completed outing (DESIGN §5.5). Visible to its owner, its
+ * people (app users) and admins. Stops show only locations the viewer can see.
+ */
+export const trips = sqliteTable(
+  "trips",
+  {
+    id: id(),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => users.id),
+    title: text("title").notNull(),
+    startsOn: text("starts_on"),
+    endsOn: text("ends_on"),
+    notes: text("notes").notNull().default(""),
+    reportMd: text("report_md").notNull().default(""),
+    emergencyContact: text("emergency_contact", { mode: "json" }).$type<EmergencyContact>(),
+    status: text("status", { enum: TRIP_STATUSES }).notNull().default("planned"),
+    version: integer("version").notNull().default(1),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    check("trips_status", inList("status", TRIP_STATUSES)),
+    index("trips_owner_idx").on(t.ownerId),
+    index("trips_starts_idx").on(t.startsOn),
+  ],
+);
+
+export const tripStops = sqliteTable(
+  "trip_stops",
+  {
+    tripId: text("trip_id")
+      .notNull()
+      .references(() => trips.id, { onDelete: "cascade" }),
+    locationId: text("location_id")
+      .notNull()
+      .references(() => locations.id, { onDelete: "cascade" }),
+    sort: integer("sort").notNull().default(0),
+  },
+  (t) => [
+    primaryKey({ columns: [t.tripId, t.locationId] }),
+    index("trip_stops_location_idx").on(t.locationId),
+  ],
+);
+
+export const tripPeople = sqliteTable(
+  "trip_people",
+  {
+    id: id(),
+    tripId: text("trip_id")
+      .notNull()
+      .references(() => trips.id, { onDelete: "cascade" }),
+    userId: text("user_id").references(() => users.id),
+    name: text("name"),
+  },
+  (t) => [
+    check("trip_people_exactly_one", sql`(user_id IS NULL) <> (name IS NULL)`),
+    index("trip_people_trip_idx").on(t.tripId),
+    index("trip_people_user_idx").on(t.userId),
+  ],
+);
+
+/** One packing-list line. `label` is copied from the equipment so it survives its deletion. */
+export const tripChecklist = sqliteTable(
+  "trip_checklist",
+  {
+    id: id(),
+    tripId: text("trip_id")
+      .notNull()
+      .references(() => trips.id, { onDelete: "cascade" }),
+    equipmentId: text("equipment_id").references(() => equipment.id, { onDelete: "set null" }),
+    label: text("label").notNull(),
+    packed: integer("packed", { mode: "boolean" }).notNull().default(false),
+    sort: integer("sort").notNull().default(0),
+  },
+  (t) => [index("trip_checklist_trip_idx").on(t.tripId)],
 );
 
 // --- Map tiles --------------------------------------------------------------
@@ -534,5 +783,18 @@ export type VisitPersonRow = typeof visitPeople.$inferSelect;
 export type NewVisitPerson = typeof visitPeople.$inferInsert;
 export type Photo = typeof photos.$inferSelect;
 export type NewPhoto = typeof photos.$inferInsert;
+export type HistoryRow = typeof history.$inferSelect;
+export type NewHistory = typeof history.$inferInsert;
+export type SourceRow = typeof sources.$inferSelect;
+export type NewSource = typeof sources.$inferInsert;
+export type CommentRow = typeof comments.$inferSelect;
+export type NewComment = typeof comments.$inferInsert;
+export type EquipmentRow = typeof equipment.$inferSelect;
+export type PackTemplateRow = typeof packTemplates.$inferSelect;
+export type Trip = typeof trips.$inferSelect;
+export type NewTrip = typeof trips.$inferInsert;
+export type TripStopRow = typeof tripStops.$inferSelect;
+export type TripPersonRow = typeof tripPeople.$inferSelect;
+export type TripChecklistRow = typeof tripChecklist.$inferSelect;
 export type TileRegion = typeof tileRegions.$inferSelect;
 export type NewTileRegion = typeof tileRegions.$inferInsert;

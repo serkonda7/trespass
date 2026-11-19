@@ -2,7 +2,8 @@
 // it through a ByteWriter. Layout: docs/export-format.md.
 //
 // Scope comes only from the authz SQL predicates: visibleLocationsWhere,
-// visibleVisitsWhere and visiblePhotosWhere. Nothing is filtered in JS.
+// visibleVisitsWhere, visiblePhotosWhere, visibleHistoryWhere,
+// visibleCommentsWhere and visibleTripsWhere. Nothing is filtered in JS.
 // Coordinates come from visibleLatExpr/visibleLonExpr, and locations go through
 // serializeLocation, so a viewer below `precise` gets one stable fuzzed point
 // and never an outline, notes, fuzz radius or exact photo GPS.
@@ -32,6 +33,7 @@ import {
   visibleLocationsWhere,
   visibleLonExpr,
 } from "../authz";
+import { commentPagesForExport } from "../comments/service";
 import type { AppDb } from "../db/client";
 import {
   categories,
@@ -42,10 +44,13 @@ import {
   tags,
   users,
 } from "../db/schema";
+import { equipmentForExport } from "../equipment/service";
+import { historyPagesForExport } from "../history/service";
 import { effectiveStatusExpr } from "../locations/status";
 import type { PhotoExportRow } from "../photos/service";
 import { photoPagesForExport } from "../photos/service";
 import type { PhotoStore } from "../photos/storage";
+import { tripPagesForExport } from "../trips/service";
 import { visitPagesForExport } from "../visits/service";
 import { photoExtension, slug } from "./paths";
 import { openSnapshot } from "./snapshot";
@@ -63,6 +68,11 @@ export const PATHS = {
   photos: "data/photos.json",
   grants: "data/grants.json",
   users: "data/users.json",
+  history: "data/history.json",
+  comments: "data/comments.json",
+  trips: "data/trips.json",
+  equipment: "data/equipment.json",
+  packTemplates: "data/pack-templates.json",
   journalsDir: "journals",
   photosDir: "photos",
 } as const;
@@ -142,6 +152,11 @@ async function build(
     skippedPhotos: 0,
     grants: 0,
     users: 0,
+    history: 0,
+    comments: 0,
+    trips: 0,
+    equipment: 0,
+    packTemplates: 0,
   };
   const skipped: SkippedPhoto[] = [];
   /** Only users referenced by exported data (never auth/session fields). */
@@ -418,6 +433,39 @@ async function build(
     }
   }
 
+  // --- data/history.json, comments, trips (v1.1) -----------------------------
+  // Same rule as everything else: the services' SQL predicates decide what is
+  // in here (visibleHistoryWhere, visibleCommentsWhere, visibleTripsWhere), and
+  // trip stops are serialized at the exporter's level.
+  counts.history = await jsonArray(PATHS.history, historyPagesForExport(db, ctx, pageSize));
+  counts.comments = await jsonArray(
+    PATHS.comments,
+    (function* () {
+      for (const page of commentPagesForExport(db, ctx, pageSize)) {
+        for (const c of page) noteUser(c.authorId);
+        yield page;
+      }
+    })(),
+  );
+  counts.trips = await jsonArray(
+    PATHS.trips,
+    (function* () {
+      for (const page of tripPagesForExport(db, ctx, Math.min(pageSize, 100))) {
+        for (const t of page) {
+          noteUser(t.ownerId);
+          for (const p of t.people) noteUser(p.userId);
+          if (t.emergencyContact?.kind === "user") noteUser(t.emergencyContact.userId);
+        }
+        yield page;
+      }
+    })(),
+  );
+  // Equipment is personal: admins export everyone's, members their own.
+  const gear = equipmentForExport(db, isAdmin ? "all" : ctx.userId);
+  for (const e of gear.equipment) noteUser(e.ownerId);
+  counts.equipment = await jsonArray(PATHS.equipment, [gear.equipment]);
+  counts.packTemplates = await jsonArray(PATHS.packTemplates, [gear.templates]);
+
   // --- data/grants.json ------------------------------------------------------
   // Admins manage everything; members only get the grants of locations they
   // manage. The set comes from the levels computed for already-filtered rows.
@@ -465,6 +513,11 @@ async function build(
     photos: PATHS.photos,
     grants: PATHS.grants,
     users: PATHS.users,
+    history: PATHS.history,
+    comments: PATHS.comments,
+    trips: PATHS.trips,
+    equipment: PATHS.equipment,
+    packTemplates: PATHS.packTemplates,
     manifest: PATHS.manifest,
   };
   await jsonValue(PATHS.manifest, {

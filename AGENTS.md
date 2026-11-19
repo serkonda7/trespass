@@ -8,8 +8,9 @@ exactly: add one with `bun add --exact`, only on purpose.
 
 The MVP (DESIGN §12) is in place: identity, admin and jobs, locations with
 coordinate privacy, map and tile regions, visits/journal, photos, search and
-export. History, comments, trips, equipment, push, offline and research are
-later versions (v1.1+).
+export. v1.1 is in place too: history + sources (archive.org), comments,
+equipment and packing templates, trips with a route preview. Push, check-in,
+offline and research are later versions (v1.2+).
 
 ## Workspaces
 Bun workspaces driven by Turborepo (`turbo.json`). One hoisted `node_modules`
@@ -193,6 +194,47 @@ whichever workspace a command runs in.
 - `GET /api/v1/export` streams a ZIP while the client reads it; the layout is the contract in `docs/export-format.md` (`EXPORT_FORMAT_VERSION = 1` in `shared/export/types.ts`). Code in `apps/server/src/export/`: `build.ts` (`writeExport`, `PATHS`), `zip.ts` (streaming ZIP64 writer), `stream.ts` (backpressure, `ExportAborted`), `snapshot.ts` (read-only connection in one read transaction), `registry.ts` (one export per user, two overall, page tickets), `handler.ts` (route logic + `export.created` audit of counts only), `functions.ts`, `service.ts`, `paths.ts`.
 - Contents follow `visibleLocationsWhere` / `visibleVisitsWhere` / `visiblePhotosWhere` (never JS filtering); locations use `visibleLatExpr`/`visibleLonExpr` in SQL and `serializeLocation`. New tables/columns: decide whether they are exported, then update `build.ts`, the doc and the secret-sentinel test. Never export auth tables, invites, sessions, passkeys, settings secrets or notifications; `data/users.json` holds only referenced ids and display names.
 - Page: `/admin/export` is a section for admin **and** member; it reserves a slot with `reserveExportFn`, then opens `?ticket=…`; `getExportInfoFn` gives the estimate and progress. Guests get 404. Tests: `exportToMemory()` in `apps/server/src/export/test-helpers.ts`; metamorphic check pins `now` so the whole archive is byte-comparable.
+
+## History, comments, equipment and trips (v1.1)
+
+- Generic domain errors for these services: `server/errors.ts` (`AppError`,
+  `parseAppInput`; message "CODE" or "CODE:detail", German text in
+  `shared/error-text.ts`, which ignores the detail).
+- **History** (`server/history/`, rules in `server/authz/history.ts`):
+  `visibleHistoryWhere(ctx)` — approved entries at `view`, drafts only at
+  `edit`; writes need `edit`. Dates are ISO prefixes per precision ('YYYY-MM-DD',
+  'YYYY-MM', 'YYYY'; decades normalized), so they sort as text. Sources belong
+  to exactly one entry (`sources.history_id`, no join table) and inherit its
+  visibility. Approved text feeds the FTS `history` column: every history write
+  calls `reindexLocations` in its transaction (`history/texts.ts` avoids an
+  import cycle). Approved entries also appear in `getLocationTimeline`.
+- **archive.org**: new or changed source URLs enqueue `sources.archive`
+  (`history/archive.ts`, injectable fetch, generic UA, only the URL is sent).
+  The last failed attempt marks the source `failed`; `ARCHIVE=off` (e2e) marks
+  new sources `skipped` and enqueues nothing.
+- **Comments** (`server/comments/`, rules in `server/authz/comments.ts`): one of
+  `location_id` / `visit_id` / `photo_id` is set (CHECK + cascading FKs);
+  `visibleCommentsWhere(ctx)` follows the target's own predicate. Guests read
+  only; authors edit; authors and admins delete (soft: body wiped, row kept for
+  replies). Bodies go through `renderMarkdown` without photo embeds. UI:
+  `components/comments/comment-thread.tsx` (location tab, visit cards, photo
+  viewer).
+- **Equipment** (`server/equipment/`): private to the owner, scoped by
+  `owner_id` in SQL; foreign ids are 404. `createDefaultTemplates` adds the four
+  DESIGN §5.5 templates once. Page `/ausruestung` (user menu).
+- **Trips** (`server/trips/`, rules in `server/authz/trips.ts`):
+  `visibleTripsWhere(ctx)` = owner, listed app users, admins. Seeing a trip
+  never widens location access: stops are loaded with `visibleLocationsWhere`
+  and serialized with `serializeLocation` at the viewer's level; invisible
+  stops are absent (editors get a `hiddenStops` count and keep those stops on
+  reorder). Owner/admin edit; non-guest people tick the packing list. Visits
+  may carry a `tripId` (checked against `visibleTripsWhere`; cleared on trip
+  delete). `tripProbes` in `authz/metamorphic.ts` covers trips, history and
+  comments. Route preview: `shared/trips/route.ts` (straight lines from the
+  serialized points; legs touching a fuzzed point are "≈"). Pages: `/touren`,
+  `/touren/new?location=`, `/touren/$tripId`, `/touren/$tripId/edit`; "Zur
+  Tour hinzufügen" on the location page. The emergency contact is stored and
+  shown; alerts come with the v1.2 check-in.
 
 ## Commands
 Run from the repo root; turbo fans out to the workspaces and caches results

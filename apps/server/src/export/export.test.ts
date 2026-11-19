@@ -5,9 +5,13 @@ import { eq } from "drizzle-orm";
 import { strFromU8 } from "fflate";
 import { recordEvent } from "../audit";
 import { ctxFor, seed } from "../authz/test-fixtures";
+import { createComment } from "../comments/service";
 import { accounts, invites, passkeys, sessions, users, verifications, visits } from "../db/schema";
 import { createTestDb } from "../db/test-db";
+import { createEquipment } from "../equipment/service";
+import { createHistory } from "../history/service";
 import { insertPhoto, tempPhotoStore } from "../photos/test-helpers";
+import { createTrip } from "../trips/service";
 import { PATHS } from "./build";
 import { exportToMemory, type ReadArchive, readArchive } from "./test-helpers";
 
@@ -240,6 +244,11 @@ describe("export contents", () => {
         PATHS.photos,
         PATHS.grants,
         PATHS.users,
+        PATHS.history,
+        PATHS.comments,
+        PATHS.trips,
+        PATHS.equipment,
+        PATHS.packTemplates,
         "journals/2026-10-01-freundesort-vis-1.md",
         "journals/2026-10-02-vertrautenort-vis-2.md",
         "photos/ph-own.jpg",
@@ -337,6 +346,71 @@ describe("export contents", () => {
     // The uploader may see the original URL of their own photo, but not of others'.
     expect(photos.find((p) => p.id === "ph-own")?.originalUrl).toBeDefined();
     expect(photos.find((p) => p.id === "ph-other")?.originalUrl).toBeUndefined();
+    assertNoSecrets(a);
+    w.store.cleanup();
+  });
+
+  test("v1.1 data follows the same visibility rules", async () => {
+    const w = await world();
+    const ben = ctxFor("ben", "member");
+    createHistory(w.db, admin, {
+      locationId: "loc-hidden",
+      datePrecision: "year",
+      dateFrom: "1950",
+      text: "SENTINEL-draft-history",
+      status: "draft",
+    });
+    createHistory(w.db, admin, {
+      locationId: "loc-hidden",
+      datePrecision: "year",
+      dateFrom: "1960",
+      text: "Bekannte Geschichte",
+    });
+    seed(w.db, {
+      skipCategories: true,
+      locations: [{ id: "loc-ben-only", ownerId: "ben", name: "Nur Ben" }],
+    });
+    createComment(w.db, ben, {
+      target: { kind: "location", id: "loc-ben-only" },
+      bodyMd: "SENTINEL-invisible-comment",
+    });
+    createComment(w.db, ben, { target: { kind: "location", id: "loc-friends" }, bodyMd: "Hallo" });
+    createTrip(w.db, ben, { title: "SENTINEL-ben-trip", locationIds: ["loc-ben-only"] });
+    createTrip(w.db, admin, {
+      title: "Gemeinsam",
+      people: [{ userId: "ann" }],
+      locationIds: ["loc-friends", "loc-ben-only"],
+    });
+    createEquipment(w.db, ben, { name: "SENTINEL-ben-gear" });
+    createEquipment(w.db, anna, { name: "Annas Lampe" });
+
+    const a = await exportToMemory(w.db, anna, w.store.store);
+    const text = Object.values(a.files)
+      .map((f) => strFromU8(f))
+      .join("\n");
+    for (const hidden of [
+      "SENTINEL-draft-history",
+      "SENTINEL-invisible-comment",
+      "SENTINEL-ben-trip",
+      "SENTINEL-ben-gear",
+      "Nur Ben",
+    ])
+      expect({ hidden, found: text.includes(hidden) }).toEqual({ hidden, found: false });
+    expect(a.json<{ text: string }[]>(PATHS.history).map((h) => h.text)).toEqual([
+      "Bekannte Geschichte",
+    ]);
+    expect(a.json<unknown[]>(PATHS.comments)).toHaveLength(1);
+    const trips = a.json<
+      { title: string; stops: { location: { id: string; point: { lat: number } } }[] }[]
+    >(PATHS.trips);
+    expect(trips.map((t) => t.title)).toEqual(["Gemeinsam"]);
+    // Only the visible stop, at the fuzzed point.
+    expect(trips[0]!.stops.map((s) => [s.location.id, s.location.point.lat])).toEqual([
+      ["loc-friends", 51.2],
+    ]);
+    expect(a.json<{ name: string }[]>(PATHS.equipment).map((e) => e.name)).toEqual(["Annas Lampe"]);
+    const manifest = a.json<{ counts: Record<string, number> }>(PATHS.manifest);
+    expect(manifest.counts).toMatchObject({ history: 1, comments: 1, trips: 1, equipment: 1 });
     assertNoSecrets(a);
     w.store.cleanup();
   });

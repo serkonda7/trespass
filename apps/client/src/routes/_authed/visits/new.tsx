@@ -16,8 +16,10 @@ import { locationQuery, principalsQuery } from "~/lib/locations/queries";
 import { runAction } from "~/lib/run-action";
 
 export const Route = createFileRoute("/_authed/visits/new")({
-  validateSearch: (raw: Record<string, unknown>) => ({
+  validateSearch: (raw: Record<string, unknown>): { location: string; trip?: string } => ({
     location: typeof raw.location === "string" ? raw.location : "",
+    /** Set when the visit is logged from a trip stop. */
+    ...(typeof raw.trip === "string" && raw.trip.length <= 64 ? { trip: raw.trip } : {}),
   }),
   beforeLoad: ({ context, search }) => {
     if (context.user.role === "guest" || !search.location || search.location.length > 64) {
@@ -47,15 +49,26 @@ function NewVisitPage() {
 
   const onSubmit = async (values: VisitFormValues) => {
     const result = await runAction(
-      () => createVisitFn({ data: { locationId: search().location, ...visitPayload(values) } }),
+      () =>
+        createVisitFn({
+          data: {
+            locationId: search().location,
+            ...visitPayload(values),
+            ...(search().trip ? { tripId: search().trip } : {}),
+          },
+        }),
       { success: m.visits_created() },
     );
     if (!result) return false;
     await Promise.all([
       qc.invalidateQueries({ queryKey: ["visits"] }),
       qc.invalidateQueries({ queryKey: ["locations"] }),
+      qc.invalidateQueries({ queryKey: ["trips"] }),
     ]);
-    await navigate({ to: "/locations/$locationId", params: { locationId: search().location } });
+    const trip = search().trip;
+    if (trip) await navigate({ to: "/touren/$tripId", params: { tripId: trip } });
+    else
+      await navigate({ to: "/locations/$locationId", params: { locationId: search().location } });
     return true;
   };
 

@@ -9,7 +9,14 @@ export {
   exportScope,
   requireCan,
 } from "./actions";
+export {
+  canDeleteComment,
+  canEditComment,
+  canWriteComment,
+  visibleCommentsWhere,
+} from "./comments";
 export { visibleLatExpr, visibleLonExpr } from "./coords";
+export { canEditHistory, visibleHistoryWhere } from "./history";
 export {
   atLeast,
   canSeeExact,
@@ -65,6 +72,7 @@ export {
   serializeLocation,
   serializeLocationsForCtx,
 } from "./serialize";
+export { canEditTrip, canPackTrip, visibleTripsWhere } from "./trips";
 export {
   canCreateVisit,
   canMutateVisit,

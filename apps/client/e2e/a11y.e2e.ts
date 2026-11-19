@@ -24,11 +24,31 @@ async function audit(page: Page, path: string) {
 }
 
 test("pages have no axe violations", async ({ adminPage, newUser }) => {
-  for (const path of ["/", "/suche", "/account", "/locations/new"]) await audit(adminPage, path);
+  for (const path of [
+    "/",
+    "/suche",
+    "/account",
+    "/locations/new",
+    "/touren",
+    "/touren/new",
+    "/ausruestung",
+  ])
+    await audit(adminPage, path);
   const url = await createLocation(adminPage, `A11y ${token()}`);
   for (const path of [new URL(url).pathname, `${new URL(url).pathname}/edit`]) {
     await audit(adminPage, path);
   }
+  // A trip with one stop: route preview, packing list and report.
+  await adminPage.goto(url);
+  await hydrated(adminPage);
+  await adminPage.getByTestId("add-to-trip").click();
+  await adminPage.getByRole("link", { name: "Neue Tour mit diesem Ort" }).click();
+  await hydrated(adminPage);
+  await adminPage.getByLabel("Titel").fill(`A11y-Tour ${token()}`);
+  await adminPage.getByRole("button", { name: "Tour anlegen" }).click();
+  await expect(adminPage).toHaveURL(/\/touren\/[0-9a-f-]{36}$/);
+  const trip = new URL(adminPage.url()).pathname;
+  for (const path of [trip, `${trip}/edit`]) await audit(adminPage, path);
   const guest = await newUser("guest");
   for (const path of [
     "/admin/users",

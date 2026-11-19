@@ -8,11 +8,14 @@ import type { AuthCtx } from "@trespass/shared/authz/ctx";
 import { bboxAround } from "@trespass/shared/geo/distance";
 import type { Point } from "@trespass/shared/geo/types";
 import { eq } from "drizzle-orm";
+import { listComments } from "../comments/service";
 import type { AppDb } from "../db/client";
 import { locations } from "../db/schema";
+import { listHistory } from "../history/service";
 import { findDuplicates, getLocation, listLocations } from "../locations/service";
 import { getPhoto, listPhotos } from "../photos/service";
 import { searchLocations } from "../search/query";
+import { getTrip, listTrips } from "../trips/service";
 import {
   getLocationTimeline,
   listFeed,
@@ -61,6 +64,20 @@ export const searchProbes: ExtraProbe = (db, ctx, locationId) => {
       ?.name ?? "";
   return { search: searchLocations(db, ctx, { q: name, limit: 100 }) };
 };
+
+/**
+ * v1.1 probes: history and comments on the location, and a trip that has the
+ * location as a stop and the viewer among its people. A trip must never show a
+ * stop more precisely than the viewer's own level (DESIGN §3.4, §13).
+ */
+export const tripProbes =
+  (tripId: string): ExtraProbe =>
+  (db, ctx, locationId) => ({
+    listHistory: listHistory(db, ctx, locationId),
+    listComments: listComments(db, ctx, { target: { kind: "location", id: locationId } }),
+    getTrip: getTrip(db, ctx, tripId),
+    listTrips: listTrips(db, ctx),
+  });
 
 /** Captures one JSON string per endpoint, keyed by a stable name. */
 export async function captureLocationResponses(

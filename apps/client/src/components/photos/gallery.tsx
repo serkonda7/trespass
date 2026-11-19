@@ -12,6 +12,7 @@ import { m } from "@trespass/shared/paraglide/messages";
 import { photoUrl } from "@trespass/shared/photos/rules";
 import type { SerializedPhoto } from "@trespass/shared/photos/types";
 import { createMemo, createSignal, For, Show } from "solid-js";
+import { CommentThread } from "~/components/comments/comment-thread";
 import { ConfirmButton } from "~/components/confirm-dialog";
 import { Button } from "~/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
@@ -240,6 +241,12 @@ export function PhotoGallery(props: {
                     </div>
                   </div>
                 </Show>
+                <details class="rounded-md border p-2">
+                  <summary class="cursor-pointer text-sm font-medium">{m.comments_title()}</summary>
+                  <div class="pt-2">
+                    <CommentThread target={{ kind: "photo", id: p().id }} shared />
+                  </div>
+                </details>
                 <Show when={p().originalUrl}>
                   <a
                     class="text-sm text-primary underline underline-offset-4"

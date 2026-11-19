@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from "@tanstack/solid-router";
 import type { SessionUser } from "@trespass/server/auth/functions";
+import { can } from "@trespass/shared/app-actions";
 import { m } from "@trespass/shared/paraglide/messages";
 import { For, type JSX, Show } from "solid-js";
 import { Button } from "~/components/ui/button";
@@ -15,16 +16,17 @@ import { authClient } from "~/lib/auth-client";
 import { cn } from "~/lib/cn";
 
 type NavItem = {
-  to: "/" | "/logbuch" | "/suche" | "/admin";
+  to: "/" | "/logbuch" | "/touren" | "/suche" | "/admin";
   label: () => string;
   icon: string;
   roles?: SessionUser["role"][];
 };
 
-// Later stages add Touren and Ausrüstung.
+// Ausrüstung lives in the user menu (it is personal, and the bottom bar is full).
 const NAV: NavItem[] = [
   { to: "/", label: m.nav_map, icon: "⌂" },
   { to: "/logbuch", label: m.nav_logbook, icon: "▤" },
+  { to: "/touren", label: m.nav_trips, icon: "⇢" },
   { to: "/suche", label: m.nav_search, icon: "⌕" },
   { to: "/admin", label: m.nav_admin, icon: "⚙", roles: ["admin", "member"] },
 ];
@@ -73,7 +75,11 @@ export function AppShell(props: { user: SessionUser; children: JSX.Element }) {
               <DropdownMenuContent>
                 <DropdownMenuLabel>@{props.user.username}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {/* Later: Touren, Ausrüstung. */}
+                <Show when={can(props.user, "ownEquipment")}>
+                  <DropdownMenuItem onSelect={() => navigate({ to: "/ausruestung" })}>
+                    {m.nav_equipment()}
+                  </DropdownMenuItem>
+                </Show>
                 <DropdownMenuItem onSelect={() => navigate({ to: "/account" })}>
                   {m.account_nav()}
                 </DropdownMenuItem>

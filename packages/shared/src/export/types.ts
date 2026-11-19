@@ -29,6 +29,11 @@ export type ExportCounts = {
   skippedPhotos: number;
   grants: number;
   users: number;
+  history: number;
+  comments: number;
+  trips: number;
+  equipment: number;
+  packTemplates: number;
 };
 
 /** What /admin/export shows before and while an export runs. */

@@ -39,10 +39,12 @@ import type { Level } from "../authz/levels";
 import type { AppDb, DbOrTx } from "../db/client";
 
 import { events, locations, type NewVisitPerson, users, visitPeople, visits } from "../db/schema";
+import { listHistory } from "../history/service";
 import { forbidden, notFound } from "../locations/errors";
 import { visitCreateTime } from "../locations/status";
 import { journalExcerpt, photoEmbedIds, renderJournalMarkdown } from "../markdown";
 import { resolvePhotoEmbeds } from "../photos/service";
+import { checkTripForVisit } from "../trips/service";
 import {
   conflict,
   invalidDate,
@@ -210,6 +212,7 @@ export function createVisit(
     const day = input.visitedOn ?? todayInTz(found.location.tz);
     checkDay(day, found.location.tz);
     checkPeople(tx, input.people);
+    checkTripForVisit(tx, ctx, input.tripId);
     const at = visitCreateTime(tx, found.location.id);
     const row = tx
       .insert(visits)
@@ -219,6 +222,7 @@ export function createVisit(
         visitedOn: day,
         conditions: input.conditions,
         journalMd: input.journalMd,
+        tripId: input.tripId ?? null,
         createdAt: at,
         updatedAt: at,
       })
@@ -259,6 +263,10 @@ export function updateVisit(db: AppDb, ctx: AuthCtx, raw: UpdateVisitInput): { v
     }
     if (input.conditions !== undefined) set.conditions = input.conditions;
     if (input.journalMd !== undefined) set.journalMd = input.journalMd;
+    if (input.tripId !== undefined) {
+      checkTripForVisit(tx, ctx, input.tripId);
+      set.tripId = input.tripId;
+    }
     if (input.people !== undefined) {
       checkPeople(tx, input.people);
       replacePeople(tx, row.visit.id, input.people);
@@ -439,7 +447,7 @@ export function yearReview(db: AppDb, ctx: AuthCtx, raw: { year: number }): Year
   };
 }
 
-/** Visits and status changes of one visible location, merged by date. */
+/** Visits, status changes and history entries of one visible location, newest first. */
 export function getLocationTimeline(db: AppDb, ctx: AuthCtx, locationId: string): TimelineEntry[] {
   const found = loadLocationForCtx(db, ctx, locationId, "view");
   if (!found) throw notFound();
@@ -482,5 +490,12 @@ export function getLocationTimeline(db: AppDb, ctx: AuthCtx, locationId: string)
     seen.add(key);
     statusEntries.push({ kind: "status", date, from, to });
   }
-  return [...visitEntries, ...statusEntries].sort((a, b) => b.date.localeCompare(a.date));
+  const historyEntries: TimelineEntry[] = listHistory(db, ctx, locationId).map((h) => ({
+    kind: "history",
+    date: h.dateFrom,
+    history: h,
+  }));
+  return [...visitEntries, ...statusEntries, ...historyEntries].sort((a, b) =>
+    b.date.localeCompare(a.date),
+  );
 }

@@ -34,7 +34,18 @@ export type AuditAction =
   | "photo.assigned"
   | "photo.deleted"
   | "photo.cover"
-  | "export.created";
+  | "export.created"
+  | "history.created"
+  | "history.updated"
+  | "history.approved"
+  | "history.deleted"
+  | "comment.created"
+  | "comment.updated"
+  | "comment.deleted"
+  | "trip.created"
+  | "trip.updated"
+  | "trip.deleted"
+  | "trip.stops";
 
 /** Keys that look like secrets. Matched case-insensitively at any depth. */
 const SECRET_KEY = /pass(word)?|token|hash|secret|credential/i;

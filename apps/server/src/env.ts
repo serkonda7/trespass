@@ -37,6 +37,8 @@ const schema = z.object({
   VAPID_PRIVATE_KEY: optional,
   /** Reverse geocoding (Nominatim); "off" disables the job entirely (e2e sets this). */
   GEOCODE: optional.pipe(z.enum(["on", "off"]).default("on")),
+  /** Wayback Machine copies of history sources; "off" sends nothing to archive.org (e2e sets this). */
+  ARCHIVE: optional.pipe(z.enum(["on", "off"]).default("on")),
   /** Optional integrations used by later stages (research, notifications, healthchecks.io). */
   ANTHROPIC_API_KEY: optional,
   NTFY_URL: optional,

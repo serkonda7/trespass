@@ -60,6 +60,8 @@ export function MapView(props: {
   onPick?: (point: Point) => void;
   marker?: Point | null;
   circle?: { point: Point; radiusM: number } | null;
+  /** Straight lines between consecutive points (trip route preview). */
+  route?: readonly Point[] | null;
   /** Fit to this box whenever it changes (e.g. after the first data load). */
   fit?: MapBbox | null;
   class?: string;
@@ -178,6 +180,19 @@ export function MapView(props: {
         source: "fuzz",
         paint: { "line-color": "#38bdf8", "line-dasharray": [2, 2], "line-width": 2 },
       });
+      m.addSource("route", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+      m.addLayer(
+        {
+          id: "route-line",
+          type: "line",
+          source: "route",
+          paint: { "line-color": "#f97316", "line-width": 3, "line-dasharray": [3, 1.5] },
+        },
+        "clusters",
+      );
       setReady(true);
       const fit = props.fit;
       if (fit) fitBounds(fit);
@@ -284,6 +299,25 @@ export function MapView(props: {
             },
           ]
         : [],
+    });
+  });
+
+  createEffect(() => {
+    const route = props.route ?? [];
+    if (!ready() || !map) return;
+    const source = map.getSource("route") as import("maplibre-gl").GeoJSONSource | undefined;
+    source?.setData({
+      type: "FeatureCollection",
+      features:
+        route.length > 1
+          ? [
+              {
+                type: "Feature",
+                geometry: { type: "LineString", coordinates: route.map((p) => [p.lon, p.lat]) },
+                properties: {},
+              },
+            ]
+          : [],
     });
   });
 

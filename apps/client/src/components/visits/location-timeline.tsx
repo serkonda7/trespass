@@ -1,4 +1,5 @@
-// The "Besuche" tab on a location: visits and status changes in one list.
+// The "Besuche" tab on a location: visits, history entries and status changes
+// in one list, newest first.
 import { useQuery } from "@tanstack/solid-query";
 import { Link } from "@tanstack/solid-router";
 import { formatIsoDay } from "@trespass/shared/format";
@@ -6,6 +7,7 @@ import type { LocationStatus } from "@trespass/shared/locations/types";
 import { m } from "@trespass/shared/paraglide/messages";
 import type { TimelineEntry } from "@trespass/shared/visits/types";
 import { createSignal, For, Match, Show, Switch } from "solid-js";
+import { HistoryCard } from "~/components/history/history-section";
 import { Card, CardContent } from "~/components/ui/card";
 import { statusLabel } from "~/lib/locations/status";
 import { locationTimelineQuery } from "~/lib/visits/queries";
@@ -62,6 +64,12 @@ function TimelineItem(props: { entry: TimelineEntry; tz: string; onChanged: () =
         {(() => {
           const entry = props.entry as Extract<TimelineEntry, { kind: "visit" }>;
           return <VisitCard visit={entry.visit} tz={props.tz} onChanged={props.onChanged} />;
+        })()}
+      </Match>
+      <Match when={props.entry.kind === "history"}>
+        {(() => {
+          const entry = props.entry as Extract<TimelineEntry, { kind: "history" }>;
+          return <HistoryCard entry={entry.history} />;
         })()}
       </Match>
       <Match when={props.entry.kind === "status"}>

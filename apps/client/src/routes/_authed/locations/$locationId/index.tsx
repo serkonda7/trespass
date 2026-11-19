@@ -1,16 +1,20 @@
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/solid-router";
 import { deleteLocationFn, moveLocationFn } from "@trespass/server/locations/functions";
+import { can } from "@trespass/shared/app-actions";
 import { formatCoordinates, parseCoordinates } from "@trespass/shared/geo/parse-coords";
 import { parseLocationsError } from "@trespass/shared/locations/errors";
 import type { SerializedLocation } from "@trespass/shared/locations/types";
 import { m } from "@trespass/shared/paraglide/messages";
 import { photoUrl } from "@trespass/shared/photos/rules";
 import { createSignal, For, onCleanup, onMount, Show } from "solid-js";
+import { CommentThread } from "~/components/comments/comment-thread";
 import { ConfirmButton } from "~/components/confirm-dialog";
+import { HistorySection } from "~/components/history/history-section";
 import { LocationSharing } from "~/components/locations/location-sharing";
 import { MapView } from "~/components/map/map-view";
 import { PhotoSection } from "~/components/photos/photo-section";
+import { AddToTripDialog } from "~/components/trips/add-to-trip";
 import { Badge } from "~/components/ui/badge";
 import { Button, buttonVariants } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -32,7 +36,7 @@ import { locationQuery } from "~/lib/locations/queries";
 import { statusColor, statusLabel } from "~/lib/locations/status";
 import { runAction } from "~/lib/run-action";
 
-export const Route = createFileRoute("/_authed/locations/$locationId")({
+export const Route = createFileRoute("/_authed/locations/$locationId/")({
   beforeLoad: ({ params }) => {
     if (params.locationId.length > 64) throw notFound();
   },
@@ -81,6 +85,7 @@ function LocationPage() {
         <LocationView
           location={data().location}
           meId={ctx().user.id}
+          role={ctx().user.role}
           canAddVisit={data().location.permissions.canContribute && ctx().user.role !== "guest"}
         />
       )}
@@ -88,13 +93,19 @@ function LocationPage() {
   );
 }
 
-function LocationView(props: { location: SerializedLocation; meId: string; canAddVisit: boolean }) {
+function LocationView(props: {
+  location: SerializedLocation;
+  meId: string;
+  role: "admin" | "member" | "guest";
+  canAddVisit: boolean;
+}) {
   const loc = () => props.location;
   const qc = useQueryClient();
   const navigate = useNavigate();
   const settings = useQuery(() => settingsQuery());
   const [shareOpen, setShareOpen] = createSignal(false);
   const [moveOpen, setMoveOpen] = createSignal(false);
+  const [tripOpen, setTripOpen] = createSignal(false);
   const [coordText, setCoordText] = createSignal(formatCoordinates(loc().point));
   const [localTime, setLocalTime] = createSignal<string | null>(null);
   onMount(() => {
@@ -207,11 +218,14 @@ function LocationView(props: { location: SerializedLocation; meId: string; canAd
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="overview">
-        <TabsList>
+      {/* min-w-0: the grid item must not grow to the tab list's width on phones. */}
+      <Tabs defaultValue="overview" class="min-w-0">
+        <TabsList class="flex w-full justify-start overflow-x-auto">
           <TabsTrigger value="overview">{m.location_tab_overview()}</TabsTrigger>
           <TabsTrigger value="visits">{m.location_tab_visits()}</TabsTrigger>
           <TabsTrigger value="photos">{m.location_tab_photos()}</TabsTrigger>
+          <TabsTrigger value="history">{m.location_tab_history()}</TabsTrigger>
+          <TabsTrigger value="comments">{m.location_tab_comments()}</TabsTrigger>
         </TabsList>
         <TabsContent value="overview">
           <Card>
@@ -294,9 +308,31 @@ function LocationView(props: { location: SerializedLocation; meId: string; canAd
             canSetCover={loc().permissions.canEdit}
           />
         </TabsContent>
+        <TabsContent value="history">
+          <HistorySection
+            locationId={loc().id}
+            canEdit={loc().permissions.canEdit && props.role !== "guest"}
+            shared={loc().visibility === "friends"}
+          />
+        </TabsContent>
+        <TabsContent value="comments">
+          <Card>
+            <CardContent class="pt-4">
+              <CommentThread
+                target={{ kind: "location", id: loc().id }}
+                shared={loc().visibility === "friends"}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       <section class="flex flex-wrap gap-2" aria-label={m.location_details()}>
+        <Show when={can({ role: props.role }, "createTrip")}>
+          <Button variant="outline" onClick={() => setTripOpen(true)} data-testid="add-to-trip">
+            {m.trips_add_to()}
+          </Button>
+        </Show>
         <Show when={loc().permissions.canEdit}>
           <Link
             to="/locations/$locationId/edit"
@@ -323,6 +359,13 @@ function LocationView(props: { location: SerializedLocation; meId: string; canAd
           />
         </Show>
       </section>
+
+      <AddToTripDialog
+        locationId={loc().id}
+        isAdmin={props.role === "admin"}
+        open={tripOpen()}
+        onOpenChange={setTripOpen}
+      />
 
       <LocationSharing
         location={loc()}

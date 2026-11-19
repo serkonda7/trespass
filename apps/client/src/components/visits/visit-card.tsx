@@ -7,10 +7,12 @@ import { deleteVisitFn } from "@trespass/server/visits/functions";
 import { browserTimeZone, formatIsoDay } from "@trespass/shared/format";
 import { m } from "@trespass/shared/paraglide/messages";
 import type { SerializedVisit } from "@trespass/shared/visits/types";
-import { createMemo, For, Show } from "solid-js";
+import { createMemo, createSignal, For, Show } from "solid-js";
+import { CommentThread } from "~/components/comments/comment-thread";
 import { ConfirmButton } from "~/components/confirm-dialog";
 import { VisitPhotoThumbs } from "~/components/photos/visit-photos";
 import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
 import { runAction } from "~/lib/run-action";
 import { conditionBadges } from "~/lib/visits/labels";
@@ -23,6 +25,7 @@ export function VisitCard(props: {
   onChanged?: () => void;
 }) {
   const qc = useQueryClient();
+  const [comments, setComments] = createSignal(false);
   const badges = createMemo(() => conditionBadges(props.visit.conditions));
   const differentZone = createMemo(() => {
     const zone = props.tz;
@@ -93,6 +96,20 @@ export function VisitCard(props: {
             innerHTML={props.visit.journalHtml}
           />
         </Show>
+
+        <div>
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-expanded={comments()}
+            onClick={() => setComments(!comments())}
+          >
+            {comments() ? m.comments_hide() : m.comments_show()}
+          </Button>
+          <Show when={comments()}>
+            <CommentThread target={{ kind: "visit", id: props.visit.id }} shared />
+          </Show>
+        </div>
 
         <Show when={props.visit.permissions.canEdit || props.visit.permissions.canDelete}>
           <div class="flex flex-wrap gap-2">

@@ -33,6 +33,26 @@ const TEXT: Record<string, () => string> = {
   PHOTO_BAD_REQUEST: m.photos_error_bad_request,
   PHOTO_ORDER_INVALID: m.photos_error_order,
   PHOTO_ASSIGN_INVALID: m.photos_error_assign,
+  HISTORY_NOT_FOUND: m.history_error_not_found,
+  HISTORY_FORBIDDEN: m.error_forbidden,
+  HISTORY_DATE_INVALID: m.history_error_date,
+  SOURCE_URL_INVALID: m.history_error_url,
+  COMMENT_NOT_FOUND: m.comments_error_not_found,
+  COMMENT_FORBIDDEN: m.error_forbidden,
+  COMMENT_PARENT_INVALID: m.comments_error_parent,
+  EQUIPMENT_NOT_FOUND: m.equipment_error_not_found,
+  TEMPLATE_NOT_FOUND: m.equipment_error_template_not_found,
+  TRIP_NOT_FOUND: m.trips_error_not_found,
+  TRIP_FORBIDDEN: m.error_forbidden,
+  TRIP_DATES_INVALID: m.trips_error_dates,
+  TRIP_PERSON_INVALID: m.trips_error_person,
+  TRIP_STOP_INVALID: m.trips_error_stop,
+  TRIP_STOPS_FULL: m.trips_error_stops_full,
+  CHECKLIST_ITEM_NOT_FOUND: m.trips_error_checklist_item,
+  EMERGENCY_CONTACT_INVALID: m.trips_error_emergency_contact,
+  LOCATION_NOT_FOUND: m.locations_error_not_found,
+  LOCATION_FORBIDDEN: m.error_forbidden,
+  Forbidden: m.error_forbidden,
   // Shared with the location forms.
   VERSION_CONFLICT: m.locations_error_version_conflict,
   INVALID_INPUT: m.locations_error_invalid_input,
@@ -45,7 +65,10 @@ export function errorCode(err: unknown): string | undefined {
 
 export function errorText(err: unknown): string {
   const code = errorCode(err);
-  return (code && TEXT[code]?.()) || m.error_generic();
+  if (!code) return m.error_generic();
+  // Domain errors are "CODE" or "CODE:detail"; the detail is never shown.
+  const head = code.includes(":") ? code.slice(0, code.indexOf(":")) : code;
+  return TEXT[code]?.() || TEXT[head]?.() || m.error_generic();
 }
 
 /** Server functions throw this message when the session is gone (see auth/session.ts). */

@@ -598,10 +598,10 @@ photos          (id PK, sha256, uploader_id, location_id NULL, visit_id NULL,
 history         (id PK, location_id FK, date_from, date_to NULL,
                  date_precision CHECK IN ('day','month','year','decade','circa'),
                  text, status CHECK IN ('draft','approved'), candidate_id NULL, created_by)
-sources         (id PK, url, title, retrieved_at, archived_url NULL, excerpt NULL)
-history_sources (history_id, source_id)
-comments        (id PK, author_id, target_kind CHECK IN ('location','visit','photo'),
-                 target_id, parent_id NULL, body_md, edited_at NULL, deleted_at NULL, created_at)
+sources         (id PK, history_id FK, url, title, retrieved_on, archived_url NULL,
+                 archive_status, excerpt NULL)       -- one entry per source (v1.1: no join table)
+comments        (id PK, author_id, location_id | visit_id | photo_id  -- exactly one, FK cascade
+                 parent_id NULL, body_md, edited_at NULL, deleted_at NULL, created_at)
 
 -- Gear & trips -------------------------------------------------------------------
 equipment       (id PK, owner_id, name, category, weight_g NULL, needs_charging BOOL, notes)

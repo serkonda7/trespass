@@ -8,12 +8,16 @@ import {
   photoProbes,
   runMetamorphicPrivacyCheck,
   searchProbes,
+  tripProbes,
   visitProbes,
 } from "../authz/metamorphic";
 import { ctxFor, seed } from "../authz/test-fixtures";
+import { createComment } from "../comments/service";
 import type { AppDb } from "../db/client";
 import { locations, photos } from "../db/schema";
 import { createTestDb } from "../db/test-db";
+import { createHistory } from "../history/service";
+import { createTrip } from "../trips/service";
 import { createVisit } from "../visits/service";
 import { createLocation, getLocation, setLocationGrant } from "./service";
 
@@ -103,6 +107,22 @@ describe("metamorphic coordinate privacy", () => {
         })
         .returning({ id: photos.id })
         .get();
+      createHistory(db, ctxFor(ADMIN, "admin"), {
+        locationId: id,
+        datePrecision: "year",
+        dateFrom: "1923",
+        text: "Eröffnet",
+        sources: [{ url: "https://example.org/chronik" }],
+      });
+      createComment(db, ctxFor(ADMIN, "admin"), {
+        target: { kind: "location", id },
+        bodyMd: "Seiteneingang offen",
+      });
+      const trip = createTrip(db, ctxFor(ADMIN, "admin"), {
+        title: "Tour",
+        people: [{ userId: c.ctx.userId }],
+        locationIds: [id],
+      });
       const before = getLocation(db, c.ctx, id);
       expect(before.location.exact).toBe(false);
       expect(before.location.level === "view" || before.location.level === "contribute").toBe(true);
@@ -118,6 +138,7 @@ describe("metamorphic coordinate privacy", () => {
             ...visitProbes(probeDb, probeCtx, locationId),
             ...photoProbes(photo.id)(probeDb, probeCtx, locationId),
             ...searchProbes(probeDb, probeCtx, locationId),
+            ...(await tripProbes(trip.id)(probeDb, probeCtx, locationId)),
           }),
         },
       );
@@ -128,9 +149,13 @@ describe("metamorphic coordinate privacy", () => {
         "getLocation",
         "getLocationTimeline",
         "getPhoto",
+        "getTrip",
         "list",
+        "listComments",
         "listFeed",
+        "listHistory",
         "listPhotos",
+        "listTrips",
         "listVisitsForLocation",
         "nearExact",
         "search",
