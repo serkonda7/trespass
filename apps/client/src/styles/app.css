@@ -30,10 +30,10 @@
   --input: oklch(0.48 0.012 70);
   --ring: oklch(0.78 0.15 55);
   --radius: 0.375rem;
-  --header-h: 3.5rem;
+  --header-h: 3rem;
   /* Sidebar widths (app-shell); the header's brand cell matches them. */
-  --sidebar-w: 14rem;
-  --sidebar-rail: 4.25rem;
+  --sidebar-w: 13rem;
+  --sidebar-rail: 3.5rem;
 }
 
 @theme inline {
@@ -100,7 +100,7 @@
 /* Typography roles. Condensed, heavy display face for titles; a small mono
    kicker above them for the "label maker" feel. */
 @utility page-title {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   line-height: 1.1;
   font-weight: 750;
   font-stretch: 78%;
@@ -108,7 +108,7 @@
   text-wrap: balance;
 }
 @utility section-title {
-  font-size: 1.125rem;
+  font-size: 1rem;
   line-height: 1.25;
   font-weight: 700;
   font-stretch: 85%;

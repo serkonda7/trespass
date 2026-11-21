@@ -24,10 +24,10 @@ const VARIANTS: Record<ButtonVariant, string> = {
   link: "text-primary underline-offset-4 hover:underline",
 };
 const SIZES: Record<ButtonSize, string> = {
-  default: "h-11 px-4 py-2", // 44px touch target
-  sm: "h-9 rounded-md px-3",
-  lg: "h-12 rounded-md px-6 text-base",
-  icon: "size-11",
+  default: "h-9 px-3.5 py-2 pointer-coarse:h-11 pointer-coarse:px-4", // 44px on touch
+  sm: "h-8 rounded-md px-2.5 pointer-coarse:h-10 pointer-coarse:px-3",
+  lg: "h-10 rounded-md px-5 text-base pointer-coarse:h-12 pointer-coarse:px-6",
+  icon: "size-9 pointer-coarse:size-11",
 };
 
 export function buttonVariants({

@@ -28,7 +28,7 @@ function ResearchLayout() {
     return t.exact ? path === t.to : path.startsWith(t.to);
   };
   return (
-    <div class="mx-auto grid w-full max-w-5xl gap-5">
+    <div class="mx-auto grid w-full max-w-5xl gap-4">
       <PageHeader title={m.research_title()} description={m.research_intro()} />
       <SectionNav
         label={m.research_tabs()}

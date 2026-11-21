@@ -326,7 +326,7 @@ function DashboardPage() {
           <>
             <StatTiles data={data()} canUpload={ctx().user.role !== "guest"} />
             <StatusCard data={data()} />
-            <div class="grid gap-5 md:grid-cols-2">
+            <div class="grid gap-4 md:grid-cols-2">
               <RecentVisits data={data()} />
               <OpenTrips data={data()} />
             </div>

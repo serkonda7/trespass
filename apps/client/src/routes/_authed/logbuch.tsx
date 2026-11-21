@@ -66,7 +66,7 @@ function LogbookPage() {
             </select>
           </div>
         </CardHeader>
-        <CardContent class="grid gap-5">
+        <CardContent class="grid gap-4">
           <Show when={review.data}>
             {(data) => (
               <>

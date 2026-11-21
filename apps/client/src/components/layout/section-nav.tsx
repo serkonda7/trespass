@@ -17,7 +17,7 @@ export function SectionNav(props: {
               <Link
                 to={item.to as "/"}
                 class={cn(
-                  "-mb-px inline-flex h-11 items-center whitespace-nowrap border-b-2 px-3 text-sm font-semibold transition-colors",
+                  "-mb-px inline-flex h-9 items-center pointer-coarse:h-11 whitespace-nowrap border-b-2 px-3 text-sm font-semibold transition-colors",
                   props.isActive(item.to)
                     ? "border-primary text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground",

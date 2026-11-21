@@ -7,8 +7,8 @@ const make = (base: string) => (props: ComponentProps<"div">) => {
 };
 
 export const Card = make("rounded-lg border bg-card text-card-foreground");
-export const CardHeader = make("flex flex-col gap-1.5 p-4");
+export const CardHeader = make("flex flex-col gap-1 p-3.5");
 export const CardTitle = make("section-title");
 export const CardDescription = make("text-sm text-muted-foreground");
-export const CardContent = make("p-4 pt-0");
-export const CardFooter = make("flex items-center p-4 pt-0");
+export const CardContent = make("p-3.5 pt-0");
+export const CardFooter = make("flex items-center p-3.5 pt-0");

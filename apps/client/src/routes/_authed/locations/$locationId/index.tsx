@@ -189,7 +189,7 @@ function LocationView(props: {
   const toolLabel = (text: string) => <span class="sr-only sm:not-sr-only">{text}</span>;
 
   return (
-    <div class="mx-auto grid w-full max-w-4xl gap-5">
+    <div class="mx-auto grid w-full max-w-4xl gap-4">
       <section class="overflow-hidden rounded-xl border bg-card" aria-labelledby="location-title">
         <Show when={loc().coverPhotoId} fallback={mapPreview("grid-paper h-56 border-b sm:h-72")}>
           {(id) => (
@@ -207,7 +207,7 @@ function LocationView(props: {
             </div>
           )}
         </Show>
-        <div class="grid gap-3 p-4 sm:p-5">
+        <div class="grid gap-3 p-3.5 sm:p-4">
           <p class="kicker flex flex-wrap items-center gap-x-2 gap-y-1">
             <CategoryIcon name={loc().category?.icon} class="size-3.5 text-primary" />
             <For each={[loc().category?.name, loc().country, loc().adminArea].filter(Boolean)}>

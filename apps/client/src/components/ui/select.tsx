@@ -38,7 +38,7 @@ export function SelectTrigger<T extends ValidComponent = "button">(
   return (
     <SelectPrimitive.Trigger
       class={cn(
-        "flex h-11 w-full items-center justify-between rounded-md border border-input/70 bg-background px-3 py-2 text-base hover:border-input focus:outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50",
+        "flex h-9 w-full items-center justify-between rounded-md border border-input/70 bg-background px-3 py-1.5 text-sm pointer-coarse:h-11 pointer-coarse:py-2 pointer-coarse:text-base hover:border-input focus:outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50",
         local.class,
       )}
       {...others}
@@ -86,7 +86,7 @@ export function SelectItem<T extends ValidComponent = "li">(
   return (
     <SelectPrimitive.Item
       class={cn(
-        "relative flex w-full cursor-default select-none items-center rounded-sm py-2 pl-2 pr-8 text-base outline-none data-[disabled]:pointer-events-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:opacity-50",
+        "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm pointer-coarse:py-2 pointer-coarse:text-base outline-none data-[disabled]:pointer-events-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:opacity-50",
         local.class,
       )}
       {...others}

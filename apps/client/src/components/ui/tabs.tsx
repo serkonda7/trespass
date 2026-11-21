@@ -14,7 +14,10 @@ export function TabsList<T extends ValidComponent = "div">(
   const [local, others] = splitProps(props as ListProps, ["class"]);
   return (
     <TabsPrimitive.List
-      class={cn("inline-flex h-11 items-stretch gap-1 border-b text-muted-foreground", local.class)}
+      class={cn(
+        "inline-flex h-9 items-stretch gap-1 border-b pointer-coarse:h-11 text-muted-foreground",
+        local.class,
+      )}
       {...others}
     />
   );

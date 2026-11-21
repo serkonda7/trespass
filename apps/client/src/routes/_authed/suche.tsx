@@ -54,7 +54,7 @@ function SearchPage() {
           <Input
             id="search-q"
             type="search"
-            class="h-12 pl-11 text-lg"
+            class="h-11 pl-10 text-base"
             ref={adoptTypedValue(text, setText)}
             value={text()}
             placeholder={m.search_placeholder()}

@@ -21,7 +21,7 @@ function AdminLayout() {
   const sections = () => sectionsFor(ctx().user.role);
   const active = (to: string) => location().pathname.startsWith(to);
   return (
-    <div class="mx-auto grid w-full max-w-5xl gap-5">
+    <div class="mx-auto grid w-full max-w-5xl gap-4">
       <PageHeader title={m.admin_nav_title()} />
       <SectionNav label={m.admin_nav_sections()} items={sections()} isActive={active} />
       <Outlet />

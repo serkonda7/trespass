@@ -25,7 +25,7 @@ export function DialogContent<T extends ValidComponent = "div">(
       <div class="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
         <DialogPrimitive.Content
           class={cn(
-            "tr-animate-zoom relative grid max-h-[90dvh] w-full gap-4 overflow-y-auto rounded-t-xl border bg-popover p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl shadow-black/50 before:absolute before:left-1/2 before:top-2 before:h-1 before:w-10 before:-translate-x-1/2 before:rounded-full before:bg-border sm:max-w-lg sm:rounded-xl sm:pb-5 sm:before:hidden",
+            "tr-animate-zoom relative grid max-h-[90dvh] w-full gap-4 overflow-y-auto rounded-t-xl border bg-popover p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl shadow-black/50 before:absolute before:left-1/2 before:top-2 before:h-1 before:w-10 before:-translate-x-1/2 before:rounded-full before:bg-border sm:max-w-lg sm:rounded-xl sm:pb-4 sm:before:hidden",
             local.class,
           )}
           {...others}

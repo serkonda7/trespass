@@ -157,7 +157,7 @@ function SidebarNav(props: { user: SessionUser; collapsed?: boolean; onNavigate?
 
   return (
     <nav
-      class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-2.5 py-3 [scrollbar-width:thin]"
+      class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-2 py-2.5 [scrollbar-width:thin]"
       aria-label={m.nav_main()}
     >
       <For each={groups()}>
@@ -168,9 +168,9 @@ function SidebarNav(props: { user: SessionUser; collapsed?: boolean; onNavigate?
                 <>
                   {/* Collapsed, the label stays for screen readers behind a divider. */}
                   <Show when={props.collapsed}>
-                    <span class="mx-2 mb-1.5 border-t" aria-hidden="true" />
+                    <span class="mx-2 mb-1 border-t" aria-hidden="true" />
                   </Show>
-                  <p class={props.collapsed ? "sr-only" : "kicker px-2.5 pb-1"}>{label()()}</p>
+                  <p class={props.collapsed ? "sr-only" : "kicker px-2 pb-0.5"}>{label()()}</p>
                 </>
               )}
             </Show>
@@ -186,14 +186,14 @@ function SidebarNav(props: { user: SessionUser; collapsed?: boolean; onNavigate?
                 >
                   <Show when={isActive(item)}>
                     <span
-                      class="absolute inset-y-1.5 -left-2.5 w-0.5 rounded-r-full bg-primary"
+                      class="absolute inset-y-1.5 -left-2 w-0.5 rounded-r-full bg-primary"
                       aria-hidden="true"
                     />
                   </Show>
                   <Link
                     to={item.to}
                     class={cn(
-                      "flex h-10 min-w-0 flex-1 items-center gap-3 rounded-md px-2.5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      "flex h-8 min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 text-sm font-semibold pointer-coarse:h-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                       props.collapsed && "justify-center px-0",
                     )}
                     aria-current={isActive(item) ? "page" : undefined}
@@ -202,14 +202,14 @@ function SidebarNav(props: { user: SessionUser; collapsed?: boolean; onNavigate?
                   >
                     <Dynamic
                       component={item.icon}
-                      class={cn("size-5 shrink-0", isActive(item) && "text-primary")}
+                      class={cn("size-[1.125rem] shrink-0", isActive(item) && "text-primary")}
                     />
                     <span class={props.collapsed ? "sr-only" : "truncate"}>{item.label()}</span>
                   </Link>
                   <Show when={!props.collapsed && item.add && can(props.user, item.add.action)}>
                     <Link
                       to={item.add?.to ?? "/"}
-                      class="mr-1 flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-background/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:opacity-0 md:group-hover/item:opacity-100 md:focus-visible:opacity-100"
+                      class="mr-0.5 flex size-7 shrink-0 pointer-coarse:size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-background/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:opacity-0 md:group-hover/item:opacity-100 md:focus-visible:opacity-100"
                       aria-label={item.add?.label()}
                       title={item.add?.label()}
                       onClick={() => props.onNavigate?.()}
@@ -259,9 +259,14 @@ function UserMenu(props: { user: SessionUser }) {
   const navigate = useNavigate();
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger as={Button} variant="ghost" size="sm" class="h-10 gap-2 pl-1.5 pr-2.5">
+      <DropdownMenuTrigger
+        as={Button}
+        variant="ghost"
+        size="sm"
+        class="h-9 gap-2 pl-1 pr-2 pointer-coarse:h-10"
+      >
         <span
-          class="flex size-7 items-center justify-center rounded-full border border-primary/40 bg-primary/15 font-mono text-[0.7rem] font-semibold text-primary"
+          class="flex size-6 items-center justify-center rounded-full border border-primary/40 bg-primary/15 font-mono text-[0.7rem] font-semibold text-primary"
           aria-hidden="true"
         >
           {initials(props.user.displayName)}
@@ -338,7 +343,7 @@ export function AppShell(props: {
         {/* As wide as the sidebar below it, so its border runs the full height. */}
         <div
           class={cn(
-            "flex h-full shrink-0 items-center px-3 transition-[width] duration-150 md:border-r md:px-4",
+            "flex h-full shrink-0 items-center px-3 transition-[width] duration-150 md:border-r md:px-3",
             collapsed()
               ? "md:w-[var(--sidebar-rail)] md:justify-center md:px-0"
               : "md:w-[var(--sidebar-w)]",
@@ -368,12 +373,12 @@ export function AppShell(props: {
           )}
         >
           <SidebarNav user={props.user} collapsed={collapsed()} />
-          <div class={cn("border-t p-2.5", collapsed() && "flex justify-center")}>
+          <div class={cn("border-t p-2", collapsed() && "flex justify-center")}>
             <button
               type="button"
               class={cn(
-                "flex h-9 items-center gap-3 rounded-md px-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                collapsed() ? "w-10 justify-center px-0" : "w-full",
+                "flex h-8 items-center gap-2.5 rounded-md px-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                collapsed() ? "w-9 justify-center px-0" : "w-full",
               )}
               aria-expanded={!collapsed()}
               aria-label={collapsed() ? m.nav_expand() : undefined}
@@ -392,7 +397,7 @@ export function AppShell(props: {
 
         <main class={cn("min-w-0 flex-1", fullBleed() && "relative")}>
           <Show when={!fullBleed()} fallback={page()}>
-            <div class="mx-auto w-full max-w-5xl px-4 pt-5 pb-[calc(env(safe-area-inset-bottom)+2.5rem)] md:px-8 md:pt-7 print:max-w-none print:p-0">
+            <div class="mx-auto w-full max-w-5xl px-3 pt-4 pb-[calc(env(safe-area-inset-bottom)+2rem)] md:px-6 md:pt-5 print:max-w-none print:p-0">
               {page()}
             </div>
           </Show>

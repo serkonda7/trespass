@@ -20,8 +20,8 @@ export function PageHeader(props: {
   const description = children(() => props.description);
   const actions = children(() => props.actions);
   return (
-    <div class={cn("flex flex-wrap items-end justify-between gap-x-4 gap-y-3", props.class)}>
-      <div class="grid min-w-0 gap-1.5">
+    <div class={cn("flex flex-wrap items-end justify-between gap-x-4 gap-y-2", props.class)}>
+      <div class="grid min-w-0 gap-1">
         <Show when={kicker.toArray().length > 0}>
           <p class="kicker">{kicker()}</p>
         </Show>
@@ -41,7 +41,7 @@ export function PageHeader(props: {
 export function PageColumn(props: { children: JSX.Element; class?: string; wide?: boolean }) {
   return (
     <div
-      class={cn("mx-auto grid w-full gap-5", props.wide ? "max-w-5xl" : "max-w-3xl", props.class)}
+      class={cn("mx-auto grid w-full gap-4", props.wide ? "max-w-5xl" : "max-w-3xl", props.class)}
     >
       {props.children}
     </div>
@@ -54,7 +54,7 @@ export function EmptyState(props: { icon?: JSX.Element; children: JSX.Element; c
   return (
     <div
       class={cn(
-        "grid-paper flex flex-col items-center gap-2 rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground",
+        "grid-paper flex flex-col items-center gap-2 rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground",
         props.class,
       )}
     >

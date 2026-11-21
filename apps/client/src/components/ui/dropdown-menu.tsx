@@ -37,7 +37,7 @@ export function DropdownMenuItem<T extends ValidComponent = "div">(
   return (
     <DropdownMenuPrimitive.Item
       class={cn(
-        "relative flex min-h-11 cursor-default select-none items-center gap-3 rounded-md px-2.5 py-1.5 text-base outline-none [&_svg]:size-4 [&_svg]:text-muted-foreground data-[disabled]:pointer-events-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:opacity-50",
+        "relative flex min-h-8 cursor-default select-none items-center gap-2.5 rounded-md px-2 py-1 text-sm pointer-coarse:min-h-11 pointer-coarse:text-base outline-none [&_svg]:size-4 [&_svg]:text-muted-foreground data-[disabled]:pointer-events-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:opacity-50",
         local.class,
       )}
       {...others}

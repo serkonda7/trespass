@@ -104,7 +104,7 @@ function TripView(props: { trip: SerializedTrip; canOwnEquipment: boolean; canAd
 
   return (
     <div class="mx-auto grid max-w-3xl grid-cols-1 gap-4">
-      <section class="grid gap-4 rounded-xl border bg-card p-4 sm:p-5">
+      <section class="grid gap-3 rounded-xl border bg-card p-3.5 sm:p-4">
         <div class="grid gap-2">
           <p class="kicker flex flex-wrap items-center gap-x-2">
             <span>{tripDates(t())}</span>

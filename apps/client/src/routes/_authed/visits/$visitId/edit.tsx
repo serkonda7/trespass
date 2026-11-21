@@ -47,7 +47,7 @@ function EditVisitPage() {
   }));
   return (
     <div class="mx-auto max-w-3xl">
-      <Show when={q.data} fallback={<Card class="p-6">{m.common_loading()}</Card>}>
+      <Show when={q.data} fallback={<Card class="p-4">{m.common_loading()}</Card>}>
         {(visit) => (
           <EditForm
             visit={visit()}
