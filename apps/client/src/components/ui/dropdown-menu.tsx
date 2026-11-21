@@ -17,7 +17,7 @@ export function DropdownMenuContent<T extends ValidComponent = "div">(
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content
         class={cn(
-          "tr-animate-fade z-50 min-w-40 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
+          "tr-animate-fade z-50 min-w-48 overflow-hidden rounded-lg border bg-popover p-1 text-popover-foreground shadow-xl shadow-black/40",
           local.class,
         )}
         {...others}
@@ -37,7 +37,7 @@ export function DropdownMenuItem<T extends ValidComponent = "div">(
   return (
     <DropdownMenuPrimitive.Item
       class={cn(
-        "relative flex min-h-10 cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-base outline-none data-[disabled]:pointer-events-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:opacity-50",
+        "relative flex min-h-11 cursor-default select-none items-center gap-3 rounded-md px-2.5 py-1.5 text-base outline-none [&_svg]:size-4 [&_svg]:text-muted-foreground data-[disabled]:pointer-events-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:opacity-50",
         local.class,
       )}
       {...others}
@@ -47,7 +47,7 @@ export function DropdownMenuItem<T extends ValidComponent = "div">(
 
 export function DropdownMenuLabel(props: ComponentProps<"div">) {
   const [local, others] = splitProps(props, ["class"]);
-  return <div class={cn("px-2 py-1.5 text-sm font-semibold", local.class)} {...others} />;
+  return <div class={cn("px-2.5 py-2 text-sm font-semibold", local.class)} {...others} />;
 }
 
 type SeparatorProps<T extends ValidComponent = "hr"> =
@@ -58,7 +58,7 @@ export function DropdownMenuSeparator<T extends ValidComponent = "hr">(
   const [local, others] = splitProps(props as SeparatorProps, ["class"]);
   return (
     <DropdownMenuPrimitive.Separator
-      class={cn("-mx-1 my-1 h-px border-none bg-muted", local.class)}
+      class={cn("-mx-1 my-1 h-px border-none bg-border", local.class)}
       {...others}
     />
   );

@@ -26,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
+import { IconPlus } from "~/components/ui/icons";
 import { Input, inputClass } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
@@ -94,8 +95,9 @@ function EquipmentPage() {
   return (
     <div class="mx-auto grid max-w-3xl grid-cols-1 gap-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <h1 class="text-2xl font-semibold">{m.equipment_title()}</h1>
+        <h1 class="page-title">{m.equipment_title()}</h1>
         <Button onClick={() => setDraft(emptyDraft())} data-testid="add-equipment">
+          <IconPlus />
           {m.equipment_add()}
         </Button>
       </div>
@@ -103,7 +105,7 @@ function EquipmentPage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            <h2 class="text-lg font-semibold">{m.equipment_inventory()}</h2>
+            <h2 class="section-title">{m.equipment_inventory()}</h2>
           </CardTitle>
         </CardHeader>
         <CardContent class="grid gap-4">
@@ -321,7 +323,7 @@ function Templates(props: {
     <Card>
       <CardHeader>
         <CardTitle>
-          <h2 class="text-lg font-semibold">{m.equipment_templates()}</h2>
+          <h2 class="section-title">{m.equipment_templates()}</h2>
         </CardTitle>
       </CardHeader>
       <CardContent class="grid gap-4">

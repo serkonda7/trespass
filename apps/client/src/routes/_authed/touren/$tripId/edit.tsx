@@ -100,7 +100,7 @@ function EditForm(props: { trip: SerializedTrip; principals: readonly PrincipalO
     <Card>
       <CardHeader>
         <CardTitle>
-          <h1 class="text-2xl font-semibold">{m.trips_edit()}</h1>
+          <h1 class="page-title">{m.trips_edit()}</h1>
         </CardTitle>
       </CardHeader>
       <CardContent>

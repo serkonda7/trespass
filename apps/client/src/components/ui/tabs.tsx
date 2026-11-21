@@ -14,10 +14,7 @@ export function TabsList<T extends ValidComponent = "div">(
   const [local, others] = splitProps(props as ListProps, ["class"]);
   return (
     <TabsPrimitive.List
-      class={cn(
-        "inline-flex h-11 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground",
-        local.class,
-      )}
+      class={cn("inline-flex h-11 items-stretch gap-1 border-b text-muted-foreground", local.class)}
       {...others}
     />
   );
@@ -33,7 +30,7 @@ export function TabsTrigger<T extends ValidComponent = "button">(
   return (
     <TabsPrimitive.Trigger
       class={cn(
-        "inline-flex h-9 items-center justify-center whitespace-nowrap rounded-sm px-3 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 data-[selected]:bg-background data-[selected]:text-foreground data-[selected]:shadow-sm",
+        "-mb-px inline-flex items-center justify-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-3 text-sm font-semibold transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 data-[selected]:border-primary data-[selected]:text-foreground",
         local.class,
       )}
       {...others}
@@ -51,7 +48,7 @@ export function TabsContent<T extends ValidComponent = "div">(
   return (
     <TabsPrimitive.Content
       class={cn(
-        "mt-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "mt-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         local.class,
       )}
       {...others}

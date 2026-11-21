@@ -1,4 +1,5 @@
 import { fileURLToPath } from "node:url";
+import { tablerIcons } from "@serkonda7/solid-components/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/solid-start/plugin/vite";
 import { nitro } from "nitro/vite";
@@ -11,6 +12,10 @@ const outDir = process.env.NITRO_OUTPUT_DIR;
 
 export default defineConfig({
   server: { port: 3000 },
+  // Fonts always ship as files: Vite would inline small subsets as data: URLs,
+  // which the CSP (font-src 'self') blocks. Set for every environment so the
+  // client and SSR builds emit the same stylesheet hash.
+  build: { assetsInlineLimit: (file) => (/\.woff2?$/.test(file) ? false : undefined) },
   resolve: { alias: { "~": fileURLToPath(new URL("./src", import.meta.url)) } },
   environments: {
     client: {
@@ -40,6 +45,11 @@ export default defineConfig({
     },
   },
   plugins: [
+    // Rewrites `import { IconX } from "@tabler/icons-solidjs"` to per-icon
+    // modules. Without it, dev loads all ~6000 icons through the barrel (the
+    // `solid` export condition serves unbundled source); it also keeps the
+    // build from parsing the barrel. Must run before vite-plugin-solid.
+    tablerIcons(),
     tailwindcss(),
     tanstackStart(),
     nitro({

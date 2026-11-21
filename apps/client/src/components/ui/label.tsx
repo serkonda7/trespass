@@ -7,7 +7,7 @@ export function Label(props: ComponentProps<"label">) {
     // biome-ignore lint/a11y/noLabelWithoutControl: callers pass `for`
     <label
       class={cn(
-        "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+        "text-sm font-semibold leading-none text-foreground/90 peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
         local.class,
       )}
       {...others}

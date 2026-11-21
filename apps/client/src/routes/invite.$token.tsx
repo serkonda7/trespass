@@ -4,6 +4,7 @@ import { acceptInviteFn, getInvite } from "@trespass/server/auth/invite-function
 import { errorCode, errorText } from "@trespass/shared/error-text";
 import { m } from "@trespass/shared/paraglide/messages";
 import { createSignal, Match, Show, Switch } from "solid-js";
+import { AuthLayout } from "~/components/layout/auth-layout";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
@@ -78,15 +79,15 @@ function InvitePage() {
   };
 
   return (
-    <main class="mx-auto flex min-h-dvh max-w-sm flex-col justify-center p-4">
-      <Card>
+    <AuthLayout>
+      <Card class="shadow-2xl shadow-black/40">
         <Switch>
           <Match when={valid()}>
             {(inv) => (
               <>
                 <CardHeader>
                   <CardTitle>
-                    <h1>{m.invite_title()}</h1>
+                    <h1 class="page-title text-2xl">{m.invite_title()}</h1>
                   </CardTitle>
                   <p class="text-sm text-muted-foreground">
                     {m.invite_intro({ role: roleLabel(inv().role) })}
@@ -160,7 +161,7 @@ function InvitePage() {
           <Match when={invite.data && !valid()}>
             <CardHeader>
               <CardTitle>
-                <h1>{m.invite_invalid_title()}</h1>
+                <h1 class="page-title text-2xl">{m.invite_invalid_title()}</h1>
               </CardTitle>
             </CardHeader>
             <CardContent class="grid gap-4">
@@ -172,6 +173,6 @@ function InvitePage() {
           </Match>
         </Switch>
       </Card>
-    </main>
+    </AuthLayout>
   );
 }

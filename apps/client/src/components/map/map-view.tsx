@@ -5,7 +5,9 @@
 import type { Point } from "@trespass/shared/geo/types";
 import type { LocationStatus } from "@trespass/shared/locations/types";
 import { createEffect, createSignal, type JSX, onCleanup, onMount } from "solid-js";
-import { statusColor } from "~/lib/locations/status";
+import { render } from "solid-js/web";
+import { CATEGORY_ICONS } from "~/components/locations/category-icon";
+import { STATUSES, statusColor, statusLabel } from "~/lib/locations/status";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 export type MapPoint = {
@@ -47,6 +49,38 @@ if (!import.meta.env.SSR) {
   });
 }
 
+/** Map accents (hex: MapLibre paint properties do not read CSS variables). */
+const ACCENT = "#f08a3e";
+const INK = "#141311";
+const PAPER = "#f3ede2";
+const AREA = "#b7a8ef";
+
+/**
+ * Registers every category icon as a map image ("cat-<name>"), drawn from the
+ * same Lucide icons the UI uses. Rendered to an SVG data URL (img-src data:
+ * is allowed) at 2x for crisp pins.
+ */
+async function addCategoryImages(m: MapInstance) {
+  await Promise.all(
+    Object.entries(CATEGORY_ICONS).map(async ([name, Icon]) => {
+      const id = `cat-${name}`;
+      if (m.hasImage(id)) return;
+      const host = document.createElement("div");
+      const dispose = render(() => <Icon size={26} color={INK} strokeWidth={2.2} />, host);
+      const svg = host.innerHTML;
+      dispose();
+      const img = new Image(26, 26);
+      img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+      try {
+        await img.decode();
+        if (!m.hasImage(id)) m.addImage(id, img, { pixelRatio: 2 });
+      } catch {
+        // An icon that fails to decode just leaves the plain dot.
+      }
+    }),
+  );
+}
+
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
 /** An approximate circle ring in degrees, for the fuzz-radius display only. */
@@ -83,6 +117,10 @@ export function MapView(props: {
   polygons?: readonly (readonly (readonly [number, number])[])[] | null;
   /** Link target of a pin's popup (default: the location page). */
   pinHref?: (id: string) => string;
+  /** Initial centre (and zoom) when nothing else positions the map. */
+  center?: { point: Point; zoom: number } | null;
+  /** Extra room when fitting, e.g. for controls floating over the map. */
+  fitPadding?: { top: number; bottom: number; left: number; right: number };
   /** Fit to this box whenever it changes (e.g. after the first data load). */
   fit?: MapBbox | null;
   class?: string;
@@ -96,6 +134,7 @@ export function MapView(props: {
   let longPressTimer: ReturnType<typeof setTimeout> | undefined;
   let longPressed = false;
   const [ready, setReady] = createSignal(false);
+  let pendingFit: MapBbox | null = null;
 
   const bboxOf = (m: MapInstance): MapBbox => {
     const b = m.getBounds();
@@ -122,14 +161,15 @@ export function MapView(props: {
     const m = new lib.Map({
       container,
       style: buildMapStyle(window.location.origin),
-      center: [10.5, 51],
-      zoom: 5,
+      center: props.center ? [props.center.point.lon, props.center.point.lat] : [10.5, 51],
+      zoom: props.center?.zoom ?? 5,
       attributionControl: { compact: true },
     });
     map = m;
     m.addControl(new lib.NavigationControl({ showCompass: false }), "top-right");
 
     m.on("load", () => {
+      void addCategoryImages(m);
       m.addSource("locations", {
         type: "geojson",
         data: { type: "FeatureCollection", features: (props.points ?? []).map(feature) },
@@ -143,8 +183,11 @@ export function MapView(props: {
         source: "locations",
         filter: ["has", "point_count"],
         paint: {
-          "circle-color": "#334155",
-          "circle-radius": ["step", ["get", "point_count"], 18, 10, 24, 50, 30],
+          "circle-color": INK,
+          "circle-opacity": 0.92,
+          "circle-stroke-color": ACCENT,
+          "circle-stroke-width": 2,
+          "circle-radius": ["step", ["get", "point_count"], 16, 10, 21, 50, 27],
         },
       });
       m.addLayer({
@@ -155,8 +198,9 @@ export function MapView(props: {
         layout: {
           "text-field": ["get", "point_count_abbreviated"],
           "text-size": 12,
-          "text-font": ["Noto Sans Regular"],
+          "text-font": ["Noto Sans Medium"],
         },
+        paint: { "text-color": PAPER },
       });
       m.addLayer({
         id: "location-pins",
@@ -167,14 +211,12 @@ export function MapView(props: {
           "circle-color": [
             "match",
             ["get", "status"],
-            ...(
-              ["idea", "researched", "planned", "sealed", "redeveloped", "demolished"] as const
-            ).flatMap((s) => [s, statusColor(s)]),
-            "#94a3b8",
+            ...STATUSES.flatMap((s) => [s, statusColor(s)]),
+            "#a3adb8",
           ] as never,
-          "circle-radius": 8,
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, 7, 10, 11],
           "circle-stroke-width": 2,
-          "circle-stroke-color": "#0f1216",
+          "circle-stroke-color": INK,
         },
       });
       m.addLayer({
@@ -182,13 +224,16 @@ export function MapView(props: {
         type: "symbol",
         source: "locations",
         filter: ["!", ["has", "point_count"]],
+        minzoom: 7,
         layout: {
-          "text-field": ["get", "icon"],
-          "text-size": 10,
-          "text-font": ["Noto Sans Regular"],
-          "text-allow-overlap": true,
-        },
-        paint: { "text-color": "#ffffff" },
+          "icon-image": [
+            "coalesce",
+            ["image", ["concat", "cat-", ["get", "icon"]]],
+            ["image", "cat-circle"],
+          ],
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
+        } as never,
       });
       m.addSource("fuzz", {
         type: "geojson",
@@ -198,13 +243,13 @@ export function MapView(props: {
         id: "fuzz-fill",
         type: "fill",
         source: "fuzz",
-        paint: { "fill-color": "#38bdf8", "fill-opacity": 0.12 },
+        paint: { "fill-color": ACCENT, "fill-opacity": 0.1 },
       });
       m.addLayer({
         id: "fuzz-line",
         type: "line",
         source: "fuzz",
-        paint: { "line-color": "#38bdf8", "line-dasharray": [2, 2], "line-width": 2 },
+        paint: { "line-color": ACCENT, "line-dasharray": [2, 2], "line-width": 1.5 },
       });
       m.addSource("areas", {
         type: "geojson",
@@ -216,7 +261,7 @@ export function MapView(props: {
           type: "fill",
           source: "areas",
           filter: ["==", ["geometry-type"], "Polygon"],
-          paint: { "fill-color": "#a855f7", "fill-opacity": 0.12 },
+          paint: { "fill-color": AREA, "fill-opacity": 0.12 },
         },
         "clusters",
       );
@@ -225,7 +270,7 @@ export function MapView(props: {
           id: "areas-line",
           type: "line",
           source: "areas",
-          paint: { "line-color": "#a855f7", "line-width": 2 },
+          paint: { "line-color": AREA, "line-width": 2 },
         },
         "clusters",
       );
@@ -238,12 +283,15 @@ export function MapView(props: {
           id: "route-line",
           type: "line",
           source: "route",
-          paint: { "line-color": "#f97316", "line-width": 3, "line-dasharray": [3, 1.5] },
+          paint: { "line-color": ACCENT, "line-width": 3, "line-dasharray": [3, 1.5] },
         },
         "clusters",
       );
       setReady(true);
-      const fit = props.fit;
+      // A fit requested before the map finished loading (the map page clears
+      // its `fit` right after the first data load) is applied now.
+      const fit = props.fit ?? pendingFit;
+      pendingFit = null;
       if (fit) fitBounds(fit);
     });
 
@@ -267,12 +315,21 @@ export function MapView(props: {
       longPressed = true; // a pin click is not a coordinate pick
       const coords = (f.geometry as { coordinates: unknown }).coordinates as [number, number];
       const content = document.createElement("div");
+      content.className = "grid gap-1";
       const a = document.createElement("a");
       const pinId = String(f.properties?.id ?? "");
       a.href = props.pinHref ? props.pinHref(pinId) : `/locations/${pinId}`;
-      a.className = "font-semibold text-primary underline underline-offset-4";
+      a.className = "text-[0.95rem] font-bold leading-tight hover:text-primary hover:underline";
       a.textContent = String(f.properties?.name ?? "");
       content.append(a);
+      const status = f.properties?.status as LocationStatus | undefined;
+      if (status) {
+        const tag = document.createElement("span");
+        tag.className = "font-mono text-[0.68rem] uppercase tracking-wide";
+        tag.style.color = statusColor(status);
+        tag.textContent = `● ${statusLabel(status)}`;
+        content.append(tag);
+      }
       new lib.Popup({ closeButton: false, maxWidth: "240px" })
         .setLngLat(coords)
         .setDOMContent(content)
@@ -320,7 +377,7 @@ export function MapView(props: {
         [bbox.minLon, bbox.minLat],
         [bbox.maxLon, bbox.maxLat],
       ],
-      { padding: 32, maxZoom: 13, duration: 0 },
+      { padding: props.fitPadding ?? 32, maxZoom: 13, duration: 0 },
     );
   };
 
@@ -404,13 +461,17 @@ export function MapView(props: {
       return;
     }
     if (!marker)
-      marker = new lib.Marker({ color: "#38bdf8" }).setLngLat([point.lon, point.lat]).addTo(map);
+      marker = new lib.Marker({ color: ACCENT }).setLngLat([point.lon, point.lat]).addTo(map);
     else marker.setLngLat([point.lon, point.lat]);
   });
 
   createEffect(() => {
     const fit = props.fit;
-    if (!ready() || !fit) return;
+    if (!fit) return;
+    if (!ready()) {
+      pendingFit = fit;
+      return;
+    }
     fitBounds(fit);
   });
 

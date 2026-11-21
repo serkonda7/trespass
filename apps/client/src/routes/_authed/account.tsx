@@ -23,8 +23,8 @@ export const Route = createFileRoute("/_authed/account")({
 
 function AccountPage() {
   return (
-    <div class="grid gap-4">
-      <h1 class="text-2xl font-semibold">{m.account_title()}</h1>
+    <div class="mx-auto grid w-full max-w-3xl gap-5">
+      <h1 class="page-title">{m.account_title()}</h1>
       <ProfileCard />
       <PasswordCard />
       <PasskeysCard />

@@ -12,8 +12,9 @@ import { CommentThread } from "~/components/comments/comment-thread";
 import { ConfirmButton } from "~/components/confirm-dialog";
 import { VisitPhotoThumbs } from "~/components/photos/visit-photos";
 import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
+import { Button, buttonVariants } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
+import { IconMessage, IconPencil, IconTrash, IconUsers } from "~/components/ui/icons";
 import { runAction } from "~/lib/run-action";
 import { conditionBadges } from "~/lib/visits/labels";
 
@@ -45,30 +46,33 @@ export function VisitCard(props: {
 
   return (
     <Card data-testid="visit-card">
-      <CardContent class="grid gap-2 pt-4">
-        <div class="flex flex-wrap items-center gap-2">
-          <strong>{formatIsoDay(props.visit.visitedOn)}</strong>
-          <Show when={differentZone()}>
-            <Badge variant="secondary">{m.visits_local_time()}</Badge>
-          </Show>
+      <CardContent class="grid gap-3 pt-4">
+        <div class="grid gap-1.5">
+          <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span class="kicker text-foreground">{formatIsoDay(props.visit.visitedOn)}</span>
+            <Show when={differentZone()}>
+              <Badge variant="outline">{m.visits_local_time()}</Badge>
+            </Show>
+            <span class="kicker">
+              {m.logbook_by({ name: props.visit.authorName || m.visit_location_unknown() })}
+            </span>
+          </div>
           <Show when={props.showLocation && props.visit.location}>
             {(loc) => (
               <Link
                 to="/locations/$locationId"
                 params={{ locationId: loc().id }}
-                class="text-primary underline underline-offset-4"
+                class="section-title text-xl hover:text-primary hover:underline"
               >
                 {loc().name}
               </Link>
             )}
           </Show>
-          <span class="text-sm text-muted-foreground">
-            {m.logbook_by({ name: props.visit.authorName || m.visit_location_unknown() })}
-          </span>
         </div>
 
         <Show when={props.visit.people.length > 0}>
-          <p class="text-sm">
+          <p class="flex items-start gap-2 text-sm text-muted-foreground">
+            <IconUsers class="mt-0.5 size-4 shrink-0" />
             {m.visits_with_people({
               names: props.visit.people.map((p) => p.displayName).join(", "),
             })}
@@ -97,42 +101,46 @@ export function VisitCard(props: {
           />
         </Show>
 
-        <div>
+        <div class="-mx-2 flex flex-wrap items-center gap-1 border-t pt-2">
           <Button
             variant="ghost"
             size="sm"
             aria-expanded={comments()}
             onClick={() => setComments(!comments())}
           >
+            <IconMessage />
             {comments() ? m.comments_hide() : m.comments_show()}
           </Button>
-          <Show when={comments()}>
-            <CommentThread target={{ kind: "visit", id: props.visit.id }} shared />
+          <Show when={props.visit.permissions.canEdit || props.visit.permissions.canDelete}>
+            <span class="ml-auto flex flex-wrap gap-1">
+              <Show when={props.visit.permissions.canEdit}>
+                <Link
+                  to="/visits/$visitId/edit"
+                  params={{ visitId: props.visit.id }}
+                  class={buttonVariants({ variant: "ghost", size: "sm" })}
+                >
+                  <IconPencil />
+                  {m.visits_edit()}
+                </Link>
+              </Show>
+              <Show when={props.visit.permissions.canDelete}>
+                <ConfirmButton
+                  label={m.visits_delete()}
+                  question={m.visits_delete_confirm()}
+                  confirmLabel={m.visits_delete()}
+                  destructive
+                  variant="ghost"
+                  onConfirm={onDelete}
+                >
+                  <IconTrash class="text-destructive" />
+                  {m.visits_delete()}
+                </ConfirmButton>
+              </Show>
+            </span>
           </Show>
         </div>
-
-        <Show when={props.visit.permissions.canEdit || props.visit.permissions.canDelete}>
-          <div class="flex flex-wrap gap-2">
-            <Show when={props.visit.permissions.canEdit}>
-              <Link
-                to="/visits/$visitId/edit"
-                params={{ visitId: props.visit.id }}
-                class="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent"
-              >
-                {m.visits_edit()}
-              </Link>
-            </Show>
-            <Show when={props.visit.permissions.canDelete}>
-              <ConfirmButton
-                label={m.visits_delete()}
-                question={m.visits_delete_confirm()}
-                confirmLabel={m.visits_delete()}
-                destructive
-                variant="destructive"
-                onConfirm={onDelete}
-              />
-            </Show>
-          </div>
+        <Show when={comments()}>
+          <CommentThread target={{ kind: "visit", id: props.visit.id }} shared />
         </Show>
       </CardContent>
     </Card>

@@ -80,7 +80,7 @@ function NewVisitPage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            <h1 class="text-2xl font-semibold">{m.visit_new_title()}</h1>
+            <h1 class="page-title">{m.visit_new_title()}</h1>
           </CardTitle>
           <Show when={location.data}>
             {(data) => (

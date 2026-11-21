@@ -117,7 +117,7 @@ function EditForm(props: {
     <Card>
       <CardHeader>
         <CardTitle>
-          <h1 class="text-2xl font-semibold">{m.visit_edit_title()}</h1>
+          <h1 class="page-title">{m.visit_edit_title()}</h1>
         </CardTitle>
       </CardHeader>
       <CardContent>

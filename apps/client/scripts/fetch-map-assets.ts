@@ -28,7 +28,7 @@ const RANGES = [
   "4096-4351",
   "8192-8447",
 ];
-const SPRITES = ["light.json", "light.png", "light@2x.json", "light@2x.png"];
+const SPRITES = ["dark.json", "dark.png", "dark@2x.json", "dark@2x.png"];
 
 function keep(path: string): boolean {
   return existsSync(path) && statSync(path).size > 0;

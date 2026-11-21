@@ -1,8 +1,8 @@
-import { createFileRoute, Link, notFound, Outlet, useLocation } from "@tanstack/solid-router";
+import { createFileRoute, notFound, Outlet, useLocation } from "@tanstack/solid-router";
 import { can } from "@trespass/shared/app-actions";
 import { m } from "@trespass/shared/paraglide/messages";
-import { For } from "solid-js";
-import { cn } from "~/lib/cn";
+import { PageHeader } from "~/components/layout/page-header";
+import { SectionNav } from "~/components/layout/section-nav";
 
 // Research (DESIGN §6, §11): admin only, because it reveals which areas the
 // admin is interested in. Everyone else gets a 404; the server functions
@@ -28,33 +28,13 @@ function ResearchLayout() {
     return t.exact ? path === t.to : path.startsWith(t.to);
   };
   return (
-    <div class="grid gap-4">
-      <div class="grid gap-1">
-        <h1 class="text-2xl font-semibold">{m.research_title()}</h1>
-        <p class="text-sm text-muted-foreground">{m.research_intro()}</p>
-      </div>
-      <nav aria-label={m.research_tabs()} class="-mx-4 overflow-x-auto px-4">
-        <ul class="flex gap-1 border-b">
-          <For each={TABS}>
-            {(t) => (
-              <li>
-                <Link
-                  to={t.to}
-                  class={cn(
-                    "-mb-px inline-flex h-11 items-center whitespace-nowrap border-b-2 px-3 text-sm font-medium",
-                    active(t)
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground",
-                  )}
-                  aria-current={active(t) ? "page" : undefined}
-                >
-                  {t.label()}
-                </Link>
-              </li>
-            )}
-          </For>
-        </ul>
-      </nav>
+    <div class="mx-auto grid w-full max-w-5xl gap-5">
+      <PageHeader title={m.research_title()} description={m.research_intro()} />
+      <SectionNav
+        label={m.research_tabs()}
+        items={TABS}
+        isActive={(to) => active(TABS.find((t) => t.to === to)!)}
+      />
       <Outlet />
     </div>
   );

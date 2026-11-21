@@ -31,15 +31,16 @@ const LABELS: Record<LocationStatus, () => string> = {
   demolished: m.location_status_demolished,
 };
 
-// Dark-map friendly, WCAG-AA-distinguishable fills.
+// Dark-map friendly fills, distinguishable from each other and from the
+// orange app accent; all reach WCAG AA against the dark surfaces.
 const COLORS: Record<LocationStatus, string> = {
-  idea: "#a78bfa",
-  researched: "#38bdf8",
-  planned: "#fbbf24",
-  visited: "#22d3ee",
-  sealed: "#f97316",
-  redeveloped: "#34d399",
-  demolished: "#ef4444",
+  idea: "#b7a8ef",
+  researched: "#6cb8e0",
+  planned: "#f0c449",
+  visited: "#6fcf8e",
+  sealed: "#ec8fb0",
+  redeveloped: "#a3adb8",
+  demolished: "#f0675a",
 };
 
 const LEVEL_LABELS = {

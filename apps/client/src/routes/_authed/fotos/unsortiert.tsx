@@ -6,7 +6,7 @@ export const Route = createFileRoute("/_authed/fotos/unsortiert")({
   head: () => ({ meta: [{ title: `${m.photos_unsorted()} · ${m.app_name()}` }] }),
   component: () => (
     <div class="mx-auto grid max-w-3xl gap-4">
-      <h1 class="text-2xl font-semibold">{m.photos_unsorted()}</h1>
+      <h1 class="page-title">{m.photos_unsorted()}</h1>
       <UnsortedPhotos />
     </div>
   ),

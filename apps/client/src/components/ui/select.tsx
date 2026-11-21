@@ -1,6 +1,7 @@
 import type { PolymorphicProps } from "@kobalte/core/polymorphic";
 import * as SelectPrimitive from "@kobalte/core/select";
 import { type JSX, splitProps, type ValidComponent } from "solid-js";
+import { IconCheck, IconChevronDown } from "~/components/ui/icons";
 import { cn } from "~/lib/cn";
 
 /**
@@ -26,14 +27,14 @@ export function SelectTrigger<T extends ValidComponent = "button">(
   return (
     <SelectPrimitive.Trigger
       class={cn(
-        "flex h-11 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        "flex h-11 w-full items-center justify-between rounded-md border border-input/70 bg-background px-3 py-2 text-base hover:border-input focus:outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50",
         local.class,
       )}
       {...others}
     >
       {local.children}
       <SelectPrimitive.Icon class="ml-2 opacity-60" aria-hidden="true">
-        ▾
+        <IconChevronDown class="size-4" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   );
@@ -51,7 +52,7 @@ export function SelectContent<T extends ValidComponent = "div">(
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
         class={cn(
-          "tr-animate-fade relative z-50 min-w-32 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md",
+          "tr-animate-fade relative z-50 min-w-32 overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-xl shadow-black/40",
           local.class,
         )}
         {...others}
@@ -80,7 +81,7 @@ export function SelectItem<T extends ValidComponent = "li">(
       {...others}
     >
       <SelectPrimitive.ItemIndicator class="absolute right-2 flex size-4 items-center justify-center">
-        ✓
+        <IconCheck class="size-4 text-primary" aria-hidden="true" />
       </SelectPrimitive.ItemIndicator>
       <SelectPrimitive.ItemLabel>{local.children}</SelectPrimitive.ItemLabel>
     </SelectPrimitive.Item>

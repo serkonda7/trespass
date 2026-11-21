@@ -1,32 +1,42 @@
 @import "tailwindcss";
+/* Self-hosted variable fonts (font-src 'self'): Archivo with its width axis for
+   condensed headings, JetBrains Mono for coordinates, dates and counts. */
+@import "@fontsource-variable/archivo/wdth.css";
+@import "@fontsource-variable/jetbrains-mono/wght.css";
 
-/* Design tokens (shadcn-style). Dark only; WCAG AA contrast. */
+/* Design tokens: "field notebook". Warm, low-glare darks (concrete in shadow),
+   paper-coloured text and a hi-vis orange accent. Dark only; WCAG AA contrast. */
 :root {
   color-scheme: dark;
-  --background: oklch(0.17 0.01 260);
-  --foreground: oklch(0.88 0.005 260);
-  --muted: oklch(0.24 0.012 260);
-  --muted-foreground: oklch(0.72 0.015 260);
-  --card: oklch(0.21 0.012 260);
+  --background: oklch(0.165 0.006 70);
+  --foreground: oklch(0.92 0.014 85);
+  --muted: oklch(0.235 0.008 70);
+  --muted-foreground: oklch(0.74 0.018 75);
+  --card: oklch(0.2 0.007 70);
   --card-foreground: var(--foreground);
-  --popover: oklch(0.23 0.012 260);
+  --popover: oklch(0.225 0.008 70);
   --popover-foreground: var(--foreground);
-  --primary: oklch(0.72 0.12 250);
-  --primary-foreground: oklch(0.17 0.02 260);
-  --secondary: oklch(0.28 0.012 260);
+  --primary: oklch(0.74 0.16 52);
+  --primary-foreground: oklch(0.18 0.03 50);
+  --secondary: oklch(0.275 0.009 70);
   --secondary-foreground: var(--foreground);
-  --accent: oklch(0.3 0.03 250);
+  --accent: oklch(0.27 0.012 65);
   --accent-foreground: var(--foreground);
-  --destructive: oklch(0.7 0.14 25);
-  --destructive-foreground: oklch(0.17 0.02 25);
-  --success: oklch(0.74 0.14 150);
-  --border: oklch(0.31 0.012 260);
-  --input: oklch(0.5 0.012 260);
-  --ring: oklch(0.72 0.13 250);
-  --radius: 0.5rem;
+  --destructive: oklch(0.7 0.17 27);
+  --destructive-foreground: oklch(0.17 0.03 27);
+  --success: oklch(0.76 0.13 150);
+  --warning: oklch(0.83 0.14 85);
+  --border: oklch(0.3 0.009 70);
+  --input: oklch(0.48 0.012 70);
+  --ring: oklch(0.78 0.15 55);
+  --radius: 0.375rem;
+  --header-h: 3.5rem;
+  --tabbar-h: 4rem;
 }
 
 @theme inline {
+  --font-sans: "Archivo Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", Menlo, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
@@ -44,13 +54,14 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 6px);
 }
 
 @layer base {
@@ -59,12 +70,196 @@
     /* Tailwind's ring offset defaults to white; match the dark page instead. */
     --tw-ring-offset-color: var(--color-background);
   }
+  html {
+    font-family: var(--font-sans);
+    font-stretch: 100%;
+  }
   body {
     background: var(--color-background);
     color: var(--color-foreground);
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     -webkit-tap-highlight-color: transparent;
+    font-feature-settings: "ss01";
   }
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+  }
+  ::selection {
+    background: color-mix(in oklch, var(--primary) 40%, transparent);
+  }
+  a {
+    text-underline-offset: 3px;
+  }
+}
+
+/* Typography roles. Condensed, heavy display face for titles; a small mono
+   kicker above them for the "label maker" feel. */
+@utility page-title {
+  font-size: 1.75rem;
+  line-height: 1.1;
+  font-weight: 750;
+  font-stretch: 78%;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+@utility section-title {
+  font-size: 1.125rem;
+  line-height: 1.25;
+  font-weight: 700;
+  font-stretch: 85%;
+}
+@utility kicker {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted-foreground);
+}
+@utility condensed {
+  font-stretch: 82%;
+}
+/* A faint survey grid behind empty states and the map placeholder. */
+@utility grid-paper {
+  background-color: var(--color-card);
+  background-image:
+    linear-gradient(color-mix(in oklch, var(--foreground) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(
+      90deg,
+      color-mix(in oklch, var(--foreground) 5%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 24px 24px;
+}
+
+/* Rendered, server-sanitized Markdown (journal, history, comments, reports).
+   No typography plugin: a small hand-written set in the app's voice. */
+.prose {
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.prose > * + * {
+  margin-top: 0.75em;
+}
+.prose :is(h1, h2, h3, h4) {
+  font-weight: 750;
+  font-stretch: 85%;
+  line-height: 1.25;
+  margin-top: 1.25em;
+}
+.prose h1 {
+  font-size: 1.35em;
+}
+.prose h2 {
+  font-size: 1.2em;
+}
+.prose :is(h3, h4) {
+  font-size: 1.05em;
+}
+.prose a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+.prose :is(ul, ol) {
+  padding-left: 1.25em;
+}
+.prose ul {
+  list-style: square;
+}
+.prose ol {
+  list-style: decimal;
+}
+.prose li::marker {
+  color: var(--muted-foreground);
+}
+.prose blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 0.875em;
+  color: var(--muted-foreground);
+}
+.prose code {
+  background: var(--muted);
+  border-radius: var(--radius-sm);
+  padding: 0.1em 0.3em;
+}
+.prose pre {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.75em;
+  overflow-x: auto;
+}
+.prose pre code {
+  background: none;
+  padding: 0;
+}
+.prose hr {
+  border-color: var(--border);
+}
+.prose img {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+.prose strong {
+  font-weight: 700;
+  color: var(--foreground);
+}
+.prose-sm {
+  font-size: 0.9375rem;
+}
+
+/* MapLibre controls and popups in the app's palette. Prefixed with
+   .maplibregl-map so they outrank MapLibre's own stylesheet (no !important). */
+.maplibregl-map .maplibregl-ctrl-group:not(:empty) {
+  background: var(--popover);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.35);
+}
+.maplibregl-map .maplibregl-ctrl-group button + button {
+  border-top-color: var(--border);
+}
+.maplibregl-map .maplibregl-ctrl-group button .maplibregl-ctrl-icon,
+.maplibregl-map .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button {
+  filter: invert(0.9);
+}
+.maplibregl-map .maplibregl-ctrl.maplibregl-ctrl-attrib {
+  background: color-mix(in oklch, var(--background) 85%, transparent);
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.maplibregl-map .maplibregl-ctrl.maplibregl-ctrl-attrib a {
+  color: var(--muted-foreground);
+}
+.maplibregl-map .maplibregl-popup .maplibregl-popup-content {
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0.625rem 0.75rem;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.45);
+}
+.maplibregl-map .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.maplibregl-map .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.maplibregl-map .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--popover);
+}
+.maplibregl-map .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.maplibregl-map .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.maplibregl-map .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--popover);
+}
+.maplibregl-map .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--popover);
+}
+.maplibregl-map .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--popover);
+}
+.maplibregl-map {
+  font-family: var(--font-sans);
 }
 
 /* Kobalte exposes open/closed state via data attributes; keep transitions subtle. */
@@ -132,4 +327,14 @@
     transform: none;
     animation: tr-fade-in 1ms linear 120ms forwards;
   }
+}
+
+/* Map page: the floating search bar covers the top-right on phones. */
+@media (max-width: 767px) {
+  .tr-map-page .maplibregl-ctrl-top-right {
+    top: 3.75rem;
+  }
+}
+.tr-map-page .maplibregl-ctrl-bottom-right {
+  bottom: 0;
 }

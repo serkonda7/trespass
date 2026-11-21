@@ -109,7 +109,7 @@ function EditForm(props: { location: SerializedLocation; categories: readonly Ca
     <Card>
       <CardHeader>
         <CardTitle>
-          <h1 class="text-2xl font-semibold">{m.location_edit_title()}</h1>
+          <h1 class="page-title">{m.location_edit_title()}</h1>
         </CardTitle>
       </CardHeader>
       <CardContent class="grid gap-4">

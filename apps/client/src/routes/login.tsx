@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/solid-router";
 import { m } from "@trespass/shared/paraglide/messages";
 import { createSignal, Show } from "solid-js";
 import { z } from "zod";
+import { AuthLayout } from "~/components/layout/auth-layout";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
@@ -60,11 +61,11 @@ function LoginPage() {
   }
 
   return (
-    <main class="mx-auto flex min-h-dvh max-w-sm flex-col justify-center p-4">
-      <Card>
+    <AuthLayout>
+      <Card class="shadow-2xl shadow-black/40">
         <CardHeader>
           <CardTitle>
-            <h1>{m.login_title()}</h1>
+            <h1 class="page-title text-2xl">{m.login_title()}</h1>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -109,6 +110,6 @@ function LoginPage() {
           </Button>
         </CardContent>
       </Card>
-    </main>
+    </AuthLayout>
   );
 }

@@ -8,7 +8,9 @@ import { m } from "@trespass/shared/paraglide/messages";
 import type { TimelineEntry } from "@trespass/shared/visits/types";
 import { createSignal, For, Match, Show, Switch } from "solid-js";
 import { HistoryCard } from "~/components/history/history-section";
-import { Card, CardContent } from "~/components/ui/card";
+import { EmptyState } from "~/components/layout/page-header";
+import { buttonVariants } from "~/components/ui/button";
+import { IconPlus } from "~/components/ui/icons";
 import { statusLabel } from "~/lib/locations/status";
 import { locationTimelineQuery } from "~/lib/visits/queries";
 import { VisitCard } from "./visit-card";
@@ -24,25 +26,31 @@ export function LocationTimeline(props: { locationId: string; tz: string; canAdd
           <Link
             to="/visits/new"
             search={{ location: props.locationId }}
-            class="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            class={buttonVariants()}
             data-testid="add-visit"
           >
+            <IconPlus />
             {m.visits_add()}
           </Link>
         </div>
       </Show>
-      <Show
-        when={timeline.data?.length}
-        fallback={
-          <Card>
-            <CardContent class="pt-4">{m.visits_empty()}</CardContent>
-          </Card>
-        }
-      >
-        <ol class="grid gap-3" data-reload={reload()}>
+      <Show when={timeline.data?.length} fallback={<EmptyState>{m.visits_empty()}</EmptyState>}>
+        {/* A survey line down the left with a marker per entry. */}
+        <ol
+          class="relative grid gap-4 pl-6 before:absolute before:bottom-2 before:left-[0.4375rem] before:top-2 before:w-px before:bg-border"
+          data-reload={reload()}
+        >
           <For each={timeline.data ?? []}>
             {(entry) => (
-              <li>
+              <li class="relative">
+                <span
+                  class={
+                    entry.kind === "visit"
+                      ? "absolute -left-6 top-5 size-3.5 rounded-full border-2 border-background bg-primary"
+                      : "absolute -left-[1.3rem] top-5 size-2 rounded-full bg-muted-foreground"
+                  }
+                  aria-hidden="true"
+                />
                 <TimelineItem
                   entry={entry}
                   tz={props.tz}
@@ -76,18 +84,19 @@ function TimelineItem(props: { entry: TimelineEntry; tz: string; onChanged: () =
         {(() => {
           const entry = props.entry as Extract<TimelineEntry, { kind: "status" }>;
           return (
-            <Card data-testid="status-change">
-              <CardContent class="flex flex-wrap items-center gap-2 pt-4 text-sm">
-                <strong>{formatIsoDay(entry.date)}</strong>
-                <span>{m.visits_status_change()}</span>
-                <span>
-                  {m.logbook_status_change({
-                    from: statusLabelSafe(entry.from),
-                    to: statusLabelSafe(entry.to),
-                  })}
-                </span>
-              </CardContent>
-            </Card>
+            <div
+              class="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-dashed px-4 py-3 text-sm"
+              data-testid="status-change"
+            >
+              <span class="kicker text-foreground">{formatIsoDay(entry.date)}</span>
+              <span class="text-muted-foreground">{m.visits_status_change()}</span>
+              <span>
+                {m.logbook_status_change({
+                  from: statusLabelSafe(entry.from),
+                  to: statusLabelSafe(entry.to),
+                })}
+              </span>
+            </div>
           );
         })()}
       </Match>

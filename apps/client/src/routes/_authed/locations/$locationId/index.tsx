@@ -8,17 +8,20 @@ import { parseLocationsError } from "@trespass/shared/locations/errors";
 import type { SerializedLocation } from "@trespass/shared/locations/types";
 import { m } from "@trespass/shared/paraglide/messages";
 import { photoUrl } from "@trespass/shared/photos/rules";
-import { createSignal, For, onCleanup, onMount, Show } from "solid-js";
+import { createSignal, For, type JSX, onCleanup, onMount, Show } from "solid-js";
 import { CommentThread } from "~/components/comments/comment-thread";
 import { ConfirmButton } from "~/components/confirm-dialog";
 import { HistorySection } from "~/components/history/history-section";
+import { EmptyState } from "~/components/layout/page-header";
+import { CategoryIcon } from "~/components/locations/category-icon";
 import { LocationSharing } from "~/components/locations/location-sharing";
+import { StatusBadge } from "~/components/locations/status-badge";
 import { MapView } from "~/components/map/map-view";
 import { PhotoSection } from "~/components/photos/photo-section";
 import { AddToTripDialog } from "~/components/trips/add-to-trip";
 import { Badge } from "~/components/ui/badge";
 import { Button, buttonVariants } from "~/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { Card, CardContent } from "~/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -27,14 +30,27 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
+import {
+  IconAlertTriangle,
+  IconArrowsMove,
+  IconCar,
+  IconCopy,
+  IconExternalLink,
+  IconKey,
+  IconPencil,
+  IconRoute,
+  IconShare,
+  IconTelescope,
+  IconTrash,
+} from "~/components/ui/icons";
 import { Input, inputClass } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { showToast } from "~/components/ui/toast";
 import { LocationTimeline } from "~/components/visits/location-timeline";
 import { settingsQuery } from "~/lib/admin-queries";
+import { cn } from "~/lib/cn";
 import { locationQuery } from "~/lib/locations/queries";
-import { statusColor, statusLabel } from "~/lib/locations/status";
 import { runAction } from "~/lib/run-action";
 
 export const Route = createFileRoute("/_authed/locations/$locationId/")({
@@ -47,18 +63,12 @@ export const Route = createFileRoute("/_authed/locations/$locationId/")({
       throw err;
     }),
   notFoundComponent: () => (
-    <Card class="mx-auto max-w-lg">
-      <CardHeader>
-        <CardTitle>
-          <h1 class="text-2xl font-semibold">{m.locations_error_not_found()}</h1>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Link to="/" class="text-primary underline underline-offset-4">
-          {m.error_back_home()}
-        </Link>
-      </CardContent>
-    </Card>
+    <EmptyState class="mx-auto max-w-lg">
+      <h1 class="section-title mb-2 text-foreground">{m.locations_error_not_found()}</h1>
+      <Link to="/" class="text-primary underline underline-offset-4">
+        {m.error_back_home()}
+      </Link>
+    </EmptyState>
   ),
   head: () => ({ meta: [{ title: `${m.nav_map()} · ${m.app_name()}` }] }),
   component: LocationPage,
@@ -81,7 +91,10 @@ function LocationPage() {
   const ctx = Route.useRouteContext();
   const q = useQuery(() => locationQuery(params().locationId));
   return (
-    <Show when={q.data} fallback={<Card class="mx-auto max-w-lg p-6">{m.common_loading()}</Card>}>
+    <Show
+      when={q.data}
+      fallback={<EmptyState class="mx-auto max-w-lg">{m.common_loading()}</EmptyState>}
+    >
       {(data) => (
         <LocationView
           location={data().location}
@@ -154,74 +167,162 @@ function LocationView(props: {
     showToast({ title: m.location_copied(), variant: "success" });
   };
 
+  const mapPreview = (cls: string) => (
+    <div class={cls}>
+      <MapView
+        points={[
+          {
+            id: loc().id,
+            name: loc().name,
+            status: loc().status,
+            categoryIcon: loc().category?.icon ?? "",
+            exact: exact(),
+            lat: loc().point.lat,
+            lon: loc().point.lon,
+          },
+        ]}
+        marker={loc().point}
+        center={{ point: loc().point, zoom: exact() ? 13 : 11 }}
+        circle={
+          exact() || !loc().fuzzRadiusM
+            ? null
+            : {
+                point: loc().point,
+                radiusM: loc().fuzzRadiusM ?? settings.data?.defaultFuzzM ?? 1500,
+              }
+        }
+        label={loc().name}
+        class="size-full"
+      />
+    </div>
+  );
+
+  /** Toolbar button: icon always, text from `sm` (still the accessible name). */
+  const toolLabel = (text: string) => <span class="sr-only sm:not-sr-only">{text}</span>;
+
   return (
-    <div class="mx-auto grid max-w-3xl gap-4">
-      <Card>
-        <CardHeader>
-          <div class="flex flex-wrap items-center gap-2">
-            <CardTitle>
-              <h1 class="text-2xl font-semibold">{loc().name}</h1>
-            </CardTitle>
-            <Badge style={{ "background-color": statusColor(loc().status), color: "#0f1216" }}>
-              {statusLabel(loc().status)}
-            </Badge>
-            <Show when={!exact()}>
-              <Badge variant="secondary">{m.location_approximate()}</Badge>
-            </Show>
-          </div>
-          <p class="text-sm text-muted-foreground">
-            {[loc().category?.name, loc().country, loc().adminArea].filter(Boolean).join(" · ")}
-            <Show when={localTime()}> · {m.location_local_time({ time: localTime()! })}</Show>
-          </p>
-          <Show when={loc().coverPhotoId}>
-            {(id) => (
+    <div class="mx-auto grid w-full max-w-4xl gap-5">
+      <section class="overflow-hidden rounded-xl border bg-card" aria-labelledby="location-title">
+        <Show when={loc().coverPhotoId} fallback={mapPreview("grid-paper h-56 border-b sm:h-72")}>
+          {(id) => (
+            <div class="relative h-56 border-b sm:h-80">
               <img
                 src={photoUrl(id(), 1600)}
                 alt={m.photos_cover()}
-                class="max-h-64 w-full rounded-md object-cover"
+                class="size-full object-cover"
                 data-testid="location-cover-photo"
               />
-            )}
-          </Show>
-        </CardHeader>
-        <CardContent class="grid gap-4">
-          <div class="h-64 overflow-hidden rounded-md border">
-            <MapView
-              points={[
-                {
-                  id: loc().id,
-                  name: loc().name,
-                  status: loc().status,
-                  categoryIcon: loc().category?.icon ?? "",
-                  exact: exact(),
-                  lat: loc().point.lat,
-                  lon: loc().point.lon,
-                },
-              ]}
-              marker={loc().point}
-              circle={
-                exact() || !loc().fuzzRadiusM
-                  ? null
-                  : {
-                      point: loc().point,
-                      radiusM: loc().fuzzRadiusM ?? settings.data?.defaultFuzzM ?? 1500,
-                    }
-              }
-              label={loc().name}
-              class="size-full"
-            />
+              <div
+                class="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-card to-transparent"
+                aria-hidden="true"
+              />
+            </div>
+          )}
+        </Show>
+        <div class="grid gap-3 p-4 sm:p-5">
+          <p class="kicker flex flex-wrap items-center gap-x-2 gap-y-1">
+            <CategoryIcon name={loc().category?.icon} class="size-3.5 text-primary" />
+            <For each={[loc().category?.name, loc().country, loc().adminArea].filter(Boolean)}>
+              {(part, i) => (
+                <>
+                  <Show when={i() > 0}>
+                    <span aria-hidden="true">·</span>
+                  </Show>
+                  <span>{part}</span>
+                </>
+              )}
+            </For>
+            <Show when={localTime()}>
+              <span aria-hidden="true">·</span>
+              <span>{m.location_local_time({ time: localTime()! })}</span>
+            </Show>
+          </p>
+          <h1 id="location-title" class="page-title text-3xl sm:text-4xl">
+            {loc().name}
+          </h1>
+          <div class="flex flex-wrap items-center gap-2">
+            <StatusBadge status={loc().status} />
+            <Show when={!exact()}>
+              <Badge variant="outline">≈ {m.location_approximate()}</Badge>
+            </Show>
           </div>
-          <Show when={!exact()}>
-            <p class="rounded-md border border-accent p-3 text-sm">
-              <strong>{m.location_approximate()}</strong> — {m.location_approximate_hint()}
-            </p>
-          </Show>
-        </CardContent>
-      </Card>
+
+          <section
+            class="mt-1 flex flex-wrap items-center gap-2 border-t pt-4 [&>button]:flex-1 sm:[&>button]:flex-none"
+            aria-label={m.location_details()}
+          >
+            <Show when={can({ role: props.role }, "createTrip")}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setTripOpen(true)}
+                data-testid="add-to-trip"
+              >
+                <IconRoute />
+                {m.trips_add_to()}
+              </Button>
+            </Show>
+            <Show when={can({ role: props.role }, "research")}>
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="start-research"
+                onClick={() =>
+                  void runAction(() => startEnrichFn({ data: { locationId: loc().id } }), {
+                    success: m.research_started(),
+                  })
+                }
+              >
+                <IconTelescope />
+                {m.research_start()}
+              </Button>
+            </Show>
+            <div class="grid w-full auto-cols-fr grid-flow-col gap-2 empty:hidden sm:ml-auto sm:flex sm:w-auto">
+              <Show when={loc().permissions.canEdit}>
+                <Link
+                  to="/locations/$locationId/edit"
+                  params={{ locationId: loc().id }}
+                  class={buttonVariants({ variant: "outline", size: "sm" })}
+                >
+                  <IconPencil />
+                  {toolLabel(m.location_action_edit())}
+                </Link>
+                <Button variant="outline" size="sm" onClick={() => setMoveOpen(true)}>
+                  <IconArrowsMove />
+                  {toolLabel(m.location_action_move())}
+                </Button>
+              </Show>
+              <Show when={loc().permissions.canManage}>
+                <Button variant="outline" size="sm" onClick={() => setShareOpen(true)}>
+                  <IconShare />
+                  {toolLabel(m.location_action_share())}
+                </Button>
+                <ConfirmButton
+                  label={m.location_action_delete()}
+                  question={m.location_delete_confirm()}
+                  confirmLabel={m.location_action_delete()}
+                  destructive
+                  variant="destructive"
+                  onConfirm={onDelete}
+                >
+                  <IconTrash />
+                  {toolLabel(m.location_action_delete())}
+                </ConfirmButton>
+              </Show>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <Show when={!exact()}>
+        <Callout tone="info">
+          <strong>{m.location_approximate()}</strong> — {m.location_approximate_hint()}
+        </Callout>
+      </Show>
 
       {/* min-w-0: the grid item must not grow to the tab list's width on phones. */}
       <Tabs defaultValue="overview" class="min-w-0">
-        <TabsList class="flex w-full justify-start overflow-x-auto">
+        <TabsList class="flex w-full justify-start overflow-x-auto [scrollbar-width:none]">
           <TabsTrigger value="overview">{m.location_tab_overview()}</TabsTrigger>
           <TabsTrigger value="visits">{m.location_tab_visits()}</TabsTrigger>
           <TabsTrigger value="photos">{m.location_tab_photos()}</TabsTrigger>
@@ -229,75 +330,101 @@ function LocationView(props: {
           <TabsTrigger value="comments">{m.location_tab_comments()}</TabsTrigger>
         </TabsList>
         <TabsContent value="overview">
-          <Card>
-            <CardContent class="grid gap-4 pt-4">
-              <p class="whitespace-pre-wrap">
-                {loc().description || m.location_description_empty()}
-              </p>
-              <Show when={exact()}>
-                <dl class="grid gap-3 sm:grid-cols-2">
-                  <Show when={loc().accessNotes}>
-                    <div>
-                      <dt class="font-semibold">{m.location_access_notes()}</dt>
-                      <dd class="whitespace-pre-wrap">{loc().accessNotes}</dd>
+          <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_18rem]">
+            <div class="grid content-start gap-4">
+              <Card>
+                <CardContent class="grid gap-4 pt-4">
+                  <p
+                    class={cn(
+                      "whitespace-pre-wrap leading-relaxed",
+                      !loc().description && "text-muted-foreground",
+                    )}
+                  >
+                    {loc().description || m.location_description_empty()}
+                  </p>
+                  <Show when={(loc().tags?.length ?? 0) > 0}>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                      <span class="sr-only">{m.location_tags()}:</span>
+                      <For each={loc().tags ?? []}>
+                        {(tag) => <Badge variant="outline">#{tag}</Badge>}
+                      </For>
                     </div>
                   </Show>
+                </CardContent>
+              </Card>
+              <Show when={exact()}>
+                <dl class="grid gap-3">
                   <Show when={loc().dangerNotes}>
-                    <div>
-                      <dt class="font-semibold">{m.location_danger_notes()}</dt>
-                      <dd class="whitespace-pre-wrap">{loc().dangerNotes}</dd>
-                    </div>
+                    <Note
+                      icon={<IconAlertTriangle />}
+                      title={m.location_danger_notes()}
+                      tone="warning"
+                    >
+                      {loc().dangerNotes}
+                    </Note>
+                  </Show>
+                  <Show when={loc().accessNotes}>
+                    <Note icon={<IconKey />} title={m.location_access_notes()}>
+                      {loc().accessNotes}
+                    </Note>
                   </Show>
                   <Show when={loc().parking?.length}>
-                    <div>
-                      <dt class="font-semibold">{m.location_parking()}</dt>
-                      <dd>
+                    <Note icon={<IconCar />} title={m.location_parking()}>
+                      <span class="grid gap-1 font-mono text-sm">
                         <For each={loc().parking ?? []}>
-                          {(p, i) => (
-                            <span>
-                              {i() > 0 ? " · " : ""}
-                              {formatCoordinates(p)}
-                            </span>
-                          )}
+                          {(p) => <span>{formatCoordinates(p)}</span>}
                         </For>
-                      </dd>
-                    </div>
+                      </span>
+                    </Note>
                   </Show>
                 </dl>
-                <section class="grid gap-2" aria-label={m.location_coordinates()}>
-                  <h2 class="font-semibold">{m.location_coordinates()}</h2>
-                  <div class="flex flex-wrap items-center gap-2">
-                    <code data-testid="location-coordinates">{formatCoordinates(loc().point)}</code>
-                    <Button variant="outline" size="sm" onClick={copy}>
+              </Show>
+            </div>
+
+            <div class="grid content-start gap-4">
+              <Show when={loc().coverPhotoId}>
+                {mapPreview("grid-paper h-48 overflow-hidden rounded-lg border")}
+              </Show>
+              <Show when={exact()}>
+                <section
+                  class="grid gap-3 rounded-lg border bg-card p-4"
+                  aria-label={m.location_coordinates()}
+                >
+                  <h2 class="kicker">{m.location_coordinates()}</h2>
+                  <div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-md border border-dashed bg-background px-3 py-2">
+                    <code
+                      class="whitespace-nowrap text-sm text-foreground"
+                      data-testid="location-coordinates"
+                    >
+                      {formatCoordinates(loc().point)}
+                    </code>
+                    <Button variant="ghost" size="sm" class="-mr-1.5" onClick={copy}>
+                      <IconCopy />
                       {m.location_copy()}
                     </Button>
                   </div>
-                  <p class="text-sm text-muted-foreground">{m.location_external_notice()}</p>
-                  <h3 class="font-semibold">{m.location_open_in()}</h3>
-                  <ul class="flex flex-wrap gap-2">
+                  <h3 class="kicker mt-1">{m.location_open_in()}</h3>
+                  <ul class="grid gap-1.5">
                     <For each={openLinks(loc().point)}>
                       {(link) => (
                         <li>
                           <a
-                            class="text-primary underline underline-offset-4"
+                            class="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm font-medium text-primary hover:bg-accent"
                             href={link.href}
                             rel="noopener noreferrer"
                           >
                             {m.location_open_in_app({ app: link.name })}
+                            <IconExternalLink class="size-3.5 opacity-70" />
                           </a>
                         </li>
                       )}
                     </For>
                   </ul>
+                  <p class="text-xs text-muted-foreground">{m.location_external_notice()}</p>
                 </section>
               </Show>
-              <Show when={(loc().tags?.length ?? 0) > 0}>
-                <p class="text-sm text-muted-foreground">
-                  {m.location_tags()}: {(loc().tags ?? []).join(", ")}
-                </p>
-              </Show>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
         <TabsContent value="visits">
           <LocationTimeline locationId={loc().id} tz={loc().tz} canAdd={props.canAddVisit} />
@@ -327,52 +454,6 @@ function LocationView(props: {
           </Card>
         </TabsContent>
       </Tabs>
-
-      <section class="flex flex-wrap gap-2" aria-label={m.location_details()}>
-        <Show when={can({ role: props.role }, "createTrip")}>
-          <Button variant="outline" onClick={() => setTripOpen(true)} data-testid="add-to-trip">
-            {m.trips_add_to()}
-          </Button>
-        </Show>
-        <Show when={can({ role: props.role }, "research")}>
-          <Button
-            variant="outline"
-            data-testid="start-research"
-            onClick={() =>
-              void runAction(() => startEnrichFn({ data: { locationId: loc().id } }), {
-                success: m.research_started(),
-              })
-            }
-          >
-            {m.research_start()}
-          </Button>
-        </Show>
-        <Show when={loc().permissions.canEdit}>
-          <Link
-            to="/locations/$locationId/edit"
-            params={{ locationId: loc().id }}
-            class={buttonVariants({ variant: "outline" })}
-          >
-            {m.location_action_edit()}
-          </Link>
-          <Button variant="outline" onClick={() => setMoveOpen(true)}>
-            {m.location_action_move()}
-          </Button>
-        </Show>
-        <Show when={loc().permissions.canManage}>
-          <Button variant="outline" onClick={() => setShareOpen(true)}>
-            {m.location_action_share()}
-          </Button>
-          <ConfirmButton
-            label={m.location_action_delete()}
-            question={m.location_delete_confirm()}
-            confirmLabel={m.location_action_delete()}
-            destructive
-            variant="destructive"
-            onConfirm={onDelete}
-          />
-        </Show>
-      </section>
 
       <AddToTripDialog
         locationId={loc().id}
@@ -421,6 +502,50 @@ function LocationView(props: {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function Callout(props: { tone?: "info" | "warning"; children: JSX.Element }) {
+  return (
+    <p
+      class={cn(
+        "rounded-lg border border-l-4 bg-card p-3 text-sm",
+        props.tone === "warning" ? "border-l-warning" : "border-l-primary/70",
+      )}
+    >
+      {props.children}
+    </p>
+  );
+}
+
+/** One field note (danger, access, parking) with an icon and a title. */
+function Note(props: {
+  icon: JSX.Element;
+  title: string;
+  tone?: "warning";
+  children: JSX.Element;
+}) {
+  return (
+    <div
+      class={cn(
+        "flex gap-3 rounded-lg border bg-card p-4",
+        props.tone === "warning" && "border-warning/50 bg-warning/5",
+      )}
+    >
+      <span
+        class={cn(
+          "mt-0.5 shrink-0 [&_svg]:size-4",
+          props.tone === "warning" ? "text-warning" : "text-muted-foreground",
+        )}
+        aria-hidden="true"
+      >
+        {props.icon}
+      </span>
+      <div class="grid min-w-0 gap-1">
+        <dt class={cn("kicker", props.tone === "warning" && "text-warning")}>{props.title}</dt>
+        <dd class="whitespace-pre-wrap">{props.children}</dd>
+      </div>
     </div>
   );
 }

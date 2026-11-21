@@ -1,8 +1,8 @@
-import { createFileRoute, Link, notFound, Outlet, useLocation } from "@tanstack/solid-router";
+import { createFileRoute, notFound, Outlet, useLocation } from "@tanstack/solid-router";
 import { m } from "@trespass/shared/paraglide/messages";
-import { For } from "solid-js";
+import { PageHeader } from "~/components/layout/page-header";
+import { SectionNav } from "~/components/layout/section-nav";
 import { ADMIN_AREA_ROLES, sectionsFor } from "~/lib/admin-sections";
-import { cn } from "~/lib/cn";
 
 // Admin area layout with section navigation. Guests cannot open it; members
 // see only the sections their role allows (see ~/lib/admin-sections.ts).
@@ -21,30 +21,9 @@ function AdminLayout() {
   const sections = () => sectionsFor(ctx().user.role);
   const active = (to: string) => location().pathname.startsWith(to);
   return (
-    <div class="grid gap-4">
-      <h1 class="text-2xl font-semibold">{m.admin_nav_title()}</h1>
-      <nav aria-label={m.admin_nav_sections()} class="-mx-4 overflow-x-auto px-4">
-        <ul class="flex gap-1 border-b">
-          <For each={sections()}>
-            {(s) => (
-              <li>
-                <Link
-                  to={s.to as "/"}
-                  class={cn(
-                    "-mb-px inline-flex h-11 items-center whitespace-nowrap border-b-2 px-3 text-sm font-medium",
-                    active(s.to)
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground",
-                  )}
-                  aria-current={active(s.to) ? "page" : undefined}
-                >
-                  {s.label()}
-                </Link>
-              </li>
-            )}
-          </For>
-        </ul>
-      </nav>
+    <div class="mx-auto grid w-full max-w-5xl gap-5">
+      <PageHeader title={m.admin_nav_title()} />
+      <SectionNav label={m.admin_nav_sections()} items={sections()} isActive={active} />
       <Outlet />
     </div>
   );

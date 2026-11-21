@@ -75,7 +75,7 @@ function RunsPage() {
           </Card>
         )}
       </Show>
-      <h2 class="text-lg font-semibold">{m.research_runs()}</h2>
+      <h2 class="section-title">{m.research_runs()}</h2>
       <Show
         when={(data.data?.runs.length ?? 0) > 0}
         fallback={<p class="text-sm text-muted-foreground">{m.research_runs_empty()}</p>}
