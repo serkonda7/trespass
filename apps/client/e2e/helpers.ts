@@ -20,7 +20,8 @@ export async function createLocation(
   await page.goto("/locations/new");
   await hydrated(page);
   await page.getByLabel("Name").fill(name);
-  await page.getByLabel("Kategorie").selectOption({ label: "Industrie" });
+  await page.getByLabel("Kategorie").click();
+  await page.getByRole("option", { name: "Industrie" }).click();
   await page.getByLabel("Koordinaten").fill(coords);
   await page.getByRole("button", { name: "Neuen Ort anlegen" }).click();
   await expect(page).toHaveURL(/\/locations\/[0-9a-f-]{36}$/);

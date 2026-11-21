@@ -15,6 +15,17 @@ export const Select = SelectPrimitive.Root;
 export const SelectValue = SelectPrimitive.Value;
 export const SelectHiddenSelect = SelectPrimitive.HiddenSelect;
 
+/** Kobalte's own label: it wires `aria-labelledby` to the trigger (a plain `<label for>` cannot). */
+export function SelectLabel(props: { class?: string; children?: JSX.Element }) {
+  return (
+    <SelectPrimitive.Label
+      class={cn("text-sm font-semibold leading-none text-foreground/90", props.class)}
+    >
+      {props.children}
+    </SelectPrimitive.Label>
+  );
+}
+
 type TriggerProps<T extends ValidComponent = "button"> = SelectPrimitive.SelectTriggerProps<T> & {
   class?: string;
   children?: JSX.Element;

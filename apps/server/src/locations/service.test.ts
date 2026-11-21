@@ -5,9 +5,9 @@ import type { Point } from "@trespass/shared/geo/types";
 import { eq } from "drizzle-orm";
 import { ctxFor, seed } from "../authz/test-fixtures";
 import type { AppDb } from "../db/client";
-import { events, jobs, locations, locationTags } from "../db/schema";
+import { categories, events, jobs, locations, locationTags } from "../db/schema";
 import { createTestDb } from "../db/test-db";
-import { listCategories, SEED_CATEGORIES } from "./categories";
+import { listCategories, SEED_CATEGORIES, seedCategories } from "./categories";
 import { LocationsError } from "./errors";
 import {
   createLocation,
@@ -75,6 +75,18 @@ describe("categories", () => {
     expect(rows).toHaveLength(10);
     expect(rows.map((r) => r.name)).toEqual(SEED_CATEGORIES.map((c) => c.name));
     expect(rows.map((r) => r.key)).toContain("sanatorium");
+  });
+
+  test("reseeding renames old seeded names but keeps admin renames", () => {
+    db.update(categories)
+      .set({ name: "Heilstätte/Krankenhaus" })
+      .where(eq(categories.key, "sanatorium"))
+      .run();
+    db.update(categories).set({ name: "Bunker" }).where(eq(categories.key, "military")).run();
+    seedCategories(db);
+    const byKey = new Map(listCategories(db).map((r) => [r.key, r.name]));
+    expect(byKey.get("sanatorium")).toBe("Krankenhaus");
+    expect(byKey.get("military")).toBe("Bunker");
   });
 });
 

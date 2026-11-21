@@ -13,11 +13,21 @@ import type {
 import { m } from "@trespass/shared/paraglide/messages";
 import { createEffect, createMemo, For, type JSX, Show } from "solid-js";
 import { Button } from "~/components/ui/button";
+import { InfoTip } from "~/components/ui/info-tip";
 import { Input, inputClass } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
 import { useHydrated } from "~/lib/hydrated";
-import { EDITABLE_STATUSES, statusLabel } from "~/lib/locations/status";
+import { EDITABLE_STATUSES, statusHint, statusLabel } from "~/lib/locations/status";
+import { CategoryIcon } from "./category-icon";
 
 export type LocationFormValues = {
   name: string;
@@ -70,10 +80,20 @@ export const valuesFromLocation = (loc: SerializedLocation): LocationFormValues 
   tags: (loc.tags ?? []).join(", "),
 });
 
-function Field(props: { id: string; label: string; hint?: string; children: JSX.Element }) {
+function Field(props: {
+  id: string;
+  label: string;
+  hint?: string;
+  /** Shown behind an "i" next to the label (id: `${id}-info`). */
+  info?: string;
+  children: JSX.Element;
+}) {
   return (
-    <div class="grid gap-2">
-      <Label for={props.id}>{props.label}</Label>
+    <div class="grid content-start gap-2">
+      <div class="relative flex min-h-5 items-center gap-1.5">
+        <Label for={props.id}>{props.label}</Label>
+        <Show when={props.info}>{(text) => <InfoTip id={`${props.id}-info`} text={text()} />}</Show>
+      </div>
       {props.children}
       <Show when={props.hint}>
         <p class="text-sm text-muted-foreground">{props.hint}</p>
@@ -156,17 +176,45 @@ export function LocationForm(props: {
         </Field>
 
         <div class="grid gap-4 sm:grid-cols-2">
-          <Field id="location-category" label={m.location_field_category()}>
-            <select
-              id="location-category"
-              class={inputClass}
-              value={values().categoryId}
-              onChange={(e) => set("categoryId", e.currentTarget.value)}
+          <div class="grid content-start gap-2">
+            <Select<CategoryRow>
+              class="grid content-start gap-2"
+              options={[...props.categories]}
+              optionValue="id"
+              optionTextValue="name"
+              value={props.categories.find((c) => c.id === values().categoryId) ?? null}
+              onChange={(c) => c && set("categoryId", c.id)}
+              disallowEmptySelection
+              itemComponent={(p) => (
+                <SelectItem item={p.item}>
+                  <span class="flex items-center gap-2">
+                    <CategoryIcon name={p.item.rawValue.icon} class="size-5 shrink-0" />
+                    {p.item.rawValue.name}
+                  </span>
+                </SelectItem>
+              )}
             >
-              <For each={props.categories}>{(c) => <option value={c.id}>{c.name}</option>}</For>
-            </select>
-          </Field>
-          <Field id="location-status" label={m.location_field_status()}>
+              <div class="flex min-h-5 items-center">
+                <SelectLabel>{m.location_field_category()}</SelectLabel>
+              </div>
+              <SelectTrigger>
+                <SelectValue<CategoryRow>>
+                  {(state) => (
+                    <span class="flex items-center gap-2">
+                      <CategoryIcon name={state.selectedOption().icon} class="size-5 shrink-0" />
+                      {state.selectedOption().name}
+                    </span>
+                  )}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent />
+            </Select>
+          </div>
+          <Field
+            id="location-status"
+            label={m.location_field_status()}
+            hint={statusHint(values().status)}
+          >
             <select
               id="location-status"
               class={inputClass}
@@ -184,12 +232,13 @@ export function LocationForm(props: {
           <Field
             id="location-coords"
             label={m.location_field_coordinates()}
-            hint={m.location_coordinates_hint()}
+            info={m.location_coordinates_hint()}
           >
             <Input
               id="location-coords"
               name="coordinates"
               required
+              aria-describedby="location-coords-info"
               value={values().coordText}
               aria-invalid={coordError()}
               onInput={(e) => {
@@ -247,9 +296,10 @@ export function LocationForm(props: {
               </Field>
             </Show>
           </div>
-          <Field id="location-fuzz" label={m.location_field_fuzz()}>
+          <Field id="location-fuzz" label={m.location_field_fuzz()} info={m.location_fuzz_hint()}>
             <Input
               id="location-fuzz"
+              aria-describedby="location-fuzz-info"
               type="number"
               min="0"
               step="1"

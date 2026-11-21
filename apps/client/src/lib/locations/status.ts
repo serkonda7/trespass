@@ -31,6 +31,18 @@ const LABELS: Record<LocationStatus, () => string> = {
   demolished: m.location_status_demolished,
 };
 
+const HINTS: Record<StoredLocationStatus, () => string> = {
+  idea: m.location_status_hint_idea,
+  researched: m.location_status_hint_researched,
+  planned: m.location_status_hint_planned,
+  sealed: m.location_status_hint_sealed,
+  redeveloped: m.location_status_hint_redeveloped,
+  demolished: m.location_status_hint_demolished,
+};
+
+/** One-line explanation of a settable status, shown in the location form. */
+export const statusHint = (s: StoredLocationStatus): string => HINTS[s]();
+
 // Dark-map friendly fills, distinguishable from each other and from the
 // orange app accent; all reach WCAG AA against the dark surfaces.
 const COLORS: Record<LocationStatus, string> = {

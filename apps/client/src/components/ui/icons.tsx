@@ -25,6 +25,7 @@ import {
   IconCopy as TCopy,
   IconExternalLink as TExternalLink,
   IconHome as THome,
+  IconInfoCircle as TInfoCircle,
   IconKey as TKey,
   IconLayoutDashboard as TLayoutDashboard,
   IconList as TList,
@@ -85,6 +86,7 @@ export const IconCircle = wrap(TCircle);
 export const IconCopy = wrap(TCopy);
 export const IconExternalLink = wrap(TExternalLink);
 export const IconHome = wrap(THome);
+export const IconInfoCircle = wrap(TInfoCircle);
 export const IconKey = wrap(TKey);
 export const IconLayoutDashboard = wrap(TLayoutDashboard);
 export const IconList = wrap(TList);
