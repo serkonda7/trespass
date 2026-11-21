@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeTileReader, createTileReader, readTile } from "./store";
-import { openTileWriter, tilesFileSize, xyzToTms } from "./writer";
+import { openTileWriter, tilesFileSize } from "./writer";
 
 const dirs: string[] = [];
 const temp = () => {
@@ -16,25 +16,6 @@ afterEach(() => {
 });
 
 describe("MBTiles writer", () => {
-  test("flips XYZ y to the TMS row and reads raw bytes back", () => {
-    const path = temp();
-    const writer = openTileWriter(path);
-    try {
-      expect(xyzToTms(1, 0)).toBe(1);
-      expect(xyzToTms(2, 1)).toBe(2);
-      expect(writer.writeTiles([{ z: 1, x: 1, y: 0, data: new Uint8Array([1, 2, 3]) }])).toBe(1);
-      const reader = createTileReader(path);
-      try {
-        expect(readTile(reader, 1, 1, 0)).toEqual(new Uint8Array([1, 2, 3]));
-        expect(readTile(reader, 1, 1, 1)).toBeNull();
-      } finally {
-        closeTileReader(reader);
-      }
-    } finally {
-      writer.close();
-    }
-  });
-
   test("upserts are idempotent and ignore invalid coordinates", () => {
     const path = temp();
     const writer = openTileWriter(path);

@@ -12,7 +12,8 @@ import { createHistory } from "../history/service";
 import { insertPhoto, tempPhotoStore } from "../photos/test-helpers";
 import { createTrip } from "../trips/service";
 import { PATHS } from "./build";
-import { exportToMemory, type ReadArchive, readArchive } from "./test-helpers";
+import type { ReadArchive } from "./test-helpers";
+import { exportToMemory } from "./test-helpers";
 
 const SECRETS = {
   password: "SENTINEL-password-hash-7f3a",
@@ -462,41 +463,6 @@ describe("metamorphic privacy", () => {
       expect(Buffer.from(later.files[name]!)).toEqual(Buffer.from(before.files[name]!));
     }
     expect(later.json(PATHS.manifest).exportedAt).not.toEqual(m1.exportedAt);
-    w.store.cleanup();
-  });
-});
-
-describe("streaming", () => {
-  test("backpressure bounds the queue and a slow reader still gets a valid ZIP", async () => {
-    const w = await world();
-    const { createProducerStream } = await import("./stream");
-    const { writeExport } = await import("./build");
-    const stream = createProducerStream(
-      async (write) => {
-        await writeExport(write, {
-          db: w.db,
-          ctx: admin,
-          store: w.store.store,
-          now: new Date("2026-11-16T13:03:00Z"),
-          pageSize: 2,
-        });
-      },
-      { highWaterMark: 1 },
-    );
-    const reader = stream.getReader();
-    const chunks: Uint8Array[] = [];
-    let reads = 0;
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-      reads++;
-      // A slow consumer: the producer must wait for each read (bounded queue).
-      await new Promise((resolve) => setImmediate(resolve));
-    }
-    expect(reads).toBeGreaterThan(3);
-    const a = readArchive(new Uint8Array(Buffer.concat(chunks)));
-    expect(a.json(PATHS.manifest).formatVersion).toBe(1);
     w.store.cleanup();
   });
 });

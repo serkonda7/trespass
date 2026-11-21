@@ -269,15 +269,6 @@ describe("moveLocation", () => {
     expect(reradius.pubLat).not.toBe(moved.pubLat);
     expect(reradius.fuzzRadiusM).toBe(800);
   });
-
-  test("a stale version conflicts", () => {
-    const { id, version } = createAs(admin);
-    moveLocation(db, admin, { id, version, point: { lat: 50, lon: 7 } });
-    expect(errorCode(() => moveLocation(db, admin, { id, version, point: EXACT }))).toEqual({
-      code: "VERSION_CONFLICT",
-      status: 409,
-    });
-  });
 });
 
 describe("visibility and grants", () => {

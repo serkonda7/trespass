@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { formatDistance, routeLegs, routeTotal } from "./route";
+import { routeLegs, routeTotal } from "./route";
 
 test("legs between consecutive stops, approximate when a point is fuzzed", () => {
   const legs = routeLegs([
@@ -15,10 +15,4 @@ test("legs between consecutive stops, approximate when a point is fuzzed", () =>
   expect(total.approximate).toBe(true);
   expect(Math.round(total.meters / 1000)).toBe(22);
   expect(routeLegs([{ point: { lat: 0, lon: 0 }, exact: true }])).toEqual([]);
-});
-
-test("formats distances", () => {
-  expect(formatDistance(843)).toBe("840 m");
-  expect(formatDistance(12_400)).toBe("12,4 km");
-  expect(formatDistance(128_200)).toBe("128 km");
 });

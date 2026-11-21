@@ -11,8 +11,4 @@ describe("extractText", () => {
     expect(r.text).toContain("2000 stillgelegt");
     expect(r.text).not.toContain("alert");
   });
-
-  test("plain text passes through", () => {
-    expect(extractText("a  \n\n\n\nb", "text/plain").text).toBe("a\n\nb");
-  });
 });

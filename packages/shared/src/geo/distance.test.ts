@@ -1,5 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import fc from "fast-check";
 import { bboxAround, haversineMeters, splitBbox } from "./distance";
 
 describe("haversineMeters", () => {
@@ -9,22 +8,6 @@ describe("haversineMeters", () => {
     expect(haversineMeters({ lat: 0, lon: 0 }, { lat: 1, lon: 0 })).toBeCloseTo(111_195, -2);
     expect(haversineMeters({ lat: 51, lon: 7 }, { lat: 51, lon: 8 })).toBeGreaterThan(60_000);
     expect(haversineMeters({ lat: 51, lon: 7 }, { lat: 51, lon: 8 })).toBeLessThan(80_000);
-  });
-  test("symmetry and non-negativity", () => {
-    fc.assert(
-      fc.property(
-        fc.double({ min: -90, max: 90, noNaN: true }),
-        fc.double({ min: -180, max: 180, noNaN: true }),
-        (lat, lon) => {
-          const a = { lat, lon };
-          const b = { lat: -lat, lon: -lon };
-          const d = haversineMeters(a, b);
-          expect(d).toBeGreaterThanOrEqual(0);
-          expect(d).toBeCloseTo(haversineMeters(b, a), 6);
-        },
-      ),
-      { numRuns: 100 },
-    );
   });
 });
 

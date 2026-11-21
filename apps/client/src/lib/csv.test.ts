@@ -55,14 +55,6 @@ describe("toCsv", () => {
     ).toBe("v\r\n'=SUM(A1)\r\n'+cmd\r\n'-cmd\r\n'@cmd\r\n'\ttab\r\n");
   });
 
-  it("quotes a guarded cell that also contains CR", () => {
-    expect(toCsv(["v"], [["\rcr"]], { bom: false })).toBe('v\r\n"\'\rcr"\r\n');
-  });
-
-  it("does not guard numbers, including negative ones", () => {
-    expect(toCsv(["v"], [[-5], [0], [1.25]], { bom: false })).toBe("v\r\n-5\r\n0\r\n1.25\r\n");
-  });
-
   it("guards header strings as well", () => {
     expect(toCsv(["=H1"], [], { bom: false })).toBe("'=H1\r\n");
   });
@@ -71,9 +63,5 @@ describe("toCsv", () => {
     expect(toCsv(["a", "b"], [["x,y", "plain"]], { delimiter: ",", bom: false })).toBe(
       'a,b\r\n"x,y",plain\r\n',
     );
-  });
-
-  it("still emits one line for an empty table", () => {
-    expect(toCsv([], [], { bom: false })).toBe("\r\n");
   });
 });

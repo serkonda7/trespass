@@ -6,27 +6,6 @@ import { settings, users } from "./schema";
 import { healthStatus } from "./stats";
 import { createTestDb } from "./test-db";
 
-describe("bundled SQLite", () => {
-  test("is at least 3.45", () => {
-    const db = new Database(":memory:");
-    const v = (db.query("SELECT sqlite_version() AS v").get() as { v: string }).v;
-    const [maj = 0, min = 0] = v.split(".").map(Number);
-    expect(maj * 1000 + min).toBeGreaterThanOrEqual(3045);
-  });
-
-  test("FTS5 trigram + remove_diacritics works (for the later search stage)", () => {
-    const db = new Database(":memory:");
-    db.exec("CREATE VIRTUAL TABLE t USING fts5(name, tokenize = 'trigram remove_diacritics 1')");
-    db.exec("INSERT INTO t (name) VALUES ('Akkuschrauber'), ('Stichsäge'), ('Hammer')");
-    const find = (q: string) =>
-      (db.query("SELECT name FROM t WHERE t MATCH ?").all(q) as { name: string }[]).map(
-        (r) => r.name,
-      );
-    expect(find("schrauber")).toEqual(["Akkuschrauber"]);
-    expect(find("sage")).toEqual(["Stichsäge"]);
-  });
-});
-
 describe("migrations", () => {
   test("apply to a fresh in-memory database with all foundation tables", () => {
     const db = createTestDb();

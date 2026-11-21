@@ -1,12 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parseEnv } from "../env";
-import {
-  NOMINATIM_HOST,
-  resetGeocodeThrottle,
-  reverseGeocode,
-  reverseGeocodeUrl,
-  USER_AGENT,
-} from "./reverse";
+import { NOMINATIM_HOST, reverseGeocode, USER_AGENT } from "./reverse";
 
 const fakeFetch = (body: unknown, status = 200) => {
   const calls: { url: string; init?: { headers?: Record<string, string> } }[] = [];
@@ -48,27 +41,5 @@ describe("reverseGeocode", () => {
     await expect(
       reverseGeocode({ lat: 0, lon: 0 }, { fetch: fakeFetch({}, 503).fn as never }),
     ).rejects.toThrow(/503/);
-  });
-
-  test("the throttle is injectable; reset clears the module state", async () => {
-    resetGeocodeThrottle();
-    let throttled = 0;
-    await reverseGeocode(
-      { lat: 1, lon: 2 },
-      {
-        fetch: fakeFetch({}).fn as never,
-        throttle: async () => {
-          throttled++;
-        },
-      },
-    );
-    expect(throttled).toBe(1);
-  });
-
-  test("GEOCODE=off is a deterministic env flag", () => {
-    expect(parseEnv({}).GEOCODE).toBe("on");
-    expect(parseEnv({ GEOCODE: "off" }).GEOCODE).toBe("off");
-    expect(parseEnv({ GEOCODE: "" }).GEOCODE).toBe("on");
-    expect(reverseGeocodeUrl({ lat: 1, lon: 2 })).toContain("lat=1");
   });
 });

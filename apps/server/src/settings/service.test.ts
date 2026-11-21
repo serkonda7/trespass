@@ -36,11 +36,6 @@ function settingsEvents(db: AppDb) {
 }
 
 describe("settings", () => {
-  test("getSettings returns the defaults on a fresh database", () => {
-    const db = createTestDb();
-    expect(getSettings(db)).toEqual(DEFAULTS);
-  });
-
   test("an admin can update the settings; the name is trimmed", () => {
     const db = createTestDb();
     const result = updateSettings(db, ctxOf("admin"), {

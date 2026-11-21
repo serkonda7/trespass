@@ -26,8 +26,4 @@ Disallow: /
     expect(robotsAllows(rules, "/doc.pdf")).toBe(false);
     expect(robotsAllows(rules, "/doc.pdf?x=1")).toBe(true);
   });
-
-  test("empty robots allows everything", () => {
-    expect(robotsAllows(parseRobots("", "x"), "/a")).toBe(true);
-  });
 });

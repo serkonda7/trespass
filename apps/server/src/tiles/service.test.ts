@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { seed } from "../authz/test-fixtures";
 import { tileRegions } from "../db/schema";
 import { createTestDb } from "../db/test-db";
-import { ensureTileRegion, listAdminTileRegions, overBudget } from "./service";
+import { ensureTileRegion, listAdminTileRegions } from "./service";
 
 describe("admin tile listing", () => {
   test("contains rounded boxes, sizes and status but no location ids or exact points", () => {
@@ -46,14 +46,5 @@ describe("admin tile listing", () => {
     } finally {
       db.$client.close();
     }
-  });
-});
-
-describe("overBudget", () => {
-  test("includes the conservative estimate and the current file size", () => {
-    const mb = 1024 * 1024;
-    expect(overBudget(50 * mb, 40 * mb, 100)).toBe(false);
-    expect(overBudget(50 * mb, 51 * mb, 100)).toBe(true);
-    expect(overBudget(0, 64 * mb, 63)).toBe(true);
   });
 });

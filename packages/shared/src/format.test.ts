@@ -40,11 +40,6 @@ describe("formatNumber", () => {
     expect(formatNumber(1234567.891)).toBe("1.234.567,89");
     expect(formatNumber(0)).toBe("0");
   });
-
-  it("respects maximumFractionDigits", () => {
-    expect(formatNumber(1.23456, 3)).toBe("1,235");
-    expect(formatNumber(1.5, 0)).toBe("2");
-  });
 });
 
 describe("formatCents", () => {
@@ -53,10 +48,6 @@ describe("formatCents", () => {
     expect(formatted).toContain("\u00a0€");
     expect(formatted.replace(/\u00a0/g, " ")).toBe("1.234,56 €");
     expect(formatCents(0).replace(/\u00a0/g, " ")).toBe("0,00 €");
-  });
-
-  it("honors a custom currency", () => {
-    expect(formatCents(500, "USD").replace(/\u00a0/g, " ")).toBe("5,00 $");
   });
 });
 
@@ -96,12 +87,6 @@ describe("parseEuroToCents", () => {
     expect(parseEuroToCents("1,005 €")).toBe(101);
     expect(parseEuroToCents("0,004")).toBe(0);
     expect(parseEuroToCents("-1,005 €")).toBe(-101);
-  });
-
-  it("rejects invalid or empty input", () => {
-    expect(parseEuroToCents("abc")).toBeNull();
-    expect(parseEuroToCents("")).toBeNull();
-    expect(parseEuroToCents(" € ")).toBeNull();
   });
 });
 

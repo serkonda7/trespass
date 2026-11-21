@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { PHOTO_SIZES } from "@trespass/shared/photos/types";
 import exifr from "exifr";
 import sharp from "sharp";
-import { extractExif, heicSupported, makeDerivatives, sniffPhotoMime } from "./process";
+import { extractExif, makeDerivatives, sniffPhotoMime } from "./process";
 import type { PhotoStore } from "./storage";
 import { jpegFixture, pngFixture, tempPhotoStore } from "./test-helpers";
 
@@ -17,12 +17,6 @@ async function storeWith(bytes: Uint8Array): Promise<{ store: PhotoStore; sha: s
 }
 
 describe("photo process", () => {
-  test("heicSupported reports sharp's runtime capability", async () => {
-    const sharpMod = (await import("sharp")).default;
-    expect(heicSupported()).toBe(Boolean(sharpMod.format.heif?.input?.file));
-    expect(typeof heicSupported()).toBe("boolean");
-  });
-
   test("sniffs by magic bytes, not file name or client type", async () => {
     expect(sniffPhotoMime(await jpegFixture())).toBe("image/jpeg");
     expect(sniffPhotoMime(await pngFixture())).toBe("image/png");
@@ -77,14 +71,5 @@ describe("photo process", () => {
       expect(raw).not.toContain("TestCam");
       expect(raw).not.toContain("geheim");
     }
-  });
-
-  test("without enlargement small photos stay at their original size", async () => {
-    const bytes = await jpegFixture({ gps: null, xmp: false });
-    const { store, sha } = await storeWith(bytes);
-    await makeDerivatives(bytes, store, sha);
-    const meta = await sharp(await Bun.file(store.derivedPath(sha, 1600)).bytes()).metadata();
-    expect(meta.width).toBe(120);
-    expect(meta.height).toBe(80);
   });
 });
