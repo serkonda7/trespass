@@ -1,10 +1,7 @@
-// Removing blobs no photo row references any more. Blobs are shared (dedup),
-// so a file is deleted only after checking that no row uses its hash. The
-// reference check and the unlink happen synchronously in one tick; an upload
-// re-creates its blob synchronously in the same tick as its insert. bun:sqlite
-// and fs *Sync calls never yield, so neither can interleave with the other.
-// Deleting a photo enqueues "photos.gc"; a nightly "photos.sweep" also finds
-// rows removed by cascades. Files are never deleted inline in a request.
+// Deletes blobs no photo row references (blobs are deduped). Check and unlink
+// run synchronously in one tick, as does upload's move + insert, so they can't
+// interleave. Triggered by "photos.gc" on delete and nightly "photos.sweep";
+// never inline in a request.
 import { readdirSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";

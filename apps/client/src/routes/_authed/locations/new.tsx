@@ -11,7 +11,7 @@ import {
   LocationForm,
   type LocationFormValues,
 } from "~/components/locations/location-form";
-import { MapView } from "~/components/map/map-view";
+import { LazyMapView } from "~/components/map/lazy-map-view";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { categoriesQuery } from "~/lib/locations/queries";
 import { runAction } from "~/lib/run-action";
@@ -134,7 +134,7 @@ function NewLocationPage() {
       <section aria-label={m.location_pick_hint()}>
         <p class="mb-2 text-sm text-muted-foreground">{m.location_pick_hint()}</p>
         <div class="h-72 overflow-hidden rounded-md border">
-          <MapView
+          <LazyMapView
             onPick={(point) => setPick({ point, nonce: Date.now() })}
             marker={parseCoordinates(coordText())}
             label={m.location_pick_hint()}

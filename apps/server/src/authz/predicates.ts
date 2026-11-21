@@ -53,12 +53,7 @@ function grantAtLeastWhere(ctx: AuthCtx, min: VisibleLevel, t: LocationsTableLik
   )} and ${principal})`;
 }
 
-/**
- * True exactly where `locationLevel(ctx, loc, grants) >= min`. `min` starts at
- * `view`; the role ceiling caps everything, including ownership and grants.
- * The `friends_level` comparison happens in SQL (never fetched and compared in
- * JS). Every visible location's coordinates are exact.
- */
+/** SQL for `locationLevel(ctx, loc, grants) >= min` (min ≥ view), capped by the role ceiling. */
 export function locationsAtLeastWhere(
   ctx: AuthCtx,
   min: VisibleLevel,

@@ -1,7 +1,5 @@
-// The error thrown by the location service. Its message is "CODE" or
-// "CODE:detail" (codes and German text: src/lib/locations/errors.ts). An
-// invisible location answers exactly like a missing one: LOCATION_NOT_FOUND
-// (404), never LOCATION_FORBIDDEN for invisibility (DESIGN §3.4 rule 9).
+// Location service error; message "CODE" or "CODE:detail" (shared/locations/errors.ts).
+// Invisible = missing: LOCATION_NOT_FOUND (404), never FORBIDDEN.
 
 import type { LocationsErrorCode } from "@trespass/shared/locations/errors";
 import type { z } from "zod";

@@ -2,10 +2,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
 /**
- * The repository root: the nearest directory at or above `start` whose
- * package.json declares workspaces (in the Docker image that is /app).
- * Dev defaults such as ./data hang off it, so `bun run worker` at the root and
- * `vite dev` inside apps/client open the same database. Falls back to `start`.
+ * Nearest dir at/above `start` whose package.json has workspaces (/app in
+ * Docker), so every workspace shares ./data. Falls back to `start`.
  */
 export function workspaceRoot(start = process.cwd()): string {
   let dir = resolve(start);

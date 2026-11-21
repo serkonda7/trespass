@@ -1,8 +1,5 @@
-// Writer for the single MBTiles file (DESIGN §7.1). Only the worker opens this
-// in read-write mode; the web app's reader (./store.ts) stays read-only. WAL
-// mode plus a lazily opened reader means newly written tiles are visible to the
-// app without a restart. Transactions are short (<= 1000 rows) because
-// bun:sqlite is synchronous and the worker shares the database with the app.
+// The only read-write handle to the MBTiles file (worker only). WAL lets the
+// read-only ./store.ts see new tiles without restart. Transactions ≤ 1000 rows.
 import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";

@@ -1,18 +1,7 @@
-// Content Security Policy for the app's HTML pages (DESIGN §8.4 "strict CSP").
-// Scripts need the per-request nonce (SSR, hydration and dehydration scripts all
-// carry it, see src/lib/csp-nonce.ts) or must come from the app's own origin;
-// there is no 'unsafe-inline' and no 'unsafe-eval'. /files/:id sends its own,
-// stricter policy (attachments/serve.ts), which is kept.
-//
-// What the app uses, and where it is allowed:
-//   own scripts, styles, fonts      'self'
-//   photos and thumbnails           img-src 'self' (/files/:id)
-//   uploader previews               img-src blob: (URL.createObjectURL)
-//   camera capture                  <input capture>, no directive needed
-//   passkeys                        WebAuthn is not governed by CSP
-//   export download                 a same-origin navigation
-// Only production sends it: Vite's dev server injects unnonced scripts and
-// styles for HMR.
+// Strict CSP for HTML pages (DESIGN §8.4). Production only (Vite HMR injects
+// unnonced code). Scripts need the request nonce (shared/csp-nonce.ts) or 'self';
+// no 'unsafe-inline'/'unsafe-eval'. /files/:id keeps its own stricter policy
+// (photos/serve.ts). Uploader previews need img-src blob:.
 import { AsyncLocalStorage } from "node:async_hooks";
 
 export function buildCsp(nonce: string): string {

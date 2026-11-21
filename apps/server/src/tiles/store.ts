@@ -31,11 +31,7 @@ export function resetAppTileReader(): void {
   appReader = undefined;
 }
 
-/**
- * One tile's raw bytes, or null when there is no file/table/row. Errors from a
- * broken or incomplete MBTiles file are treated as a missing tile, never as a
- * 500 — a map must not go down because a background extract failed.
- */
+/** Raw tile bytes or null. A broken MBTiles file counts as missing, never a 500. */
 export function readTile(reader: TileReader, z: number, x: number, y: number): Uint8Array | null {
   if (reader.db === null) {
     if (!existsSync(reader.path)) return null;

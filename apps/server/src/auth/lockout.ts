@@ -1,19 +1,10 @@
-// Per-username sign-in lockout (DESIGN §8.4 "rate-limited login with lockout").
-// Better Auth already limits sign-ins per client IP; this adds a limit per
-// username across all clients, so a distributed guesser cannot keep trying
-// one account.
-//
-// - No user enumeration: the counter is keyed by the submitted username and
-//   behaves identically whether or not that user exists. A locked username
-//   answers 429 before the password is checked, for every username alike.
-// - No permanent lockout: locks expire (1 min, doubling up to 15 min), and
-//   attempts during a lock are refused without extending it.
-// - Trusted devices (OWASP "device cookies"): a successful password sign-in
-//   leaves a signed cookie naming that username. Attempts from such a device
-//   are counted in a separate bucket, so an attacker who keeps the public
-//   bucket locked does not lock the real user (e.g. the last admin) out of
-//   their own phone. Passkey sign-in is never affected by this lockout.
-// State is in memory (single process); a restart clears it.
+// Per-username sign-in lockout (DESIGN §8.4), on top of Better Auth's per-IP limit.
+// - No enumeration: keyed by submitted username, same behavior for unknown users;
+//   a locked name answers 429 before the password check.
+// - Locks expire (1 min, doubling to 15 min); attempts during a lock don't extend it.
+// - Trusted devices (OWASP device cookies) count in a separate bucket, so an
+//   attacker can't lock the real user out. Passkeys are never locked.
+// - In memory; a restart clears it.
 import { timingSafeEqual } from "node:crypto";
 
 export type LockoutConfig = {

@@ -1,10 +1,7 @@
-// GET /files/:photoId?size=400|1600|2560|original (default 1600). Explicit
-// authorization through visiblePhotosWhere; originals are 404 for everyone but
-// the uploader/admins, so their existence is not revealed. Only metadata-free
-// derivatives reach other users (DESIGN §3.4 rule 6, §5.3). Content-addressed
-// files are immutable and cached privately; ETag = sha + size. While a photo is
-// processing a derivative request gets 202 + Retry-After (the UI polls again);
-// a failed one gets 404.
+// GET /files/:photoId?size=400|1600|2560|original (default 1600).
+// - Access via visiblePhotosWhere; originals 404 except for uploader/admins.
+// - Immutable, private cache, ETag = sha + size.
+// - Processing → 202 + Retry-After; failed → 404.
 
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
 import type { PhotoSize } from "@trespass/shared/photos/types";

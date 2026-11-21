@@ -1,15 +1,8 @@
-// Keeps locations_fts in step with the locations table (DESIGN §5.9). Every
-// application write path that changes an indexed field calls reindexLocations
-// inside its own transaction: createLocation, updateLocation (also tag edits),
-// the reverse-geocode handler (country/admin_area) and deleteLocation.
-//
-// PRIVACY (DESIGN §3.4, §5.9): the index holds ONLY data visible at level
-// `view` — name, description, tag names and place (country + admin area).
-// access_notes, danger_notes, parking, coordinates and all photo / visit text
-// are deliberately never indexed: otherwise a search box would become an
-// oracle for details beyond the view level. `history` holds the text of APPROVED
-// history entries only (drafts need `edit` and must not be findable).
-// Index text and query both go through the same normalizeSearchText helper.
+// Keeps locations_fts in sync (DESIGN §5.9). Every write to an indexed field
+// calls reindexLocations in its own transaction.
+// PRIVACY: index only view-level text (name, description, tags, place, approved
+// history). Never notes, parking, coordinates, photo/visit text, or drafts —
+// search must not leak details above `view`. Text and query use normalizeSearchText.
 
 import { normalizeSearchText } from "@trespass/shared/normalize";
 import { eq, inArray, sql } from "drizzle-orm";

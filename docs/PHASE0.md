@@ -1,15 +1,13 @@
 # Phase 0 runbook: infrastructure
 
-Goal: a "Hallo" page with a MapLibre map at `https://lp.example.de`, with a real
-certificate, reachable only over Tailscale (by me and by friends the node is shared
-with, but not by them on Hausmeister), with tested backups. See DESIGN.md §8.
+**Goal**: "Hallo" page + MapLibre map at `https://lp.example.de` — real
+certificate, Tailscale only (me + shared friends, not on Hausmeister), tested
+backups. See DESIGN.md §8.
 
-This runbook assumes **Hausmeister Phase 0 is done** on the same VPS: the deSEC
-account, Docker, ufw and host Tailscale SSH already exist. Steps that would repeat
-Hausmeister's runbook point to it instead of copying it. Steps marked 🧑 are manual.
-
-> Docs only for now. The `deploy/` files referenced below don't exist yet. They are
-> created at the start of Phase 0 by **porting** Hausmeister's `deploy/` (see step 0).
+- **Requires** Hausmeister Phase 0 on the same VPS (deSEC account, Docker, ufw,
+  host Tailscale SSH). Shared steps link to its runbook.
+- 🧑 = manual step.
+- `deploy/` is ported from Hausmeister; step 0 lists the changes.
 
 ---
 
@@ -37,8 +35,8 @@ Same as Hausmeister PHASE0 §1, in the **existing** deSEC account:
 deploy/host/desec-setup.sh lp.example.de --token
 ```
 
-Store the token in the password manager as "trespass DESEC_TOKEN". It is separate from
-Hausmeister's token.
+Store it in the password manager as "trespass DESEC_TOKEN" (separate from
+Hausmeister's).
 
 ## 2. Delegate the subdomain at Strato 🧑
 
@@ -52,8 +50,7 @@ cd deploy && printf 'DOMAIN=lp.example.de\nDESEC_TOKEN=%s\n' 'the-token' > .env
 ./check-dns.sh --write-test
 ```
 
-All checks should be green except A, which is set in step 7. Also re-run Hausmeister's
-`check-dns.sh` to confirm nothing changed there.
+All green except A (step 7). Re-run Hausmeister's `check-dns.sh` too.
 
 ## 4. Tailscale 🧑
 
@@ -63,19 +60,18 @@ All checks should be green except A, which is set in step 7. Also re-run Hausmei
 
 ## 5. VPS check 🧑
 
-The VPS already exists. Check that it has room for a second stack:
+Check room for a second stack:
 
 ```sh
 free -h; df -h /opt; nproc
 docker stats --no-stream            # Hausmeister's current use
 ```
 
-- Less than 4 GB RAM in total → upgrade the Strato plan first (DESIGN §8.4).
-- Not enough disk for the photos expected in year one, plus ~10 GB of tiles → add
-  a volume for `data/uploads`.
-- Optional, on the Hausmeister side: add `mem_limit` to its containers.
+- < 4 GB RAM → upgrade the Strato plan (DESIGN §8.4).
+- Disk < year-one photos + ~10 GB tiles → add a volume for `data/uploads`.
+- Optional: `mem_limit` on Hausmeister's containers.
 
-Then put the repo in place:
+Copy the repo:
 
 ```sh
 sudo install -d -o admin -g admin /opt/trespass
@@ -84,9 +80,9 @@ rsync -a --exclude node_modules --exclude .output ./ admin@<vps>:/opt/trespass/
 
 ## 6. Object storage + start the stack 🧑
 
-1. B2: a **new private bucket** (e.g. `example-trespass`, encryption on, lifecycle
-   30 days for hidden files) and a key **for this bucket only**. Never reuse
-   Hausmeister's key.
+1. B2: **new private bucket** (e.g. `example-trespass`, encryption on, hidden
+   files expire after 30 days) + a key for this bucket only. Never reuse
+   Hausmeister's.
 2. On the VPS:
    ```sh
    cd /opt/trespass/deploy
@@ -97,9 +93,9 @@ rsync -a --exclude node_modules --exclude .output ./ admin@<vps>:/opt/trespass/
    docker compose exec tailscale tailscale ip -4      # → 100.a.b.c
    ```
 3. Remove `TS_AUTHKEY` from `.env`.
-4. Check that both sidecars are up and separate:
-   `docker compose -p hausmeister ps` and `docker compose -p trespass ps`. The tailnet
-   admin page shows the two nodes `hausmeister` and `trespass` with different IPs.
+4. Both sidecars up and separate: `docker compose -p hausmeister ps`,
+   `docker compose -p trespass ps`; the tailnet shows two nodes with
+   different IPs.
 
 ## 7. Point the domain at the tailnet IP
 
@@ -110,12 +106,12 @@ deploy/host/desec-setup.sh lp.example.de --a 100.a.b.c
 
 ## 8. TLS: staging → production
 
-Same as Hausmeister PHASE0 §8, with `lp.example.de`. Finish by switching to production
-`ACME_CA` and checking for a valid lock on the phone.
+As Hausmeister PHASE0 §8 with `lp.example.de`. Switch to production `ACME_CA`;
+check the lock on a phone.
 
 ## 9. Runtime checks (in the production image)
 
-Run these checks once by hand, then add them to CI:
+Run once by hand, then add to CI:
 
 ```sh
 docker compose exec app bun -e '<checks>'
@@ -132,14 +128,13 @@ docker compose exec app bun -e '<checks>'
 
 ## 10. Tile smoke test
 
-1. Find the newest Protomaps daily build and note its date.
-2. In the worker container, extract **world z0–6** → note its size.
-3. Extract **two 20 × 20 km boxes at z7–15**, one urban and one rural. Note the sizes,
-   and use them to set the default `tile_budget_mb` (DESIGN §7.3).
-4. Load all three into `data/tiles/tiles.sqlite` (MBTiles layout).
-5. The "Hallo" page shows a MapLibre map from `/tiles/{z}/{x}/{y}.mvt` with
-   self-hosted glyphs and sprites. In the browser's dev tools there must be **no
-   requests to third-party hosts**.
+1. Note the newest Protomaps daily build date.
+2. Worker container: extract **world z0–6**, note the size.
+3. Extract **two 20 × 20 km boxes at z7–15** (urban, rural). Sizes set the
+   default `tile_budget_mb` (DESIGN §7.3).
+4. Load all three into `data/tiles/tiles.sqlite`.
+5. "Hallo" page renders `/tiles/{z}/{x}/{y}.mvt` with self-hosted glyphs and
+   sprites. Dev tools: **no third-party requests**.
 
 ## 11. Backups + restore test
 
@@ -154,13 +149,11 @@ Store `.env`, `.env.backup` and `ts-state/` in the password manager.
 
 ## 12. Isolation test 🧑
 
-1. Share node `trespass` with one friend's Tailscale account (_Machines →
-   trespass → Share_).
-2. From the friend's device: `https://lp.example.de` loads, `https://sub.example.de`
-   **does not**.
-3. From a family member's device (in `group:family`): `sub` loads, `lp` **does not**.
-4. From outside: `nmap -Pn <VPS public IP>` shows nothing open.
-5. Note the share list, to review it every quarter.
+1. Share node `trespass` with one friend (_Machines → trespass → Share_).
+2. Friend: `lp` loads, `sub` **does not**.
+3. Family (`group:family`): `sub` loads, `lp` **does not**.
+4. Outside: `nmap -Pn <VPS public IP>` shows nothing open.
+5. Record the share list; review quarterly.
 
 ---
 

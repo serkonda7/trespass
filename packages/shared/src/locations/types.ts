@@ -6,7 +6,6 @@ import type { GeoJsonPolygon, Point } from "../geo/types";
 export type LocationStatus =
   | "idea"
   | "researched"
-  | "planned"
   | "visited"
   | "sealed"
   | "redeveloped"

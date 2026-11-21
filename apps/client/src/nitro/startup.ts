@@ -1,10 +1,6 @@
-// Nitro runtime plugin: runs once when the server process starts (the app
-// bundle itself is loaded lazily on the first request). Fails fast on bad
-// configuration and applies pending DB migrations before any request is served.
-// On a fresh instance it also prints the first-admin invite link.
-// The job worker is a separate process (`bun run worker`, DESIGN §10); the web
-// process only validates config, migrates and serves requests.
-// Uses package imports only: Nitro bundles this file outside Vite's `~` alias.
+// Nitro plugin, once per process: validate env, migrate, seed, print the
+// first-admin invite. The worker is a separate process (`bun run worker`).
+// Package imports only: bundled outside Vite's `~` alias.
 
 import { bootstrapInviteAtStartup } from "@trespass/server/auth/invites";
 import { getDb } from "@trespass/server/db/client";

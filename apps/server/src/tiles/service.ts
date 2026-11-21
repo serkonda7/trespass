@@ -56,11 +56,7 @@ export function loadTileRegions(db: DbOrTx, kinds?: readonly TileRegion["kind"][
   return kinds ? rows.filter((r) => kinds.includes(r.kind)) : rows;
 }
 
-/**
- * Rules 1–3: leave points already covered alone; otherwise create a padded,
- * randomly offset box and merge it with nearby regions. The row and its
- * extract job are written to the SAME transaction as the caller.
- */
+/** Rules 1–3 for one point. Writes the region and its extract job in the CALLER's transaction. */
 export function ensureTileRegion(
   db: DbOrTx,
   point: Point,

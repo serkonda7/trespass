@@ -45,11 +45,8 @@ export function getRouter() {
 }
 
 /**
- * The root beforeLoad serves the cached session and refreshes it in the
- * background once stale. When that refresh finds a different user (signed
- * out, disabled, role changed elsewhere), re-run every beforeLoad so the
- * _authed redirect and the role guards see it right away. Structural sharing
- * keeps the data reference stable while nothing changed.
+ * When the background session refresh finds a different user (signed out,
+ * disabled, role change), re-run every beforeLoad so guards react at once.
  */
 function rerunGuardsOnSessionChange(
   router: { invalidate: () => Promise<void> },

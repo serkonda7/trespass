@@ -1,8 +1,5 @@
-// App-level actions (DESIGN §3.5): what a role may do outside of one location.
-// Safe to import on the client — pages use `can` to decide which buttons to
-// show, and the server uses the same table (re-exported by server/authz/actions).
-// Location-level permissions are different: they come from the server's
-// serialization and are never computed in the UI.
+// App-level actions per role (DESIGN §3.5), shared by client buttons and server.
+// Location permissions come from serialization, never computed in the UI.
 import type { Role } from "./authz/ctx";
 
 export const APP_ACTIONS = {

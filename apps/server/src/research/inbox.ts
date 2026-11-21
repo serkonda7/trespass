@@ -1,12 +1,7 @@
-// The research inbox (DESIGN §6.1, §6.4) — the only output of research. A
-// candidate changes nothing until the admin decides:
-//   new_location: accept (researched location) · later (idea location) ·
-//                 merge (its facts/sources go to an existing location) · reject
-//   fact:         accept (approved history entry with its sources) · reject
-//   status_change: accept (sets the location's status) · reject
-// Rejected candidates are kept so the same thing is never suggested again.
-// Creating a location goes through createLocation, which queues the tile
-// region for a new area (DESIGN §7) and reindexes search.
+// Research inbox (DESIGN §6.4), the only output of research. Nothing changes
+// until the admin decides (see DecideCandidateInput for the options).
+// Rejected rows are kept, never suggested again. New locations go through
+// createLocation (tile region + search index).
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
 import { haversineMeters } from "@trespass/shared/geo/distance";
 import type { Point } from "@trespass/shared/geo/types";

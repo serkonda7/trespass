@@ -1,9 +1,6 @@
-// Worker-only extraction from a Protomaps daily build (DESIGN §7.1). The CLI
-// downloads only the tile ranges inside the bbox via HTTP range requests; the
-// resulting local .pmtiles is then walked with the `pmtiles` package through a
-// local Source that reads byte ranges from disk. Tile bytes are copied
-// unchanged (gzip MVT as in the build). No network access in tests: the reader
-// and the build-URL probe are independently injectable.
+// Worker-only extraction from a Protomaps daily build (DESIGN §7.1): the CLI
+// range-downloads the bbox, then a local `pmtiles` Source walks the archive.
+// Tile bytes are copied unchanged. Reader and build-URL probe are injectable.
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

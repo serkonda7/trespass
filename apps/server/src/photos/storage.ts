@@ -1,9 +1,6 @@
-// Content-addressed blob store under UPLOAD_DIR (DESIGN §5.3, §8.4):
-//   <root>/ab/cd/<sha256>                  the original, exactly as uploaded
-//   <root>/derived/<sha256>/<size>.webp    metadata-free derivatives (rebuildable)
-//   <root>/tmp/                            in-flight writes, renamed into place
-// Writes are atomic (temp file, fsync, rename), so a reader never sees half a
-// file. Deleting blobs is the job of gc.ts, which checks references first.
+// Content-addressed blobs under UPLOAD_DIR:
+//   ab/cd/<sha256>  original · derived/<sha256>/<size>.webp  derivatives · tmp/
+// Writes are atomic (temp, fsync, rename). Deletion only via gc.ts.
 import {
   closeSync,
   existsSync,

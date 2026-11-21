@@ -7,10 +7,9 @@ export function actionErrorText(err: unknown): string {
 }
 
 /**
- * Runs a UI action (usually a server function call): toasts `success` when it
- * works, the mapped error text when it fails, and sends signed-out users
- * (e.g. just disabled) to /login. Returns the result, or undefined on error.
- * `onError` sees the raw error first; return true from it to skip the toast.
+ * Runs a UI action: toasts `success` or the mapped error, sends signed-out
+ * users to /login. Returns the result or undefined. `onError` returning true
+ * skips the toast.
  */
 export async function runAction<T>(
   fn: () => Promise<T>,

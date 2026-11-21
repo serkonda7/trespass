@@ -1,7 +1,5 @@
-// Photos: upload/list/assign/caption/reorder/delete/cover. Independent of the
-// request; ./functions.ts adds authMiddleware, ./upload.ts handles multipart.
-// Every visibility decision comes from src/server/authz/photos.ts and is
-// enforced in SQL. GPS is added to the DTO whenever the photo has it.
+// Photo service (request-independent; ./functions.ts, ./upload.ts wrap it).
+// Visibility from ../authz/photos.ts, in SQL. GPS is in the DTO when present.
 
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
 import {

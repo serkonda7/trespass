@@ -1,8 +1,5 @@
-// Trips: stops, people, emergency contact, packing list and report (DESIGN
-// §5.5). Visibility comes from authz/trips.ts (SQL). A trip never widens what
-// a viewer may see of its stops: stop locations are loaded with
-// visibleLocationsWhere(ctx) and serialized with serializeLocation at the
-// viewer's own level; every visible stop is shown at its exact point.
+// Trips (DESIGN §5.5). Visibility from authz/trips.ts. A trip never widens
+// access: stops load with visibleLocationsWhere and serialize at the viewer's level.
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
 import type { LocationStatus } from "@trespass/shared/locations/types";
 import {
@@ -468,11 +465,7 @@ export function deleteTrip(db: AppDb, ctx: AuthCtx, id: string): void {
 
 // --- Write: stops --------------------------------------------------------------------------
 
-/**
- * Reorders/replaces the stops the editor can see. Stops whose location the
- * editor can no longer see are kept (after the visible ones): an editor cannot
- * remove what they cannot name, and the order of hidden stops is not revealed.
- */
+/** Replaces the editor's visible stops; hidden stops are kept at the end, order unrevealed. */
 export function setTripStops(
   db: AppDb,
   ctx: AuthCtx,

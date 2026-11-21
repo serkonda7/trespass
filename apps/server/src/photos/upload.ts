@@ -1,8 +1,6 @@
-// POST /api/v1/photos (multipart/form-data: `file`, optional `locationId`,
-// `visitId`, `caption`). One file per request so the UI can show progress and
-// retry per file. Permission is checked before the body is read; the file is
-// then streamed to a temp file while hashing, moved atomically into the blob
-// store and inserted as a `processing` row with a `photos.process` job.
+// POST /api/v1/photos (multipart: `file`, optional `locationId`, `visitId`,
+// `caption`), one file per request. Permission first; then stream + hash to
+// temp, move into the blob store, insert `processing` row + `photos.process`.
 import { closeSync, fsyncSync, rmSync, writeSync } from "node:fs";
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
 import { uploadFieldsInput } from "@trespass/shared/photos/inputs";

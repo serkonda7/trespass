@@ -1,12 +1,7 @@
-// Locations: create, read, update, move, visibility, grants, delete, list and
-// duplicate checks. Independent of the request (testable with createTestDb());
-// ./functions.ts wraps these as server functions with authMiddleware.
-//
-// Every permission check goes through src/server/authz. List/map queries AND
-// visibleLocationsWhere(ctx) in SQL and take coordinates from visibleLatExpr /
-// visibleLonExpr; rows are never filtered in JS. Every response is serialized
-// by serializeLocation. Invisible locations are LOCATION_NOT_FOUND (404),
-// never LOCATION_FORBIDDEN (DESIGN §3.4).
+// Location service (request-independent; ./functions.ts adds authMiddleware).
+// - Permissions only via ../authz; filter in SQL with visibleLocationsWhere.
+// - Coordinates from visibleLatExpr/LonExpr; responses via serializeLocation.
+// - Invisible → LOCATION_NOT_FOUND (404), never LOCATION_FORBIDDEN.
 
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
 import { diffFields } from "@trespass/shared/diff";

@@ -1,10 +1,6 @@
-// A consistent read view for one export: its own read-only connection in one
-// read transaction. In WAL mode that sees the database as of its first read
-// while the app keeps writing, so locations, visits and photos agree.
-// Cost: the WAL grows while the snapshot is open and shrinks after it.
-// Blobs are immutable; one deleted by gc meanwhile is marked missing.
-// In-memory databases (tests) can't be opened twice: there the export reads
-// the given connection directly.
+// Consistent export view: own read-only connection in one read transaction
+// (WAL grows meanwhile). Blobs gc'd meanwhile are marked missing. In-memory
+// DBs can't be reopened, so they are read directly.
 import { Database } from "bun:sqlite";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import type { AppDb } from "../db/client";

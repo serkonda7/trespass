@@ -1,6 +1,5 @@
-// Error codes of the location server functions and their German text. The
-// server throws LocationsError (src/server/locations/errors.ts) whose message
-// is "CODE" or "CODE:detail"; that survives server-function serialization.
+// Location error codes and German text. LocationsError messages ("CODE[:detail]")
+// survive server-function serialization.
 
 import { errorText } from "../error-text";
 import { m } from "../paraglide/messages";

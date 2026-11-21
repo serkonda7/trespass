@@ -13,12 +13,7 @@ export type AppTx = Parameters<Parameters<AppDb["transaction"]>[0]>[0];
 /** Functions that work both standalone and inside a caller's transaction take this. */
 export type DbOrTx = AppDb | AppTx;
 
-/**
- * Where the generated SQL migrations live: apps/server/drizzle, found below
- * the repo root (WORKDIR /app in the image). The bundled web app and Nitro's
- * dev runner have no usable `import.meta.dir`, so that is only the fallback
- * for TypeScript sources run from outside the repo.
- */
+/** apps/server/drizzle below the repo root; `import.meta.dir` only as fallback (unusable when bundled). */
 export function migrationsDir(): string {
   if (process.env.MIGRATIONS_DIR) return resolve(process.env.MIGRATIONS_DIR);
   const fromRoot = join(workspaceRoot(), "apps", "server", "drizzle");
@@ -49,10 +44,8 @@ export function openDatabase(path: string, opts: { snapshotBeforeMigrate?: boole
 export const KEEP_SNAPSHOTS = 3;
 
 /**
- * DESIGN §8.6: take a DB snapshot before migrations run on an existing
- * database, as `<db>.pre-migrate-<ISO time>.bak` next to it. Only the newest
- * KEEP_SNAPSHOTS are kept. Litestream replicates only the configured path
- * (deploy/litestream.yml), so these files are local only and never restored.
+ * Before migrating an existing DB, snapshot it to `<db>.pre-migrate-<ISO>.bak`
+ * (newest KEEP_SNAPSHOTS kept; local only, not replicated). DESIGN §8.6.
  */
 function snapshotIfPending(sqlite: Database, path: string, folder: string) {
   const journal = JSON.parse(readFileSync(join(folder, "meta", "_journal.json"), "utf8")) as {
@@ -99,11 +92,7 @@ export function pruneSnapshots(path: string, keep: number): string[] {
 // (so shutdown can close it).
 const G = globalThis as unknown as { __trespassDb?: AppDb };
 
-/**
- * The process-wide database (DATABASE_PATH). The first call opens it, runs
- * migrations and records a row in `boots`. Server code imports this; tests use
- * `createTestDb()` from ./test-db instead.
- */
+/** Process-wide DB (DATABASE_PATH). First call opens, migrates and records a `boots` row. */
 export function getDb(): AppDb {
   if (G.__trespassDb) return G.__trespassDb;
   const db = openDatabase(getEnv().DATABASE_PATH, { snapshotBeforeMigrate: true });
@@ -112,12 +101,7 @@ export function getDb(): AppDb {
   return db;
 }
 
-/**
- * Closes the process-wide database at shutdown. A PASSIVE checkpoint first
- * moves committed WAL frames into the main file without waiting for readers
- * or resetting the WAL, so a running Litestream (which holds its own read
- * connection and manages the WAL itself) is never disturbed.
- */
+/** Closes the process DB at shutdown after a PASSIVE checkpoint (never disturbs Litestream). */
 export function closeDb(): boolean {
   const db = G.__trespassDb;
   if (!db) return false;
@@ -126,11 +110,7 @@ export function closeDb(): boolean {
   return true;
 }
 
-/**
- * Checkpoints (PASSIVE) and closes one connection. `close(true)` finalizes
- * cached statements and closes now; plain `close()` would defer the close
- * (and SQLite's final checkpoint) while any cached `query()` statement lives.
- */
+/** PASSIVE checkpoint + `close(true)` (plain close() defers while cached statements live). */
 export function closeDatabase(db: AppDb) {
   try {
     db.$client.exec("PRAGMA wal_checkpoint(PASSIVE)");

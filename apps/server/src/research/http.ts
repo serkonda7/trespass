@@ -1,9 +1,6 @@
-// Polite HTTP for research (DESIGN §6.1): robots.txt is followed, one request
-// per host every few seconds, responses are cached in `http_cache` (bodies on
-// disk, revalidated with ETag / Last-Modified), the user agent is generic, and
-// blocklisted or private hosts are never fetched. A page that cannot be read
-// live falls back to its newest Wayback Machine copy. `fetch`, the clock and
-// sleep are injectable, so tests never touch the network or wait.
+// Polite research HTTP (DESIGN §6.1): robots.txt, per-host delay, `http_cache`
+// with ETag/Last-Modified, generic UA, no blocklisted/private hosts, Wayback
+// fallback. fetch, clock and sleep are injectable.
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { eq } from "drizzle-orm";

@@ -1,5 +1,5 @@
 // Photo rules shared by the server (enforcement) and the UI (early checks).
-// The server always decides the type by magic bytes (src/lib/mime-sniff.ts).
+// The server decides the type by magic bytes (../mime-sniff.ts).
 import type { PhotoSize } from "./types";
 
 /** Caddy allows 110 MB request bodies (DESIGN §5.3); one file per request. */

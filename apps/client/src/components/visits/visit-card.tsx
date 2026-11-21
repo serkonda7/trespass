@@ -1,5 +1,4 @@
-// One visit in the location timeline and the journal feed. `journalHtml` is
-// sanitized on the server (src/server/markdown.ts) before it reaches innerHTML.
+// One visit (timeline and feed). `journalHtml` is server-sanitized (server/markdown.ts).
 
 import { useQueryClient } from "@tanstack/solid-query";
 import { Link } from "@tanstack/solid-router";

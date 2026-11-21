@@ -1,8 +1,5 @@
-// `scan.wikidata` (DESIGN §6.3): Wikidata items with coordinates inside the
-// search area and a dissolved/abolished (P576), official closure (P3999) or
-// service retirement (P730) date. New items become `new_location` candidates
-// carrying the closure as a fact; items matching a known location become
-// `fact` candidates for it. Only the area's bounding box is sent.
+// `scan.wikidata`: items in the area with a closure date (P576, P3999, P730).
+// New → `new_location` (+ fact); known → `fact`. Sends only the bbox.
 
 import { pointInRing, type Ring, ringBbox } from "@trespass/shared/geo/polygon";
 import type { Point } from "@trespass/shared/geo/types";

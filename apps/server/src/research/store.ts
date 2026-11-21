@@ -1,13 +1,7 @@
-// Writes research findings into `candidates` with the deduplication of DESIGN
-// §6.2: a new place within 200 m of a known location or of any earlier
-// candidate (rejected ones included), or with a similar name within 5 km, or
-// with the same source record, is attached as evidence to the existing entry
-// instead of becoming a new one. Rejected candidates stay rejected.
-//
-// Research is admin-only and runs in the worker without a request context.
-// The admin sees every location exactly (DESIGN §3.1), so comparing against
-// the stored exact coordinates here reveals nothing to anyone else; nothing in
-// this module is ever returned to a non-admin.
+// Writes findings to `candidates` with DESIGN §6.2 dedupe: same source record,
+// ≤ 200 m from a location or earlier candidate (rejected too), or a similar
+// name ≤ 5 km → evidence on the existing entry. Rejected stays rejected.
+// Compares exact coordinates: fine only because research is admin-only.
 import { haversineMeters } from "@trespass/shared/geo/distance";
 import type { Point } from "@trespass/shared/geo/types";
 import { similarNames } from "@trespass/shared/locations/names";

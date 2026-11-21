@@ -1,11 +1,8 @@
-// Better Auth configuration (DESIGN §7, §8.4).
-//  - username + password, no email; public sign-up is impossible
-//    (emailAndPassword.disableSignUp + /sign-up/* disabled). Accounts are
-//    created only server-side via createUserWithPassword() (invite flow).
-//  - passkeys with RP ID = hostname of ORIGIN; registration needs a session.
-//  - production (https ORIGIN): host-only `__Host-` cookies, Secure, Path=/, SameSite=Lax.
-//  - disabled users: session creation is refused (covers password and passkey).
-//  - per-username lockout wraps the HTTP handler (./handler.ts, ./lockout.ts).
+// Better Auth config (DESIGN §8.4).
+// - Username + password, no email, no sign-up (accounts only via invites).
+// - Passkeys: RP ID = ORIGIN hostname; registering needs a session.
+// - https: `__Host-` cookies, Secure, SameSite=Lax. Disabled users get no session.
+// - Per-username lockout wraps the handler (./handler.ts, ./lockout.ts).
 import { passkey } from "@better-auth/passkey";
 import { APIError, betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
@@ -21,12 +18,7 @@ import type { Env } from "../env";
 export const PASSWORD_MIN_LENGTH = 1;
 export const PASSWORD_MAX_LENGTH = 128;
 export const USERNAME_PATTERN = /^[a-z0-9_.]{3,30}$/;
-/**
- * The Better Auth endpoints reachable over HTTP (paths below /api/auth). The
- * handler (./handler.ts) answers 404 for every other path, so endpoints that
- * bypass the app's account rules (e.g. /update-user: username, display name,
- * image) and anything a Better Auth upgrade adds stay closed.
- */
+/** Allowlist of Better Auth paths below /api/auth; everything else (incl. future additions) is 404. */
 export const ENABLED_AUTH_PATHS: ReadonlySet<string> = new Set([
   "/sign-in/username", // password login (login page, lockout in ./handler.ts)
   "/sign-out", // header menu
@@ -69,11 +61,8 @@ export function createAuth({ db, env, startCookies = true, rateLimit = true }: C
       minPasswordLength: PASSWORD_MIN_LENGTH,
       maxPasswordLength: PASSWORD_MAX_LENGTH,
     },
-    // /is-username-available would reveal which usernames exist; there is no
-    // email, so password-reset-by-mail is off too (an admin resets passwords).
-    // /update-user would let anyone change their own login name, display name
-    // and image past the app's rules (account page uses its own server function).
-    // The handler's ENABLED_AUTH_PATHS allowlist closes everything else too.
+    // Off: /is-username-available (enumeration), mail reset (no email; admins
+    // reset), /update-user (bypasses account rules).
     disabledPaths: [
       "/update-user",
       "/sign-up/email",

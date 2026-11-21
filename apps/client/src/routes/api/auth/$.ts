@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/solid-router";
 import { getAuthHandler } from "@trespass/server/auth/context";
 
-// Better Auth's HTTP API (sign-in, sign-out, session, passkeys) under /api/auth/*,
-// with the per-username sign-in lockout in front (src/server/auth/handler.ts).
+// Better Auth API under /api/auth/*, behind the per-username lockout (server/auth/handler.ts).
 export const Route = createFileRoute("/api/auth/$")({
   server: {
     handlers: {

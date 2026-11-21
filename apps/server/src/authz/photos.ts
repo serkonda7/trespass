@@ -1,8 +1,6 @@
-// The ONLY place that decides who may see or change a photo (DESIGN §3.3,
-// §3.4 rules 4 & 6, §5.3). Visibility is an SQL predicate over photos joined to
-// locations and visits; rows are never filtered in JS. Authors keep their own
-// photos even after the location became invisible. Unsorted photos (no location
-// and no visit) are visible only to their uploader and admins.
+// The ONLY place for photo permissions (DESIGN §3.3, §5.3). Visibility is SQL.
+// Uploaders keep their photos when the location becomes invisible; unsorted
+// photos are uploader/admin only.
 
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
 import { and, eq, inArray, or, type SQL, sql } from "drizzle-orm";
@@ -26,11 +24,7 @@ export type PhotosTableLike = {
   visitId: AnySQLiteColumn;
 };
 
-/**
- * True exactly where a photo is visible. AND it into every photo query — never
- * filter rows in JS. A photo inherits its location's (or visit's) visibility;
- * the uploader and admins always see their own photos, including unsorted ones.
- */
+/** Photo visibility predicate: location or visit visible, or uploader/admin. AND into every photo query. */
 export function visiblePhotosWhere(ctx: AuthCtx, table: PhotosTableLike = photos): SQL {
   const parts: SQL[] = [eq(table.uploaderId, ctx.userId) as SQL];
   if (ctx.role === "admin") parts.push(TRUE);

@@ -1,6 +1,5 @@
-// Errors of the visit service. Their message is "CODE" or "CODE:detail"
-// (codes and German text: src/lib/visits/errors.ts). An invisible or missing
-// visit is always VISIT_NOT_FOUND (404), never forbidden (DESIGN §3.4 rule 9).
+// Visit service error; "CODE" or "CODE:detail" (shared/visits/errors.ts).
+// Invisible = missing: VISIT_NOT_FOUND (404).
 
 import type { VisitsErrorCode } from "@trespass/shared/visits/errors";
 import type { z } from "zod";

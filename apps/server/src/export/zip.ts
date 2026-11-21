@@ -1,15 +1,9 @@
-// Streaming ZIP writer (PKWARE APPNOTE 6.3) with ZIP64, for exports larger than
-// 4 GiB. Entries are written one after another: local header, data, data
-// descriptor (CRC and sizes follow the data, so nothing is buffered). Only the
-// central directory (~100 bytes per entry) is kept in memory until finish().
-//  - method 0 (stored) for files that are already compressed (photos),
-//    method 8 (deflate, via node:zlib's streaming DeflateRaw) for text.
-//  - names are UTF-8 (flag bit 11), times are UTC DOS times plus a UTC
-//    "extended timestamp" extra field. Passing `date` makes the archive
-//    byte-for-byte reproducible (used by the metamorphic privacy test).
-//  - an entry gets a ZIP64 local header when its known size is >= 4 GiB (or
-//    when forced); the central directory and end record switch to ZIP64 as
-//    soon as an offset, size or the entry count overflows.
+// Streaming ZIP writer (APPNOTE 6.3) with ZIP64. Entries use data descriptors,
+// so nothing is buffered; only the central directory (~100 B/entry) is kept.
+// - stored for photos, deflate for text; UTF-8 names; UTC times.
+// - fixed `date` → byte-identical archives.
+// - ZIP64 per entry when size ≥ 4 GiB (or forced); directory/end record switch
+//   when any offset, size or count overflows.
 import { crc32, createDeflateRaw } from "node:zlib";
 
 const MAX32 = 0xffffffff;

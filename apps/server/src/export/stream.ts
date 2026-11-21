@@ -1,9 +1,6 @@
-// A pull-driven byte stream for the response body. The producer awaits
-// write(); write() returns only while the consumer keeps up, so at most
-// `highWaterMark` chunks sit in the queue (bounded memory, however large the
-// archive). A cancelled stream (client gone) or a consumer that stops reading
-// for `idleTimeoutMs` makes the next write() throw ExportAborted, so the
-// producer unwinds through its finally blocks (snapshot closed, lock released).
+// Pull-driven response stream: write() waits for the consumer, so at most
+// `highWaterMark` chunks are queued. Cancel or `idleTimeoutMs` without reads
+// makes the next write() throw ExportAborted, unwinding the producer.
 
 export class ExportAborted extends Error {
   constructor(public readonly reason: "client" | "idle") {

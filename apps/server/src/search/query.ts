@@ -1,13 +1,7 @@
-// The one list/search query (DESIGN §5.9, §3.4). The map's `q` filter and the
-// Suche page both go through searchLocations: FTS5 MATCH for words of at least
-// three characters, a `name_sort` prefix match for shorter ones. The visibility
-// predicate is ALWAYS ANDed in SQL, and coordinates come only from
-// visibleLatExpr / visibleLonExpr. Rows are serialized by the same mapper as
-// listLocations, so a search result is byte-for-byte a list result.
-//
-// Ranking by bm25 would only see view-level columns (the index contains no
-// exact detail fields), but we keep the stable id/distance ordering of the map
-// list so the same keyset cursor works for both paths.
+// The one list/search query (DESIGN §5.9), used by the map and /suche.
+// - FTS5 MATCH for words ≥ 3 chars, `name_sort` prefix for shorter.
+// - Visibility always ANDed in SQL; coordinates from visibleLatExpr/LonExpr.
+// - Same row mapper and id/distance order as listLocations (shared keyset cursor).
 
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
 import { splitBbox } from "@trespass/shared/geo/distance";

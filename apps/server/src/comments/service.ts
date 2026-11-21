@@ -1,8 +1,6 @@
-// Threaded comments on locations, visits and photos (DESIGN §5.4). Visibility
-// comes only from authz/comments.ts (SQL): a comment is visible exactly when
-// its target is. Bodies are Markdown rendered through the same sanitizer as
-// journals (no photo embeds). Deleted comments keep their row with an empty
-// body so replies stay in place; audits record ids only, never text.
+// Threaded comments (DESIGN §5.4). Visible exactly when the target is
+// (authz/comments.ts). Sanitized Markdown, no embeds. Soft delete keeps the
+// row for replies. Audits record ids only.
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
 import {
   type CommentTarget,

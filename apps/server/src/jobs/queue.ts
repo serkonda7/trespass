@@ -1,12 +1,8 @@
-// The `jobs` table as a queue (DESIGN §7 "Jobs"). States of a row:
-//   pending   done_at NULL, locked_until NULL or in the past (due when run_at <= now)
-//   running   done_at NULL, locked_until in the future (a worker holds the lease)
-//   done      done_at set, last_error NULL
-//   dead      done_at set, last_error set (gave up after max attempts)
-// Claiming is one UPDATE … RETURNING, so two workers can never take the same
-// row. `attempts` is incremented by the claim and doubles as the lease token:
-// a worker whose lease expired (and was re-claimed) can no longer finish or
-// fail the row.
+// `jobs` table as a queue (DESIGN §7). Row states:
+//   pending  done_at NULL, lease NULL/expired    running  done_at NULL, lease live
+//   done     done_at set, no error               dead     done_at + last_error
+// Claim = one UPDATE … RETURNING. `attempts` doubles as the lease token, so a
+// worker whose lease was re-claimed can't finish or fail the row.
 import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import type { DbOrTx } from "../db/client";
 import { type Job, jobs } from "../db/schema";
@@ -144,12 +140,7 @@ export function failJob(
   return !!r;
 }
 
-/**
- * At process start: leases held by a previous process of this (single-instance)
- * app are released at once instead of waiting for them to expire. The attempt
- * the crash interrupted stays counted, so a job that crashes the process every
- * time still ends up dead.
- */
+/** At start: release a crashed process's leases. The attempt still counts, so crash loops end dead. */
 export function releaseStaleLeases(db: DbOrTx): number {
   const r = db
     .update(jobs)

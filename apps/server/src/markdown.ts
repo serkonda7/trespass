@@ -1,11 +1,8 @@
-// Journal Markdown -> sanitized HTML. Never render untrusted text without this.
-// `photo:ID` embeds are resolved by the caller with a batch SQL visibility check
-// (photos/resolvePhotoEmbeds); an unresolved embed disappears entirely.
-//
-// The HTML is built constructively with Bun.markdown.render's callbacks: only
-// the allowlisted tags below are ever emitted, and all text/attribute values
-// are escaped. Raw HTML cannot become a tag (noHtmlBlocks/noHtmlSpans) and is
-// stripped from the Markdown before parsing, like sanitize-html did.
+// Markdown → safe HTML. Never render untrusted text without this.
+// - Built with Bun.markdown.render callbacks: only allowlisted tags, all values
+//   escaped, raw HTML stripped before parsing.
+// - `photo:ID` embeds resolve via the caller (resolvePhotoEmbeds); unresolved
+//   ones disappear.
 
 export type MarkdownOptions = {
   /** Return a URL for a photo embed, or null to drop the image. */

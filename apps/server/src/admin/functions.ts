@@ -1,8 +1,5 @@
-// Server functions for the admin area (users, invites, groups). All are
-// admin-only: roleMiddleware("admin") refuses others before the handler runs,
-// and each service function checks the role again (unit-tested).
-// Errors are thrown as HttpError with a code as message (e.g. "LAST_ADMIN");
-// the UI maps codes to German text (src/lib/error-text.ts).
+// Admin server functions (users, invites, groups). roleMiddleware("admin") plus
+// a role check in each service. Errors: HttpError with a code (shared/error-text.ts).
 import { createServerFn } from "@tanstack/solid-start";
 import { z } from "zod";
 import { createInvite, INVITE_MAX_DAYS, listPendingInvites, revokeInvite } from "../auth/invites";

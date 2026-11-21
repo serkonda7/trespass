@@ -17,7 +17,6 @@ import { listFeed, yearReview } from "../visits/service";
 const STATUSES: readonly LocationStatus[] = [
   "idea",
   "researched",
-  "planned",
   "visited",
   "sealed",
   "redeveloped",

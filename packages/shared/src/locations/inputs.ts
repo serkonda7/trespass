@@ -24,14 +24,7 @@ export const pointSchema = z.object({
 export type PointInput = z.input<typeof pointSchema>;
 
 /** Stored statuses only: `visited` is derived and can never be written. */
-export const statusSchema = z.enum([
-  "idea",
-  "researched",
-  "planned",
-  "sealed",
-  "redeveloped",
-  "demolished",
-]);
+export const statusSchema = z.enum(["idea", "researched", "sealed", "redeveloped", "demolished"]);
 /** Statuses usable as a filter/list value, including derived `visited`. */
 export const effectiveStatusSchema = z.enum([...statusSchema.options, "visited"] as const);
 export const visibilitySchema = z.enum(["private", "friends"]);

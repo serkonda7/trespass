@@ -1,8 +1,6 @@
-// `extract` (DESIGN §6.1, §6.3): Haiku reads one fetched page and returns
-// facts about one place as schema-bound JSON. The page is untrusted: the
-// prompt says so, the call has no tools, and the server keeps a fact only if
-// its quote appears verbatim in the fetched text and its date is well formed.
-// Whatever survives still only lands in the inbox.
+// `extract` (DESIGN §6.3): one untrusted page → schema-bound facts. No tools;
+// a fact survives only if its quote is verbatim in the page and its date is
+// well formed. Results go to the inbox only.
 import {
   HISTORY_PRECISIONS,
   isHistoryDate,

@@ -22,13 +22,22 @@ export default defineConfig({
       // condition out of dependency pre-bundling, so the browser would fetch
       // better-auth's client as ~170 separate modules on every page load.
       // It ships plain JS (no JSX), so pre-bundling it is safe.
+      // The map libraries are only reached through dynamic imports, so Vite
+      // would discover them late, re-optimize and reload the page (back to
+      // "Lädt …" on forms). Listing them pre-bundles them at startup.
       optimizeDeps: {
-        include: ["better-auth/client", "better-auth/client/plugins", "better-auth/solid"],
+        include: [
+          "better-auth/client",
+          "better-auth/client/plugins",
+          "better-auth/solid",
+          "maplibre-gl",
+          "@protomaps/basemaps",
+        ],
       },
       build: {
         rolldownOptions: {
           output: {
-            // Zod and src/lib/zod-config.ts share one chunk, so `jitless` is set the moment Zod loads.
+            // Zod and ~/lib/zod-config.ts share one chunk, so `jitless` is set the moment Zod loads.
             // Otherwise a shared chunk that creates schemas at load can run before the entry's z.config() and trip the CSP (no 'unsafe-eval').
             codeSplitting: {
               groups: [
@@ -54,21 +63,15 @@ export default defineConfig({
     nitro({
       preset: "bun",
       plugins: ["./src/nitro/startup.ts"],
-      // Map glyphs and sprites (public/map, from `bun run map-assets`) are
-      // unhashed but only change with a new basemaps-assets download: cache
-      // them for a week instead of revalidating every PBF on each map load.
-      // The MapLibre worker is not listed: it must match the bundled library
-      // version, so it keeps the default ETag revalidation.
+      // Glyphs/sprites change only with `map-assets`: cache a week. The MapLibre
+      // worker must match the bundle, so it keeps ETag revalidation.
       routeRules: {
         "/map/fonts/**": { headers: { "cache-control": "public, max-age=604800" } },
         "/map/sprites/**": { headers: { "cache-control": "public, max-age=604800" } },
       },
-      // Nitro traces `sharp` as a native package and copies it plus @img/* (~19 MB)
-      // into .output. The hoisted root node_modules (bunfig.toml) already ships it,
-      // and both `bun run start` and Docker resolve bare imports from there.
-      // `!sharp` stops tracing; the trace pattern also drives externalization, so
-      // `rolldownConfig.external` keeps the import bare instead of bundling sharp.
-      // Not `builtinModules`: that is only for modules the runtime provides.
+      // Don't copy sharp (~19 MB) into .output: it resolves from the hoisted root
+      // node_modules. `!sharp` stops tracing; `rolldownConfig.external` keeps the
+      // import bare.
       traceDeps: ["!sharp"],
       rolldownConfig: { external: ["sharp"] },
       ...(outDir ? { output: { dir: outDir }, buildDir: `${outDir}/.nitro` } : {}),

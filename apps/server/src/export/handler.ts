@@ -1,12 +1,7 @@
-// GET /api/v1/export: the caller's export as a streamed ZIP (DESIGN §5.10).
-//  - guests: 404 JSON, like an unknown URL; signed-out callers get 401 from
-//    withAuth in the route.
-//  - `?ticket=…` claims a slot reserved by reserveExportFn (the export page);
-//    without one, the request acquires a slot itself (API clients).
-//  - busy: 429 { error: "EXPORT_BUSY" } (this user) or "EXPORT_LIMIT" (overall);
-//    a bad ticket: 409 { error: "EXPORT_TICKET_INVALID" }.
-// The archive is produced while the client reads it (createProducerStream);
-// the audit event `export.created` is written when it ends, completed or not.
+// GET /api/v1/export: streamed ZIP (DESIGN §5.10).
+// - Guests 404, signed out 401. `?ticket=` claims a reserved slot; else acquire.
+// - Busy 429 EXPORT_BUSY/EXPORT_LIMIT; bad ticket 409 EXPORT_TICKET_INVALID.
+// - `export.created` is audited when the stream ends, completed or not.
 
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
 import { EXPORT_FORMAT } from "@trespass/shared/export/types";

@@ -1,15 +1,7 @@
-// Builds the export archive (DESIGN §3.4 rules 2/5/6, §3.5, §5.10) and streams
-// it through a ByteWriter. Layout: docs/export-format.md.
-//
-// Scope comes only from the authz SQL predicates: visibleLocationsWhere,
-// visibleVisitsWhere, visiblePhotosWhere, visibleHistoryWhere,
-// visibleCommentsWhere and visibleTripsWhere. Nothing is filtered in JS.
-// Coordinates come from visibleLatExpr/visibleLonExpr, and locations go through
-// serializeLocation; every exported location has its exact point and details.
-//
-// Memory: data is read in pages from a single read snapshot and written as it
-// is read; files are streamed in 256 KiB chunks; between pages the loop yields
-// to the event loop so other requests keep being served.
+// Builds and streams the export ZIP (DESIGN §5.10). Layout: docs/export-format.md.
+// - Scope only from the authz `visible*Where` SQL predicates; no JS filtering.
+// - Locations via visibleLatExpr/visibleLonExpr and serializeLocation.
+// - Paged from one snapshot, files in 256 KiB chunks, yielding between pages.
 import { open } from "node:fs/promises";
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
 import {

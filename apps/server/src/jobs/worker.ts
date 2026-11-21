@@ -1,19 +1,9 @@
-// In-process job worker (DESIGN §7 "Jobs"): one loop per process that leases
-// due rows from `jobs` and runs the registered handler, one job at a time.
-//
-//   registerJobHandler("reminders.daily", async (payload, { db }) => { … },
-//     { maxAttempts: 3, recurring: { next: (now) => nextEightOClock(now) } });
-//   enqueueJob(db, "reminders.daily", { … });       // from ./queue
-//
-// Failures retry with exponential backoff; after maxAttempts the row is "dead"
-// (done_at + last_error). While a handler runs, its lease is renewed; a handler
-// that exceeds timeoutMs is treated as failed. On start the worker releases
-// leases left by a crashed process (single instance), so interrupted jobs run
-// again right away; the interrupted attempt still counts.
-//
-// The registry and the process worker live on globalThis: the Nitro startup
-// plugin and the lazily loaded app bundle may each carry their own copy of
-// this module, and both must reach the same worker.
+// Job worker (DESIGN §7): one loop per process, one job at a time.
+// - Failures back off exponentially; after maxAttempts the row is dead.
+// - Leases renew while a handler runs; exceeding timeoutMs counts as failure.
+// - On start, leases from a crashed process are released (attempt still counts).
+// - Registry and worker live on globalThis: the startup plugin and the lazy app
+//   bundle may each load their own copy of this module.
 import { type AppDb, getDb } from "../db/client";
 import type { Job } from "../db/schema";
 import {
@@ -81,7 +71,7 @@ const globals = (): Globals => {
 /** The process-wide registry the startup worker runs. */
 export const jobRegistry = (): JobRegistry => globals().registry;
 
-/** Registers a handler with the process-wide registry (from src/server/jobs/handlers.ts). */
+/** Registers a handler with the process-wide registry (from ./handlers.ts). */
 export function registerJobHandler(kind: string, run: JobHandler, opts?: JobHandlerOptions) {
   addJobHandler(globals().registry, kind, run, opts);
 }
@@ -213,10 +203,8 @@ export function createJobWorker(o: {
       }
     },
     /**
-     * Stops polling and waits for the running job. With `timeoutMs`, a job that
-     * is still running then gets its signal aborted and is left behind: its
-     * lease is released at the next start, so it runs again (handlers are
-     * idempotent). Resolves true when no job was left running.
+     * Stops polling and waits for the running job. After `timeoutMs` its signal
+     * is aborted and it reruns next start. Resolves true if nothing was left.
      */
     async stop(opts: { timeoutMs?: number } = {}): Promise<boolean> {
       running = false;

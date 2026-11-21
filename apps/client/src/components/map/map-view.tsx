@@ -30,12 +30,8 @@ type MapLibre = typeof import("maplibre-gl");
 type MapInstance = import("maplibre-gl").Map;
 type MarkerInstance = import("maplibre-gl").Marker;
 
-// Browser-only, memoized. Called as soon as this module is evaluated (with the
-// route chunk, before hydration, or when a link to a map page is preloaded),
-// so the ~300 kB MapLibre download overlaps hydration instead of starting
-// after mount. Vite replaces import.meta.env.SSR with a constant, so the SSR
-// build drops these dynamic imports — and with them maplibre-gl and
-// @protomaps/basemaps — from the server bundle.
+// Browser-only, memoized, started at module load so the ~300 kB MapLibre
+// download overlaps hydration. The SSR build drops these imports.
 let mapLibs: Promise<[MapLibre, typeof import("~/lib/map/style")]> | undefined;
 function loadMapLibs() {
   mapLibs ??= Promise.all([import("maplibre-gl"), import("~/lib/map/style")]);
@@ -54,11 +50,7 @@ const INK = "#141311";
 const PAPER = "#f3ede2";
 const AREA = "#b7a8ef";
 
-/**
- * Registers every category icon as a map image ("cat-<name>"), drawn from the
- * same Lucide icons the UI uses. Rendered to an SVG data URL (img-src data:
- * is allowed) at 2x for crisp pins.
- */
+/** Registers category icons as map images ("cat-<name>"): the UI's icons as 2x SVG data URLs. */
 async function addCategoryImages(m: MapInstance) {
   await Promise.all(
     Object.entries(CATEGORY_ICONS).map(async ([name, Icon]) => {

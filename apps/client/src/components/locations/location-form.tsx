@@ -11,7 +11,7 @@ import type {
   Visibility,
 } from "@trespass/shared/locations/types";
 import { m } from "@trespass/shared/paraglide/messages";
-import { createEffect, createMemo, For, type JSX, Show } from "solid-js";
+import { createEffect, createMemo, type JSX, Show } from "solid-js";
 import { Button } from "~/components/ui/button";
 import { InfoTip } from "~/components/ui/info-tip";
 import { Input, inputClass } from "~/components/ui/input";
@@ -26,7 +26,7 @@ import {
 } from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
 import { useHydrated } from "~/lib/hydrated";
-import { EDITABLE_STATUSES, statusHint, statusLabel } from "~/lib/locations/status";
+import { EDITABLE_STATUSES, statusLabel } from "~/lib/locations/status";
 import { CategoryIcon } from "./category-icon";
 
 export type LocationFormValues = {
@@ -204,22 +204,26 @@ export function LocationForm(props: {
               <SelectContent />
             </Select>
           </div>
-          <Field
-            id="location-status"
-            label={m.location_field_status()}
-            hint={statusHint(values().status)}
+          <Select<StoredLocationStatus>
+            class="grid content-start gap-2"
+            options={[...EDITABLE_STATUSES]}
+            value={values().status}
+            onChange={(s) => s && set("status", s)}
+            disallowEmptySelection
+            itemComponent={(p) => (
+              <SelectItem item={p.item}>{statusLabel(p.item.rawValue)}</SelectItem>
+            )}
           >
-            <select
-              id="location-status"
-              class={inputClass}
-              value={values().status}
-              onChange={(e) => set("status", e.currentTarget.value as StoredLocationStatus)}
-            >
-              <For each={EDITABLE_STATUSES}>
-                {(s) => <option value={s}>{statusLabel(s)}</option>}
-              </For>
-            </select>
-          </Field>
+            <div class="flex min-h-5 items-center">
+              <SelectLabel>{m.location_field_status()}</SelectLabel>
+            </div>
+            <SelectTrigger>
+              <SelectValue<StoredLocationStatus>>
+                {(state) => statusLabel(state.selectedOption())}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent />
+          </Select>
         </div>
 
         <Show when={props.mode === "create"}>

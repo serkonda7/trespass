@@ -9,7 +9,6 @@ import { m } from "@trespass/shared/paraglide/messages";
 export const STATUSES: readonly LocationStatus[] = [
   "idea",
   "researched",
-  "planned",
   "visited",
   "sealed",
   "redeveloped",
@@ -24,31 +23,17 @@ export const EDITABLE_STATUSES: readonly StoredLocationStatus[] = STATUSES.filte
 const LABELS: Record<LocationStatus, () => string> = {
   idea: m.location_status_idea,
   researched: m.location_status_researched,
-  planned: m.location_status_planned,
   visited: m.location_status_visited,
   sealed: m.location_status_sealed,
   redeveloped: m.location_status_redeveloped,
   demolished: m.location_status_demolished,
 };
 
-const HINTS: Record<StoredLocationStatus, () => string> = {
-  idea: m.location_status_hint_idea,
-  researched: m.location_status_hint_researched,
-  planned: m.location_status_hint_planned,
-  sealed: m.location_status_hint_sealed,
-  redeveloped: m.location_status_hint_redeveloped,
-  demolished: m.location_status_hint_demolished,
-};
-
-/** One-line explanation of a settable status, shown in the location form. */
-export const statusHint = (s: StoredLocationStatus): string => HINTS[s]();
-
 // Dark-map friendly fills, distinguishable from each other and from the
 // orange app accent; all reach WCAG AA against the dark surfaces.
 const COLORS: Record<LocationStatus, string> = {
   idea: "#b7a8ef",
   researched: "#6cb8e0",
-  planned: "#f0c449",
   visited: "#6fcf8e",
   sealed: "#ec8fb0",
   redeveloped: "#a3adb8",

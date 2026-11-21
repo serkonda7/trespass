@@ -1,7 +1,5 @@
-// Research jobs (DESIGN §6.3). All run in the standalone worker, are admin
-// initiated (or the weekly `watch`), write only to `candidates` and
-// `research_runs`, and never change a location. RESEARCH=off finishes every
-// run as `skipped` without any outbound request.
+// Research jobs (DESIGN §6.3), worker only. Write only `candidates` and
+// `research_runs`, never a location. RESEARCH=off → `skipped`, no requests.
 //
 //   scan.overpass / scan.wikidata  {runId}   search area → new_location (+ fact)
 //   research.enrich                {runId}   location → Wikipedia + SearXNG → fetch → extract

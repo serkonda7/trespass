@@ -20,11 +20,10 @@ import {
 
 export const ROLES = ["admin", "member", "guest"] as const;
 export const PRINCIPAL_KINDS = ["user", "group"] as const;
-/** Non-derived statuses; `visited` is computed from visits in Stage 4 (DESIGN §2, §9). */
+/** Stored statuses; `visited` is derived from visits (DESIGN §2). */
 export const LOCATION_STATUSES = [
   "idea",
   "researched",
-  "planned",
   "sealed",
   "redeveloped",
   "demolished",
@@ -100,11 +99,8 @@ export const settings = sqliteTable(
 );
 
 /**
- * Users. Shared with Better Auth (model "user", plural "users"):
- *  - Better Auth's required `email` is mapped to `auth_email`, an internal,
- *    synthetic unique value (`<id>@users.invalid`).
- *  - Better Auth's `name` is mapped to `display_name`.
- *  - `username` / `display_username` come from the username plugin.
+ * Users, shared with Better Auth: `email` → `auth_email` (synthetic
+ * `<id>@users.invalid`), `name` → `display_name`; username plugin columns.
  */
 export const users = sqliteTable(
   "users",
@@ -251,11 +247,7 @@ export const categories = sqliteTable("categories", {
   sort: integer("sort").notNull().default(0),
 });
 
-/**
- * One abandoned place (DESIGN §4, §9). `lat/lon` is the exact point returned to
- * everyone who can see the location. `cover_photo_id` has no FK yet: photos
- * arrive in Stage 3.
- */
+/** One abandoned place (DESIGN §4). `lat/lon` is the exact point. */
 export const locations = sqliteTable(
   "locations",
   {
@@ -285,11 +277,7 @@ export const locations = sqliteTable(
     tz: text("tz").notNull(),
     builtYear: integer("built_year"),
     abandonedYear: integer("abandoned_year"),
-    /**
-     * Cover photo of this location. No FK: the photos table references
-     * locations, and a circular FK would make Drizzle's table types recursive.
-     * The service validates the photo and clears the cover on photo delete.
-     */
+    /** No FK (circular Drizzle types); the service validates it and clears it on photo delete. */
     coverPhotoId: text("cover_photo_id"),
     visibility: text("visibility", { enum: VISIBILITIES }).notNull().default("private"),
     friendsLevel: text("friends_level", { enum: FRIENDS_LEVELS }).notNull().default("view"),
@@ -410,11 +398,9 @@ export const visitPeople = sqliteTable(
 
 // --- Photos -----------------------------------------------------------------
 /**
- * One uploaded photo (DESIGN §5.3, §9). The original is stored content-addressed
- * under UPLOAD_DIR; only derivatives are served to other users. EXIF is read by
- * the worker before stripping and reduced to `exif` (camera/lens/exposure only —
- * never GPS or serials). `gps_lat/gps_lon` are exact data (DESIGN §3.4 rule 4).
- * Auto-matching only SUGGESTS a location/visit, it never attaches one.
+ * One photo (DESIGN §5.3). Others get only derivatives. `exif` keeps
+ * camera/lens/exposure (never GPS or serials); GPS has its own columns.
+ * Matching only suggests a location/visit.
  */
 export const photos = sqliteTable(
   "photos",
@@ -457,10 +443,8 @@ export const photos = sqliteTable(
 
 // --- History and sources ---------------------------------------------------
 /**
- * Dated facts about a location (DESIGN §5.4). `date_from`/`date_to` hold as many
- * ISO parts as the precision needs: 'YYYY-MM-DD' (day), 'YYYY-MM' (month) or
- * 'YYYY' (year, decade, circa), so they sort lexicographically. Drafts are
- * visible only at `edit`; approved entries at `view` (and are searchable).
+ * Dated facts (DESIGN §5.4). Dates are ISO prefixes by precision
+ * ('YYYY-MM-DD' | 'YYYY-MM' | 'YYYY'), so they sort as text. Drafts need `edit`.
  */
 export const history = sqliteTable(
   "history",
@@ -491,11 +475,7 @@ export const history = sqliteTable(
   ],
 );
 
-/**
- * A source backing one history entry. Sources belong to exactly one entry (no
- * join table): a source never needs its own visibility rule, it simply inherits
- * the entry's. `archived_url` is the Wayback Machine copy requested on save.
- */
+/** Source of exactly one history entry (inherits its visibility). `archived_url`: Wayback copy. */
 export const sources = sqliteTable(
   "sources",
   {
@@ -520,11 +500,7 @@ export const sources = sqliteTable(
 );
 
 // --- Comments ---------------------------------------------------------------
-/**
- * Threaded comments on a location, a visit or a photo (DESIGN §5.4). Exactly one
- * target column is set; FKs cascade so a deleted target takes its comments with
- * it. A deleted comment keeps its row (replies stay attached) with an empty body.
- */
+/** Comments (DESIGN §5.4): exactly one target column, cascading. Deleted = empty body, row kept. */
 export const comments = sqliteTable(
   "comments",
   {
@@ -691,11 +667,8 @@ export const tripChecklist = sqliteTable(
 
 // --- Map tiles --------------------------------------------------------------
 /**
- * One locally extracted tile region (DESIGN §7/§9). `lat/lon` is the exact box
- * sent to the extractor; it is never shown at full precision in the UI (the
- * admin page rounds it). The tiles themselves live in the separate MBTiles
- * file at TILES_PATH, which only the worker writes. The box may cross the
- * antimeridian (minLon > maxLon); the extractor splits it in that case.
+ * One extracted tile region (DESIGN §7). The box is shown rounded only; it may
+ * cross the antimeridian (minLon > maxLon). Tiles live in TILES_PATH.
  */
 export const tileRegions = sqliteTable(
   "tile_regions",
@@ -766,11 +739,9 @@ export const researchRuns = sqliteTable(
 );
 
 /**
- * Something research found, waiting in the inbox. Rejected rows are kept so the
- * same thing is never suggested again. `location_id` is the subject of a fact
- * or status change (cascade); `result_location_id` the location a new_location
- * candidate was accepted as or merged into. `source_key` identifies the source
- * record ('osm:way/123', 'wd:Q42', 'web:<hash>') for deduplication.
+ * A research finding in the inbox; rejected rows are kept.
+ * `location_id`: subject of a fact/status change. `result_location_id`: where a
+ * new_location went. `source_key`: dedupe key ('osm:way/123', 'wd:Q42', 'web:<hash>').
  */
 export const candidates = sqliteTable(
   "candidates",
@@ -829,10 +800,7 @@ export const researchWatch = sqliteTable("research_watch", {
 });
 
 // --- Activity ---------------------------------------------------------------
-/**
- * Event log. No FK on entity_id/actor_id on purpose: history outlives deletions.
- * `entityId` is a generic link to the affected record, not a domain object.
- */
+/** Event log. No FKs on entity_id/actor_id: events outlive deletions. */
 export const events = sqliteTable(
   "events",
   {

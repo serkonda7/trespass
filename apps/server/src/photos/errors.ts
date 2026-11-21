@@ -1,5 +1,4 @@
-// Errors of the photo service and upload route. `code` is the message the UI
-// maps to German (src/lib/photos/errors.ts); invisible photos are always 404.
+// Photo service/upload errors; codes mapped in shared/photos/errors.ts. Invisible → 404.
 import type { PhotoErrorCode } from "@trespass/shared/photos/rules";
 import { HttpError } from "../auth/context";
 

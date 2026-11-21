@@ -1,10 +1,7 @@
-// Running exports, in memory. Limits: one per user, `maxGlobal` overall (each
-// holds a snapshot, a file handle and deflate CPU on a small VPS).
-// The export page reserves a slot first (so "busy" is a German error, not a
-// failed download), then GET /api/v1/export?ticket=… claims it within
-// `ticketTtlMs`. API clients call without a ticket and acquire a slot directly.
-// The producer's finally block releases the slot (done, disconnect, idle,
-// error). Also keeps the running export's progress and each user's last result.
+// Running exports in memory: one per user, `maxGlobal` overall. The page
+// reserves a slot (so "busy" is a German error), then `?ticket=` claims it
+// within `ticketTtlMs`. The producer's finally releases it. Also tracks
+// progress and each user's last result.
 import type { ExportProgress } from "@trespass/shared/export/types";
 
 export type ExportSlot = {

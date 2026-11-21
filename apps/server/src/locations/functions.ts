@@ -1,7 +1,5 @@
-// Server functions for locations. Logic, permission checks and events live in
-// ./service.ts; these add auth (authMiddleware) and input validation.
-// Errors: LocationsError codes (src/lib/locations/errors.ts; locationsErrorText
-// for German). No UI in this stage — these are the API the map/forms will use.
+// Location server functions: authMiddleware + input validation over ./service.ts.
+// Errors: LocationsError codes (shared/locations/errors.ts).
 import { createServerFn } from "@tanstack/solid-start";
 import {
   createLocationInput,

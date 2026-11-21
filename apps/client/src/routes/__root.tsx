@@ -10,11 +10,8 @@ import type { RouterContext } from "~/router";
 import appCss from "~/styles/app.css?url";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
-  // Every route can read `context.user` (SessionUser | null).
-  // A cached session is used right away (refreshed in the background once
-  // stale), so client navigations never wait for a session round trip first.
-  // A session that ended meanwhile still surfaces: every server function
-  // answers 401 and the router's onError goes to /login.
+  // `context.user` (SessionUser | null) from the cached session, refreshed in the
+  // background when stale. An ended session surfaces as 401 → /login.
   beforeLoad: async ({ context }) => ({
     user: await context.queryClient.ensureQueryData({ ...sessionQuery(), revalidateIfStale: true }),
   }),

@@ -1,6 +1,5 @@
-// Job handlers of the photo feature (registered by src/server/jobs/handlers.ts).
-// `photos.process` is idempotent: a crash re-runs EXIF extraction and rebuilds
-// all derivatives from the content-addressed original.
+// Photo job handlers (registered in ../jobs/handlers.ts). `photos.process` is
+// idempotent: it rebuilds everything from the original.
 
 import { PHOTO_SIZES } from "@trespass/shared/photos/types";
 import { eq } from "drizzle-orm";

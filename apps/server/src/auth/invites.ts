@@ -1,8 +1,6 @@
-// Invites: the only way accounts are created (DESIGN §3.5, §8.6).
-// An invite link carries a random token; only its SHA-256 is stored, so the
-// link can be shown exactly once. Accepting claims the invite and creates the
-// user in one synchronous SQLite transaction: the conditional UPDATE makes
-// single use and expiry atomic, so two simultaneous accepts cannot both win.
+// Invites: the only way to create accounts (DESIGN §3.5). Only the token's
+// SHA-256 is stored (link shown once). Accept = one transaction whose
+// conditional UPDATE makes single use and expiry atomic.
 import type { AuthCtx, Role } from "@trespass/shared/authz/ctx";
 import { and, asc, eq, gt, isNull } from "drizzle-orm";
 import { recordEvent } from "../audit";
@@ -192,12 +190,7 @@ export async function acceptInvite(db: AppDb, input: AcceptInviteInput, now = ()
   });
 }
 
-/**
- * First-admin bootstrap (README "First admin"): while the instance has no
- * users at all, replace any earlier unused bootstrap invites with a fresh
- * admin invite and return its link (printed to the server log at startup).
- * Returns null once any user exists.
- */
+/** While no user exists: replace unused bootstrap invites with a fresh admin invite and return its link; else null. */
 export function ensureBootstrapInvite(db: AppDb, origin: string, now = new Date()): string | null {
   const anyUser = db.select({ id: users.id }).from(users).limit(1).get();
   if (anyUser) return null;
@@ -214,11 +207,7 @@ export function ensureBootstrapInvite(db: AppDb, origin: string, now = new Date(
   return inviteUrl(origin, token);
 }
 
-/**
- * ensureBootstrapInvite() for process start. The dev server may run startup
- * plugins more than once per process; the same still-valid link is printed
- * again instead of replacing it.
- */
+/** ensureBootstrapInvite() at startup; reprints a still-valid link (dev may run plugins twice). */
 export function bootstrapInviteAtStartup(db: AppDb, origin: string): string | null {
   const g = globalThis as { __trespassBootstrapLink?: string };
   const prev = g.__trespassBootstrapLink;

@@ -1,8 +1,5 @@
-// The one row mapper for list/map/search results. Queries that AND
-// visibleLocationsWhere(ctx) and take coordinates from visibleLatExpr /
-// visibleLonExpr hand their rows here; nothing is filtered in JS (the level
-// check is a safety net, not a filter). Shared by listLocations and
-// searchLocations so both produce identical LocationListItem values.
+// The one row mapper for list/map/search. Input rows come from queries that
+// AND visibleLocationsWhere; the level check is only a safety net.
 
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
 import type {

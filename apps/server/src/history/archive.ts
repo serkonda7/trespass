@@ -1,8 +1,5 @@
-// Wayback Machine copies of history sources (DESIGN §5.4, §8.6). On save the
-// service enqueues `sources.archive`; the worker asks archive.org to save the
-// page and records the snapshot URL. Only the source URL is sent, with a
-// generic User-Agent. ARCHIVE=off disables the job entirely and marks new
-// sources `skipped`.
+// `sources.archive`: asks archive.org to save a source URL and records the
+// snapshot. Sends only the URL, generic UA. ARCHIVE=off → `skipped`.
 import { eq } from "drizzle-orm";
 import type { AppDb } from "../db/client";
 import { sources } from "../db/schema";

@@ -1,12 +1,8 @@
-// Pure tile-region geometry (DESIGN §7.2/§3.4 rule 7). No DB, no I/O.
-//
-// Boxes are at least 20 × 20 km and put the location at a RANDOM offset, with
-// at least 5 km of padding on each side: the covered area is a coarse hint,
-// never a pointer at a pin. Longitudes may wrap over the antimeridian
-// (minLon > maxLon); the extractor splits such a box into two ordinary bboxes.
-// Latitudes are clamped to ±85 because Web Mercator cannot represent the poles.
-// A point beyond ±85 is clamped into the box as well (outside that range there
-// are no locations in practice, and extraction still covers the clamped area).
+// Pure tile-region geometry (DESIGN §7.2). No DB, no I/O.
+// - Boxes ≥ 20 × 20 km, point at a random offset with ≥ 5 km padding, so the
+//   area never points at a pin.
+// - Longitudes may wrap (minLon > maxLon); the extractor splits them.
+// - Latitudes (and points) clamp to ±85 (Web Mercator).
 import type { Bbox, Point } from "@trespass/shared/geo/types";
 
 /** Approximate metric degrees at the equator (6 371 008 m/rad). */
@@ -106,12 +102,7 @@ export function boxSizeKm(box: Bbox): { widthKm: number; heightKm: number } {
   };
 }
 
-/**
- * Rule 2: a fresh box, at least 20 × 20 km, with the point placed uniformly at
- * random inside the allowed area (>= 5 km from every edge). The box width and
- * height are also randomized, so repeated points are not distinguishable by a
- * constant offset. Deterministic when `rng` is injected.
- */
+/** Rule 2: random-size box ≥ 20 × 20 km, point uniformly placed ≥ 5 km from each edge. */
 export function newRegionBox(point: Point, rng: Rng = defaultRng): Bbox {
   const widthKm = MIN_BOX_KM + rng() * 20;
   const heightKm = MIN_BOX_KM + rng() * 20;
@@ -176,12 +167,7 @@ export function unionBoxes(a: Bbox, b: Bbox): Bbox {
   };
 }
 
-/**
- * Rule 3: merge the new box with every existing region that overlaps or is
- * closer than 10 km, repeatedly (so chains merge too). The returned ids are
- * the regions replaced by this one; their tiles stay valid and are covered by
- * the new extraction.
- */
+/** Rule 3: merge with regions overlapping or < 10 km away, transitively. Returns replaced ids. */
 export function mergeBoxes(
   newBox: Bbox,
   regions: readonly RegionLike[],

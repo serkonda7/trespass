@@ -1,8 +1,6 @@
-// A small "i" after a field label that shows a hint on hover or focus (a tap
-// focuses the button on phones). Shown by CSS alone, so it also works before
-// hydration on devices that focus tapped buttons. The tip is positioned against
-// the nearest `relative` ancestor (the label row), so it never overflows the field. The
-// hint keeps its id so the field can reference it with aria-describedby.
+// "i" after a label; hint on hover/focus via CSS only (works before hydration).
+// Positioned against the nearest `relative` ancestor. Keeps its id for
+// aria-describedby.
 import { m } from "@trespass/shared/paraglide/messages";
 import { IconInfoCircle } from "~/components/ui/icons";
 

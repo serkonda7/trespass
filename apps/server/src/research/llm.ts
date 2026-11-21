@@ -1,9 +1,6 @@
-// The research LLM (DESIGN §6.3 `extract`, §10). Claude is called with **no
-// tools** and returns only JSON matching a schema (structured outputs), so
-// crawled text can at most produce bad JSON values, never actions. Haiku 5.5
-// extracts per page; Sonnet 5.5 writes the German summary. Every call is
-// metered: the cost is added to the run and the monthly budget is checked
-// before the next call. Tests inject a fake `Llm`.
+// Research LLM (DESIGN §6.3). No tools, schema-bound JSON only, so crawled
+// text can't trigger actions. Haiku extracts, Sonnet summarizes. Every call is
+// metered against the run and the monthly budget. Injectable `Llm`.
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { eq, sql } from "drizzle-orm";

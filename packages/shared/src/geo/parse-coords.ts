@@ -1,8 +1,5 @@
-// Coordinate input parsing (DESIGN §4). Accepts decimal pairs with a dot or
-// German comma, degrees/minutes(/seconds) and full Open Location Codes. No
-// dependency: plus codes are decoded from the public OLC spec (base-20 pairs
-// plus a 4x5 grid for the extra digits). Short codes need a reference point,
-// so they are rejected here.
+// Coordinate parsing (DESIGN §4): decimal (dot or comma), DMS, full plus codes
+// (decoded from the OLC spec). Short plus codes are rejected.
 import type { Point } from "./types";
 
 const LAT_MAX = 90;

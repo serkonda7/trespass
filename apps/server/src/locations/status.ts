@@ -25,12 +25,7 @@ export function effectiveStatusExpr(): SQL<string> {
   end`;
 }
 
-/**
- * Wall-clock milliseconds are coarse: a status change and a visit made right
- * after it can share the same millisecond. Keep a strict ordering so the
- * effective-status comparison (`status_changed_at > last visit`) is stable —
- * otherwise a freshly demolished place would still read as "visited".
- */
+/** Strictly increasing ms, so `status_changed_at > last visit` holds even within one millisecond. */
 export function statusChangeTime(db: DbOrTx, locationId: string): Date {
   const row = db
     .select({ at: sql<number>`coalesce(max(${visits.createdAt}), 0)` })

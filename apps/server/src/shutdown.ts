@@ -1,15 +1,8 @@
-// Graceful shutdown (production): SIGTERM/SIGINT → stop accepting requests,
-// let in-flight ones finish, stop the job worker, checkpoint and close SQLite,
-// exit 0. `docker stop` (and every `docker compose up -d` upgrade) sends
-// SIGTERM and kills after 10 s, so all bounds together stay well below that.
-//
-// Order: srvx (Nitro's HTTP server) traps the signals itself, closes the port
-// and waits up to SERVER_SHUTDOWN_TIMEOUT seconds (default 5) for open
-// requests, then force-closes them (open exports end as ExportAborted). Its
-// close triggers Nitro's "close" hook, where `runShutdown` does the rest.
-// srvx skips trapping signals when CI or TEST is set; then our own listener
-// does the cleanup directly. A deadline makes sure the process never hangs.
-// Relative imports: loaded by the Nitro startup plugin.
+// Graceful shutdown: SIGTERM/SIGINT → drain requests, stop worker, checkpoint
+// and close SQLite, exit 0. All bounds stay below docker's 10 s kill.
+// - srvx traps signals, drains up to SERVER_SHUTDOWN_TIMEOUT (5 s), then Nitro's
+//   "close" hook calls `runShutdown`. With CI/TEST set, our own listener does.
+// - A deadline prevents hangs. Relative imports: loaded by the startup plugin.
 import { closeDb } from "./db/client";
 import { stopJobWorker } from "./jobs/worker";
 

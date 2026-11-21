@@ -1,15 +1,8 @@
-// Slow links (phones over the VPN): the server-rendered page shows up long
-// before its JavaScript runs. Until the app has hydrated, a tap on "Anmelden"
-// or Enter in a field would submit the form natively (and lose what was
-// typed), and Solid would overwrite what was typed into controlled inputs.
-//
-// The rule for forms that matter (login, invite, quick add, list search):
-// - submit buttons use `useHydrated()`: disabled with "Lädt …" until hydrated
-//   (a disabled default button also blocks Enter's implicit submission);
-// - uncontrolled inputs (login, invite) can be typed into early and keep it;
-// - controlled inputs take over early typing with `adoptTypedValue`;
-// - a form whose other controls cannot keep early input (quick add) is wrapped
-//   in `<fieldset disabled={!hydrated()}>`.
+// Forms before hydration (slow links): a native submit would lose input, and
+// Solid overwrites controlled inputs. Rules:
+// - submit buttons: `useHydrated()`, disabled with "Lädt …" (also blocks Enter);
+// - controlled inputs: `adoptTypedValue` keeps early typing;
+// - otherwise wrap in `<fieldset disabled={!hydrated()}>`.
 // <html data-hydrated> marks the moment.
 import { createSignal, onMount } from "solid-js";
 

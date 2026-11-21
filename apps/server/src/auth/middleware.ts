@@ -1,10 +1,5 @@
-// The one way server functions get the caller's AuthCtx:
-//
-//   createServerFn({ method: "POST" })
-//     .middleware([authMiddleware])
-//     .handler(({ context: { ctx } }) => ...)
-//
-// Signed-out callers get HttpError(401); roleMiddleware adds a 403 role check.
+// How server functions get AuthCtx: `.middleware([authMiddleware])`, then
+// `context.ctx`. Signed out → 401; roleMiddleware adds a 403 role check.
 import { createMiddleware } from "@tanstack/solid-start";
 import type { Role } from "@trespass/shared/authz/ctx";
 import { requireAuthCtx, requireRole } from "./session";

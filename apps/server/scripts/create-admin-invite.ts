@@ -1,14 +1,8 @@
-// Prints a one-time invite link (default: admin, valid 24 h). For the first
-// admin on a fresh instance and for recovery when no admin can sign in.
-//
-//   bun run create-admin-invite                       # local: <repo root>/data/db/app.sqlite
-//   docker compose exec app bun run create-admin-invite   # production container
-//   options: --role admin|member|guest  --hours N  --force (when active admins exist)
-//
-// Standalone on purpose: the production image has no src/ and no drizzle-orm,
-// only bun. It writes the same rows as src/server/auth/invites.ts (token is
-// only stored as its SHA-256; an `invite.created` event with actor NULL).
-// The app must have started once so that migrations created the tables.
+// Prints a one-time invite link (default admin, 24 h): first admin or recovery.
+//   bun run create-admin-invite [--role admin|member|guest] [--hours N] [--force]
+//   (--force when active admins exist; production: `docker compose exec app …`)
+// Standalone (no drizzle-orm); writes the same rows as server/auth/invites.ts.
+// Needs migrated tables (start the app once).
 import { Database } from "bun:sqlite";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";

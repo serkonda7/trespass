@@ -1,23 +1,22 @@
 # Export archive format (version 2)
 
-Version 2 removes the blurred-location fields (`exact`, `fuzzRadiusM`) from
-serialized locations and always exports exact points, notes and photo GPS.
-
 `GET /api/v1/export` returns one ZIP (`trespass-export_YYYY-MM-DD_HH-MM.zip`,
-UTC time). This is the contract for anything that reads it back. Writer:
-`src/server/export/build.ts` (`PATHS` lists the files). When a file or field
-changes meaning, bump `EXPORT_FORMAT_VERSION` in `src/lib/export/types.ts`.
+UTC). This is the contract for readers.
+
+- Writer: `apps/server/src/export/build.ts` (`PATHS` lists the files).
+- **Changing a file or field's meaning?** Bump `EXPORT_FORMAT_VERSION` in
+  `packages/shared/src/export/types.ts`.
+- v2 vs v1: no `exact` / `fuzzRadiusM` fields; points, notes and photo GPS
+  are always exact.
 
 ## Container
 
-- Standard ZIP with ZIP64 records when an entry, an offset or the entry count
-  needs them (archives over 4 GiB). Entries use data descriptors (bit 3) and
-  UTF-8 names (bit 11). JSON and Markdown are deflated; photos are stored as
-  they are (already compressed).
-- The export is produced behind a backpressured `ReadableStream`, from one
-  read-only database snapshot. Entry order is not part of the format.
-- Passing `now` to `writeExport` pins the ZIP timestamps and `exportedAt`, so
-  an unchanged database produces a byte-identical archive (§3.4 rule 5).
+- Standard ZIP; ZIP64 records when needed (> 4 GiB). Data descriptors
+  (bit 3), UTF-8 names (bit 11). JSON/Markdown deflated, photos stored.
+- Streamed with backpressure from one read-only DB snapshot. Entry order is
+  not part of the format.
+- `writeExport({ now })` pins timestamps and `exportedAt`: an unchanged DB
+  yields a byte-identical archive.
 
 ## Layout
 
@@ -45,7 +44,7 @@ photos/<photo-id>.<ext>    original (admin / own) or 2560 px WebP derivative
 ```json
 {
   "format": "trespass-export",
-  "formatVersion": 1,
+  "formatVersion": 2,
   "appVersion": "0.0.1",
   "exportedAt": "2026-11-16T13:03:00.000Z",
   "exportedBy": { "id": "…", "role": "admin" },
@@ -69,97 +68,73 @@ photos/<photo-id>.<ext>    original (admin / own) or 2560 px WebP derivative
 }
 ```
 
-Read file locations from `files` rather than hard-coding them. `snapshot: true`
-means every JSON file was read from one database snapshot.
+- Read paths from `files`; don't hard-code them.
+- `snapshot: true`: all JSON files come from one DB snapshot.
 
 ## JSON files
 
-Every `data/*.json` except the manifest is an array with one record per line.
-Ids are the database ids (UUIDv7 strings). Timestamps are ISO 8601 UTC strings;
-visit dates are `YYYY-MM-DD` in the location's time zone.
+- Each `data/*.json` is an array, one record per line.
+- Ids: DB ids (UUIDv7). Timestamps: ISO 8601 UTC. Visit dates: `YYYY-MM-DD`
+  in the location's time zone.
 
-- **locations**: exactly the output of `serializeLocation` — coordinates only
-  in `point`, always the exact point. `level`, `permissions` and the effective
-  `status` are included.
-- **categories / tags**: the seeded, editable reference tables.
-- **visits**: the DTOs of `src/server/visits/service.ts`, including `people`
-  and `conditions`. `journalMd` is present only where the exporter may edit
-  the visit; everyone else gets the sanitized `journalHtml`.
-- **photos**: the DTOs of `src/server/photos/service.ts`. `gps` and
-  `suggestion` are present when the photo has GPS data; `originalUrl` stays
-  private to the uploader and admins (§3.5 rule 6).
-- **grants**: `locationId`, `principalKind`, `principalId`, `level` — only for
-  locations the exporter manages.
-- **users**: `{ id, displayName }` of the users referenced by the other files
-  (owners, authors, people, uploaders, grantees, commenters, trip people and
-  contacts, exporter). No e-mail, role or auth fields.
-- **history**: the DTOs of `src/server/history/service.ts` with their
-  `sources` (URL, title, retrieval day, excerpt, Wayback copy). Approved
-  entries of visible locations; drafts only where the exporter has `edit`.
-- **comments**: the DTOs of `src/server/comments/service.ts` (`targetKind`,
-  `targetId`, `parentId`, sanitized `bodyHtml`; `bodyMd` only for the
-  author). Deleted comments keep their row with an empty body.
-- **trips**: the DTOs of `src/server/trips/service.ts` for trips the exporter
-  owns or is listed on (admin: all). `stops` holds only locations visible to
-  the exporter, each serialized with `serializeLocation` at the exporter's
-  level. `emergencyContact`, `people`, the packing list (`checklist`) and the
-  report are included; `reportMd` only for editors.
-- **equipment / pack-templates**: personal gear and templates
-  (`equipmentIds`). Members export their own, admins everyone's (`ownerId`).
+| File | Content |
+| --- | --- |
+| locations | `serializeLocation` output: exact `point`, `level`, `permissions`, effective `status` |
+| categories, tags | Reference tables |
+| visits | Visit DTOs incl. `people`, `conditions`, `journalHtml`; `journalMd` only where the exporter may edit |
+| photos | Photo DTOs; `gps`/`suggestion` when present; `originalUrl` only for uploader and admins |
+| grants | `locationId`, `principalKind`, `principalId`, `level` — managed locations only |
+| users | `{ id, displayName }` of referenced users. No e-mail, role or auth fields |
+| history | Entries with `sources` (URL, title, day, excerpt, Wayback copy). Approved entries; drafts only with `edit` |
+| comments | `targetKind`, `targetId`, `parentId`, `bodyHtml`; `bodyMd` only for the author. Deleted: empty body |
+| trips | Owned or listed trips (admin: all). `stops` only visible locations at the exporter's level; contact, people, `checklist`, report; `reportMd` only for editors |
+| equipment, pack-templates | Own gear and templates (`equipmentIds`); admin: everyone's (`ownerId`) |
 
-`locations.geojson` has one `Point` Feature per location. Its geometry comes
-from `visibleLatExpr` / `visibleLonExpr` in SQL and is always the exact point.
-`properties` are the serialized location **without** `point`. A location with
-an outline gets a second Feature whose geometry is the polygon and whose
-properties are
-`{ "kind": "outline", "locationId": "…", "name": "…" }`.
+`locations.geojson`:
+
+- One `Point` Feature per location (exact point); `properties` = serialized
+  location without `point`.
+- Locations with an outline add a polygon Feature with
+  `{ "kind": "outline", "locationId": "…", "name": "…" }`.
 
 ## Journals
 
-`journals/<visited_on>-<location-slug>-<visit-id>.md` has a small YAML front
-matter (`date`, `location`, `people`, `conditions`) followed by the raw
-Markdown for visits the exporter authored or may edit. For other visits the
-body is omitted and a German note says so; the sanitized HTML remains in
-`data/visits.json`.
+`journals/<visited_on>-<location-slug>-<visit-id>.md`: YAML front matter
+(`date`, `location`, `people`, `conditions`), then the raw Markdown — only for
+visits the exporter authored or may edit. Otherwise a German note replaces
+the body (HTML stays in `data/visits.json`).
 
 ## Photos
 
-Admin exports contain the ORIGINAL of every ready photo (extension from its
-MIME type). Member exports contain originals only for photos they uploaded;
-every other photo is the metadata-free 2560 px WebP derivative, named
-`photos/<photo-id>.webp`. Photos still `processing` or `failed`, and files
-missing on disk, have no entry; their ids and reasons are in
-`manifest.json` → `skippedPhotos`.
+- Admin: originals of every ready photo (extension from MIME type).
+- Member: originals of own uploads; others as metadata-free 2560 px WebP
+  (`photos/<photo-id>.webp`).
+- `processing`, `failed` or missing files: no entry; listed in
+  `manifest.json` → `skippedPhotos`.
 
 ## Scopes
 
-Scope follows `exportScope(ctx)` (DESIGN §3.5):
+`exportScope(ctx)` (DESIGN §3.5):
 
-- **all** (admin): every location, visit, photo, grant, category, tag,
-  history entry, comment, trip and all equipment; only the referenced users'
-  names.
-- **own_and_visible** (member): exactly the rows of
-  `visibleLocationsWhere`, `visibleVisitsWhere`, `visiblePhotosWhere`,
-  `visibleHistoryWhere`, `visibleCommentsWhere` and `visibleTripsWhere`.
-  Grants only on managed locations; equipment and templates only their own.
-- **none** (guest): no export; the endpoint answers 404. Signed-out callers
-  get 401.
+| Scope | Who | Contents |
+| --- | --- | --- |
+| `all` | admin | Everything; only referenced users' names |
+| `own_and_visible` | member | Rows of the `visible*Where` predicates (locations, visits, photos, history, comments, trips); grants on managed locations; own equipment |
+| `none` | guest | 404 (signed out: 401) |
 
-Never in any export: password hashes, accounts, sessions, passkeys,
+**Never exported**: password hashes, accounts, sessions, passkeys,
 verifications, invite token hashes, `auth_email`, `email_verified`, `image`,
-jobs, settings secrets or notifications.
+jobs, settings secrets, notifications.
 
-Research working data (v1.3) is not exported either: `search_areas`,
-`research_runs`, `candidates`, `research_watch` and `http_cache` (a crawler
-cache). What research produces only becomes data once the admin accepts it,
-and then it is a location or a history entry with sources, which are
-exported as above. `history.json` keeps `candidateId` as a plain id.
+**Research working data** is not exported (`search_areas`, `research_runs`,
+`candidates`, `research_watch`, `http_cache`). Accepted results are ordinary
+locations/history. `history.json` keeps `candidateId` as a plain id.
 
 ## Tickets and limits
 
-At most two exports run at once (one per user). `/admin/export` reserves a slot
-with `reserveExportFn` and opens `?ticket=…`, which must be claimed within 60
-seconds; API clients call without a ticket. Busy answers are 429
-(`EXPORT_BUSY` / `EXPORT_LIMIT`), a bad or used ticket is 409
-(`EXPORT_TICKET_INVALID`). Each finished or aborted export writes one
-`export.created` audit event with counts only.
+- Max two concurrent exports, one per user.
+- `/admin/export` reserves a slot (`reserveExportFn`) and opens `?ticket=…`;
+  claim within 60 s. API clients skip the ticket.
+- Busy → 429 (`EXPORT_BUSY` / `EXPORT_LIMIT`). Bad or used ticket → 409
+  (`EXPORT_TICKET_INVALID`).
+- Each finished or aborted export audits `export.created` (counts only).

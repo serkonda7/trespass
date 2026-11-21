@@ -1,9 +1,5 @@
-// Visits and journal: create/update/delete/read, location timeline, feed and
-// year review. Independent of the request; ./functions.ts adds authMiddleware.
-//
-// Every visibility decision comes from src/server/authz/visits.ts and is
-// enforced in SQL. Rows are never filtered in JS: authorization predicates are
-// ANDed into the query, and serialized with journalMd only for editors.
+// Visits and journal (request-independent; ./functions.ts adds authMiddleware).
+// Visibility from ../authz/visits.ts, in SQL only. journalMd only for editors.
 
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
 import { addDays, todayInTz } from "@trespass/shared/format";
@@ -393,11 +389,7 @@ export function listFeed(db: AppDb, ctx: AuthCtx, raw: FeedInput): FeedPage {
   return { rows: out, nextCursor };
 }
 
-/**
- * All visits visible to ctx, paged through the same serializer as the feed
- * (journalMd only for editors). Used by the export; visibility stays in the
- * SQL predicate of listFeed, never in a JS filter here.
- */
+/** Export: all visible visits, paged via the feed's SQL predicate and serializer. */
 export async function* visitPagesForExport(
   db: AppDb,
   ctx: AuthCtx,

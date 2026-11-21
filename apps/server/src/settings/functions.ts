@@ -1,6 +1,5 @@
-// Server functions for the instance settings singleton. Reading only needs a
-// session; writing is admin-only (enforced by the service and unit-tested).
-// Service validation throws HttpError codes mapped in src/lib/error-text.ts.
+// Settings server functions: read needs a session, write is admin-only.
+// Errors: HttpError codes (shared/error-text.ts).
 import { createServerFn } from "@tanstack/solid-start";
 import { z } from "zod";
 import { authMiddleware } from "../auth/middleware";
