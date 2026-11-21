@@ -1,15 +1,14 @@
 import { useQuery } from "@tanstack/solid-query";
 import { createFileRoute, Link } from "@tanstack/solid-router";
 import { can } from "@trespass/shared/app-actions";
-import { formatIsoDay } from "@trespass/shared/format";
 import { m } from "@trespass/shared/paraglide/messages";
-import type { TripSummary } from "@trespass/shared/trips/types";
 import { For, Show } from "solid-js";
 import { EmptyState, PageColumn, PageHeader } from "~/components/layout/page-header";
 import { Badge } from "~/components/ui/badge";
 import { buttonVariants } from "~/components/ui/button";
 import { IconChevronRight, IconPlus, IconRoute } from "~/components/ui/icons";
 import { tripStatusLabel } from "~/lib/labels";
+import { tripDates } from "~/lib/trips/dates";
 import { tripsQuery } from "~/lib/trips/queries";
 
 export const Route = createFileRoute("/_authed/touren/")({
@@ -17,12 +16,6 @@ export const Route = createFileRoute("/_authed/touren/")({
   head: () => ({ meta: [{ title: `${m.trips_title()} · ${m.app_name()}` }] }),
   component: TripsPage,
 });
-
-export function tripDates(t: Pick<TripSummary, "startsOn" | "endsOn">): string {
-  if (!t.startsOn) return m.trips_no_date();
-  if (!t.endsOn || t.endsOn === t.startsOn) return formatIsoDay(t.startsOn);
-  return `${formatIsoDay(t.startsOn)} – ${formatIsoDay(t.endsOn)}`;
-}
 
 function TripsPage() {
   const ctx = Route.useRouteContext();

@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/solid-router";
 import { AppShell } from "~/components/app-shell";
+import { readSidebarCollapsed } from "~/lib/sidebar";
 
 // Every page under src/routes/_authed/ requires a signed-in, active user.
 // Signed-out requests (SSR or client navigation) are redirected to /login.
@@ -9,7 +10,7 @@ export const Route = createFileRoute("/_authed")({
     if (!context.user) {
       throw redirect({ to: "/login", search: { redirect: location.href } });
     }
-    return { user: context.user };
+    return { user: context.user, sidebarCollapsed: readSidebarCollapsed() };
   },
   component: AuthedLayout,
 });
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/_authed")({
 function AuthedLayout() {
   const ctx = Route.useRouteContext();
   return (
-    <AppShell user={ctx().user}>
+    <AppShell user={ctx().user} sidebarCollapsed={ctx().sidebarCollapsed}>
       <Outlet />
     </AppShell>
   );

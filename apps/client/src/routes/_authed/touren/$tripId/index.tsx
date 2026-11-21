@@ -25,8 +25,8 @@ import {
 } from "~/components/ui/icons";
 import { tripStatusLabel } from "~/lib/labels";
 import { runAction } from "~/lib/run-action";
+import { tripDates } from "~/lib/trips/dates";
 import { tripQuery } from "~/lib/trips/queries";
-import { tripDates } from "../index";
 
 export const Route = createFileRoute("/_authed/touren/$tripId/")({
   beforeLoad: ({ params }) => {

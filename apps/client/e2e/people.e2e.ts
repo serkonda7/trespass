@@ -1,5 +1,14 @@
 import { E2E_ORIGIN } from "./env";
-import { acceptInvite, expect, signIn, submitLogin, test, uniqueName, userMenu } from "./fixtures";
+import {
+  acceptInvite,
+  expect,
+  openNav,
+  signIn,
+  submitLogin,
+  test,
+  uniqueName,
+  userMenu,
+} from "./fixtures";
 import { hydrated } from "./helpers";
 
 test("admin invites a member, who has no admin access", async ({ adminPage, page }) => {
@@ -17,7 +26,7 @@ test("admin invites a member, who has no admin access", async ({ adminPage, page
   await acceptInvite(page, link, { username, password: "lenas-password-1", displayName: "Lena" });
 
   // Members can only open the export section of the admin area.
-  await expect(page.getByRole("link", { name: "Verwaltung" }).first()).toBeVisible();
+  await expect((await openNav(page)).getByRole("link", { name: "Verwaltung" })).toBeVisible();
   await page.goto("/admin");
   await expect(page).toHaveURL(/\/admin\/export$/);
   await expect(page.getByRole("heading", { name: "Daten exportieren" })).toBeVisible();
@@ -33,7 +42,9 @@ test("admin invites a member, who has no admin access", async ({ adminPage, page
 
 test("a guest cannot open the admin area", async ({ newUser }) => {
   const guest = await newUser("guest");
-  await expect(guest.page.getByRole("link", { name: "Verwaltung" })).toHaveCount(0);
+  const nav = await openNav(guest.page);
+  await expect(nav.getByRole("link", { name: "Logbuch" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Verwaltung" })).toHaveCount(0);
   await guest.page.goto("/admin");
   await expect(guest.page.getByText("Seite nicht gefunden.")).toBeVisible();
 });

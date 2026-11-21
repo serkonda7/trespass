@@ -26,6 +26,7 @@ async function audit(page: Page, path: string) {
 test("pages have no axe violations", async ({ adminPage, newUser }) => {
   for (const path of [
     "/",
+    "/map",
     "/suche",
     "/account",
     "/locations/new",
@@ -38,7 +39,7 @@ test("pages have no axe violations", async ({ adminPage, newUser }) => {
   ])
     await audit(adminPage, path);
   const url = await createLocation(adminPage, `A11y ${token()}`);
-  for (const path of [new URL(url).pathname, `${new URL(url).pathname}/edit`]) {
+  for (const path of [new URL(url).pathname, `${new URL(url).pathname}/edit`, "/"]) {
     await audit(adminPage, path);
   }
   // A trip with one stop: route preview, packing list and report.

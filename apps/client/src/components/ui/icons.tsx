@@ -19,14 +19,18 @@ import {
   IconCheck as TCheck,
   IconChevronDown as TChevronDown,
   IconChevronRight as TChevronRight,
+  IconChevronsLeft as TChevronsLeft,
+  IconChevronsRight as TChevronsRight,
   IconCircle as TCircle,
   IconCopy as TCopy,
   IconExternalLink as TExternalLink,
   IconHome as THome,
   IconKey as TKey,
+  IconLayoutDashboard as TLayoutDashboard,
   IconList as TList,
   IconLogout as TLogout,
   IconMap as TMap,
+  IconMenu2 as TMenu2,
   IconMessage as TMessage,
   IconPencil as TPencil,
   IconPhoneCall as TPhoneCall,
@@ -75,14 +79,18 @@ export const IconCar = wrap(TCar);
 export const IconCheck = wrap(TCheck);
 export const IconChevronDown = wrap(TChevronDown);
 export const IconChevronRight = wrap(TChevronRight);
+export const IconChevronsLeft = wrap(TChevronsLeft);
+export const IconChevronsRight = wrap(TChevronsRight);
 export const IconCircle = wrap(TCircle);
 export const IconCopy = wrap(TCopy);
 export const IconExternalLink = wrap(TExternalLink);
 export const IconHome = wrap(THome);
 export const IconKey = wrap(TKey);
+export const IconLayoutDashboard = wrap(TLayoutDashboard);
 export const IconList = wrap(TList);
 export const IconLogout = wrap(TLogout);
 export const IconMap = wrap(TMap);
+export const IconMenu2 = wrap(TMenu2);
 export const IconMessage = wrap(TMessage);
 export const IconPencil = wrap(TPencil);
 export const IconPhoneCall = wrap(TPhoneCall);

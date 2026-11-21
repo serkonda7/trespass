@@ -65,7 +65,7 @@ export const Route = createFileRoute("/_authed/locations/$locationId/")({
   notFoundComponent: () => (
     <EmptyState class="mx-auto max-w-lg">
       <h1 class="section-title mb-2 text-foreground">{m.locations_error_not_found()}</h1>
-      <Link to="/" class="text-primary underline underline-offset-4">
+      <Link to="/map" class="text-primary underline underline-offset-4">
         {m.error_back_home()}
       </Link>
     </EmptyState>
@@ -159,7 +159,7 @@ function LocationView(props: {
       () => deleteLocationFn({ data: { id: loc().id, version: loc().version } }),
       { success: m.location_deleted() },
     );
-    if (r) await navigate({ to: "/", replace: true });
+    if (r) await navigate({ to: "/map", replace: true });
   };
 
   const copy = async () => {

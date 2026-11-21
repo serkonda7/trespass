@@ -94,6 +94,13 @@ export async function signIn(page: Page, username: string, password: string) {
 }
 
 /** Opens the user menu in the header and picks an entry. */
+/** Opens the phone navigation drawer (e2e runs on a phone viewport). */
+export async function openNav(page: Page) {
+  await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+  await page.getByRole("button", { name: "Navigation öffnen" }).click();
+  return page.getByRole("dialog", { name: "Hauptnavigation" });
+}
+
 export async function userMenu(page: Page, entry: "Mein Konto" | "Abmelden") {
   // A header button clicked before hydration is replaced by Solid's first
   // render, so the click can land on a detached element.

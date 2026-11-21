@@ -31,7 +31,9 @@
   --ring: oklch(0.78 0.15 55);
   --radius: 0.375rem;
   --header-h: 3.5rem;
-  --tabbar-h: 4rem;
+  /* Sidebar widths (app-shell); the header's brand cell matches them. */
+  --sidebar-w: 14rem;
+  --sidebar-rail: 4.25rem;
 }
 
 @theme inline {
@@ -300,6 +302,15 @@
 .tr-animate-slide[data-opened] {
   animation: tr-slide-in 150ms ease-out;
 }
+/* Phone navigation drawer (app-shell) slides in from the left edge. */
+@keyframes tr-drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+}
+.tr-animate-drawer[data-expanded] {
+  animation: tr-drawer-in 180ms ease-out;
+}
 /* Navigation progress bar (app-shell). The delay keeps it invisible for
    navigations that finish quickly; slow ones (data over the VPN) show it. */
 @keyframes tr-nav-progress {
@@ -320,7 +331,8 @@
 @media (prefers-reduced-motion: reduce) {
   .tr-animate-fade,
   .tr-animate-zoom,
-  .tr-animate-slide {
+  .tr-animate-slide,
+  .tr-animate-drawer {
     animation: none;
   }
   .tr-nav-progress {

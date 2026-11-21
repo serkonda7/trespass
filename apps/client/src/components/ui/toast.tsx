@@ -10,7 +10,7 @@ export function Toaster() {
   return (
     <Portal>
       <Toast.Region duration={5000} limit={3} swipeDirection="down">
-        <Toast.List class="fixed inset-x-0 bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))] z-[100] mx-auto flex w-full max-w-md flex-col gap-2 p-4 outline-none md:bottom-0" />
+        <Toast.List class="fixed inset-x-0 bottom-[env(safe-area-inset-bottom)] z-[100] mx-auto flex w-full max-w-md flex-col gap-2 p-4 outline-none" />
       </Toast.Region>
     </Portal>
   );
