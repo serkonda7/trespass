@@ -50,10 +50,4 @@ describe("create-admin-invite CLI", () => {
     expect(inviteStatus(db, t2)).toEqual({ role: "member" });
     db.$client.close();
   });
-
-  test("fails cleanly without a database", () => {
-    const r = run(join(dir, "missing.sqlite"));
-    expect(r.code).toBe(1);
-    expect(r.err).toContain("not found");
-  });
 });

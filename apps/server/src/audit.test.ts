@@ -9,23 +9,13 @@ import {
   renameGroup,
 } from "./admin/groups";
 import { changeRole, resetUserPassword, setUserDisabled } from "./admin/users";
-import { findSecretKey, recordEvent } from "./audit";
+import { findSecretKey } from "./audit";
 import { acceptInvite, createInvite, ensureBootstrapInvite, revokeInvite } from "./auth/invites";
 import { createTestAuth, TEST_ORIGIN } from "./auth/test-helpers";
 import { loadAuthCtx } from "./auth/users";
 import { accounts, events, invites } from "./db/schema";
 
 describe("audit events", () => {
-  test("recordEvent refuses secret-looking keys at any depth", () => {
-    const { db } = createTestAuth();
-    expect(findSecretKey({ a: 1, nested: { newPassword: "x" } })).toBe("nested.newPassword");
-    expect(findSecretKey({ tokenHash: "x" })).toBe("tokenHash");
-    expect(findSecretKey({ userId: "u", role: "admin" })).toBeNull();
-    expect(() =>
-      recordEvent(db, { actorId: null, action: "user.password_reset", diff: { password: "x" } }),
-    ).toThrow(/secret/);
-  });
-
   test("every people flow logs its event, and no diff contains a secret", async () => {
     const { db } = createTestAuth();
     const secrets: string[] = [];

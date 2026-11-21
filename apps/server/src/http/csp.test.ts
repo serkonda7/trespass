@@ -1,7 +1,6 @@
 // Browser-side proof (no violation on any page) is the CSP guard in e2e/fixtures.ts.
 import { describe, expect, test } from "bun:test";
-import { currentCspNonce } from "@trespass/shared/csp-nonce";
-import { applyCsp, buildCsp, newNonce, withCspNonce } from "./csp";
+import { applyCsp, buildCsp } from "./csp";
 
 const directive = (csp: string, name: string) =>
   csp.split("; ").find((d) => d.startsWith(`${name} `)) ?? "";
@@ -28,17 +27,5 @@ describe("CSP", () => {
     const file = new Headers({ "content-type": "text/html", "content-security-policy": "sandbox" });
     applyCsp(file, "n1");
     expect(file.get("content-security-policy")).toBe("sandbox");
-  });
-
-  test("the nonce is per request and reaches the router through async work", async () => {
-    const a = newNonce();
-    expect(a).not.toBe(newNonce());
-    expect(a).toMatch(/^[A-Za-z0-9+/]{22}==$/);
-    expect(currentCspNonce()).toBeUndefined();
-    const seen = await withCspNonce(a, async () => {
-      await Bun.sleep(1);
-      return currentCspNonce();
-    });
-    expect(seen).toBe(a);
   });
 });

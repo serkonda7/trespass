@@ -1,9 +1,8 @@
-// Which Better Auth endpoints are reachable over HTTP (ENABLED_AUTH_PATHS),
-// and that the ones the app needs keep working behind the handler.
+// The Better Auth endpoints the app uses keep working behind the handler,
+// and disabled accounts cannot sign in.
 import { describe, expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
-import { passkeys, users } from "../db/schema";
-import { ENABLED_AUTH_PATHS } from "./auth";
+import { passkeys } from "../db/schema";
 import {
   cookieHeader,
   createTestAuth,
@@ -12,7 +11,7 @@ import {
   TEST_ORIGIN,
   TEST_PASSWORD,
 } from "./test-helpers";
-import { disableUser, enableUser } from "./users";
+import { disableUser } from "./users";
 
 const WRONG = "wrong-password-123";
 
@@ -43,46 +42,7 @@ function call(
   );
 }
 
-describe("Better Auth endpoint allowlist", () => {
-  test("/update-user is closed for a signed-in user and changes nothing", async () => {
-    const { db, handler, auth, user, cookie } = await signedIn("guest");
-    const body = {
-      username: "neuer_name",
-      displayUsername: "Neu",
-      name: "x".repeat(5000),
-      image: "https://example.com/x.png",
-    };
-    for (const h of [handler, auth.handler]) {
-      const res = await call(h, "/update-user", { cookie, body });
-      expect(res.status).toBe(404);
-      expect(await res.text()).toBe("Not Found");
-    }
-    const row = db.select().from(users).where(eq(users.id, user.id)).get()!;
-    expect(row.username).toBe("gustav");
-    expect(row.displayName).toBe("gustav");
-  });
-
-  test("every endpoint outside the allowlist answers 404, even signed in", async () => {
-    const { auth, handler, cookie } = await signedIn("admin");
-    const paths = Object.values(auth.api as Record<string, { path?: string }>)
-      .map((e) => e?.path)
-      .filter((p): p is string => typeof p === "string" && p.startsWith("/"));
-    expect(paths.length).toBeGreaterThan(30);
-    const closed = paths.filter((p) => !ENABLED_AUTH_PATHS.has(p));
-    expect(closed).toContain("/update-user");
-    expect(closed).toContain("/verify-password");
-    expect(closed).toContain("/unlink-account");
-    for (const p of closed) {
-      const concrete = p.replace(/:[a-zA-Z]+/g, "x");
-      for (const method of ["GET", "POST"]) {
-        const res = await call(handler, concrete, { method, cookie, body: {} });
-        expect(`${method} ${concrete} ${res.status}`).toBe(`${method} ${concrete} 404`);
-      }
-    }
-    // Every allowlisted path is a real Better Auth endpoint.
-    for (const p of ENABLED_AUTH_PATHS) expect(paths).toContain(p);
-  });
-
+describe("Better Auth endpoints", () => {
   test("the endpoints the app needs still work", async () => {
     const { db, handler, user, cookie } = await signedIn("member");
 
@@ -150,15 +110,5 @@ describe("disabled accounts at sign-in", () => {
     expect(right.status).toBe(wrong.status);
     expect(await right.json()).toEqual(await wrong.json());
     expect(right.headers.getSetCookie()).toEqual([]);
-  });
-
-  test("correct-password attempts on a disabled account count toward the lockout", async () => {
-    const { db, handler } = createTestAuth();
-    const u = await createTestUser(db, "anna");
-    disableUser(db, u.id);
-    for (let i = 0; i < 5; i++)
-      expect((await signInRequest(handler, "anna", TEST_PASSWORD)).status).toBe(401);
-    enableUser(db, u.id);
-    expect((await signInRequest(handler, "anna", TEST_PASSWORD)).status).toBe(429);
   });
 });

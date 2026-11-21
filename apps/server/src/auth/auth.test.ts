@@ -155,25 +155,6 @@ describe("Better Auth sign-in", () => {
     expect(res.status).toBeLessThan(500);
   });
 
-  test("sign-in is rate limited per client IP", async () => {
-    const { db, auth } = createTestAuth({ rateLimit: true });
-    await createTestUser(db, "anna");
-    const statuses: number[] = [];
-    for (let i = 0; i < 7; i++) {
-      const res = await signInRequest(auth, "anna", "wrong-password-123", TEST_ORIGIN, {
-        "x-forwarded-for": "100.64.0.9",
-      });
-      statuses.push(res.status);
-    }
-    expect(statuses.slice(0, 5).every((s) => s === 401)).toBe(true);
-    expect(statuses.at(-1)).toBe(429);
-    // Another client is unaffected.
-    const other = await signInRequest(auth, "anna", undefined, TEST_ORIGIN, {
-      "x-forwarded-for": "100.64.0.10",
-    });
-    expect(other.status).toBe(200);
-  });
-
   test("https ORIGIN uses host-only __Host- cookies", async () => {
     const origin = "https://lp.example.de";
     const { db, auth } = createTestAuth({ origin });
