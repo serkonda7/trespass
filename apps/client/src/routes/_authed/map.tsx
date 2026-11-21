@@ -98,7 +98,6 @@ function MapPage() {
       name: r.name,
       status: r.status,
       categoryIcon: r.categoryIcon,
-      exact: r.exact,
       lat: r.point.lat,
       lon: r.point.lon,
     })),
@@ -132,7 +131,6 @@ function MapPage() {
 
   return (
     <div class="tr-map-page relative h-[calc(100dvh-var(--header-h))] overflow-hidden">
-      {/* Kept for existing e2e fixtures that sign in and land on / */}
       <h1 class="sr-only">{m.nav_map()}</h1>
 
       <div class="grid-paper absolute inset-0">

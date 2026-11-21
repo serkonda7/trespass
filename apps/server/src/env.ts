@@ -25,7 +25,7 @@ const schema = z.object({
   UPLOAD_DIR: optional,
   /** MBTiles file for /tiles; defaults to <dir of DATABASE_PATH>/../tiles/tiles.sqlite. */
   TILES_PATH: optional,
-  /** Automatic tile regions; "off" disables enqueueing and extraction (e2e sets this). */
+  /** Automatic tile regions; "off" disables enqueueing and extraction. */
   TILES: optional.pipe(z.enum(["on", "off"]).default("on")),
   /** go-pmtiles CLI in the worker image. */
   PMTILES_BIN: optional,
@@ -35,11 +35,11 @@ const schema = z.object({
   SMTP_URL: optional,
   VAPID_PUBLIC_KEY: optional,
   VAPID_PRIVATE_KEY: optional,
-  /** Reverse geocoding (Nominatim); "off" disables the job entirely (e2e sets this). */
+  /** Reverse geocoding (Nominatim); "off" disables the job entirely. */
   GEOCODE: optional.pipe(z.enum(["on", "off"]).default("on")),
-  /** Wayback Machine copies of history sources; "off" sends nothing to archive.org (e2e sets this). */
+  /** Wayback Machine copies of history sources; "off" sends nothing to archive.org. */
   ARCHIVE: optional.pipe(z.enum(["on", "off"]).default("on")),
-  /** Research jobs (DESIGN §6); "off" sends nothing to Overpass, Wikidata, search or crawled sites (e2e sets this). */
+  /** Research jobs (DESIGN §6); "off" sends nothing to Overpass, Wikidata, search or crawled sites. */
   RESEARCH: optional.pipe(z.enum(["on", "off"]).default("on")),
   /** Claude API key for `extract`/`enrich`/`watch`; without it only the scans run. */
   ANTHROPIC_API_KEY: optional,

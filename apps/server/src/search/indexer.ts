@@ -5,9 +5,9 @@
 //
 // PRIVACY (DESIGN §3.4, §5.9): the index holds ONLY data visible at level
 // `view` — name, description, tag names and place (country + admin area).
-// access_notes, danger_notes, parking, coordinates, fuzz radius and all photo
-// / visit text are deliberately never indexed: otherwise a search box would
-// become an oracle for precise-only data. `history` holds the text of APPROVED
+// access_notes, danger_notes, parking, coordinates and all photo / visit text
+// are deliberately never indexed: otherwise a search box would become an
+// oracle for details beyond the view level. `history` holds the text of APPROVED
 // history entries only (drafts need `edit` and must not be findable).
 // Index text and query both go through the same normalizeSearchText helper.
 

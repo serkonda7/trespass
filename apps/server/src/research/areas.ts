@@ -24,7 +24,7 @@ import type { SearchAreaDto } from "@trespass/shared/research/types";
 import { desc, eq } from "drizzle-orm";
 import type { z } from "zod";
 import { recordEvent } from "../audit";
-import { canSeeExact, loadLocationForCtx } from "../authz";
+import { loadLocationForCtx } from "../authz";
 import type { AppDb } from "../db/client";
 import { researchRuns, type SearchAreaRow, searchAreas } from "../db/schema";
 import { appForbidden, appInvalid, appNotFound, parseAppInput } from "../errors";
@@ -75,7 +75,6 @@ function ringFor(db: AppDb, ctx: AuthCtx, shape: z.output<typeof createAreaInput
   if (shape.type === "polygon") return closeRing(shape.ring);
   const found = loadLocationForCtx(db, ctx, shape.locationId);
   if (!found) throw appNotFound("LOCATION_NOT_FOUND");
-  if (!canSeeExact(found.level)) throw appForbidden("LOCATION_FORBIDDEN");
   return circleRing({ lat: found.location.lat, lon: found.location.lon }, shape.radiusKm);
 }
 

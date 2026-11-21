@@ -31,7 +31,6 @@ function SettingsPage() {
             instanceName: String(data.get("instanceName") ?? ""),
             researchBudgetCents: Number(data.get("researchBudgetCents") ?? 0),
             tileBudgetMb: Number(data.get("tileBudgetMb") ?? 10240),
-            defaultFuzzM: Number(data.get("defaultFuzzM") ?? 1500),
           },
         }),
       { success: m.admin_settings_saved() },
@@ -81,18 +80,6 @@ function SettingsPage() {
               step="1"
               required
               value={settings.data?.tileBudgetMb ?? 10240}
-            />
-          </div>
-          <div class="grid gap-2">
-            <Label for="settings-fuzz">{m.admin_settings_default_fuzz()}</Label>
-            <Input
-              id="settings-fuzz"
-              name="defaultFuzzM"
-              type="number"
-              min="0"
-              step="1"
-              required
-              value={settings.data?.defaultFuzzM ?? 1500}
             />
           </div>
           <div>

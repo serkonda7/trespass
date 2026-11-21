@@ -57,6 +57,13 @@
       "when": 1795119647796,
       "tag": "0007_research",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1795299656057,
+      "tag": "0008_illegal_wallflower",
+      "breakpoints": true
     }
   ]
 }

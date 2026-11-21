@@ -10,7 +10,7 @@
 // - controlled inputs take over early typing with `adoptTypedValue`;
 // - a form whose other controls cannot keep early input (quick add) is wrapped
 //   in `<fieldset disabled={!hydrated()}>`.
-// <html data-hydrated> marks the moment (e2e tests wait for it, too).
+// <html data-hydrated> marks the moment.
 import { createSignal, onMount } from "solid-js";
 
 const G = globalThis as unknown as { __trespassHydrated?: boolean };

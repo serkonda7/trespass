@@ -1,6 +1,6 @@
 // Route preview (DESIGN §5.5): straight lines and distances between stops.
-// Points are the server-serialized ones, so a fuzzed stop gives an approximate
-// leg. No turn-by-turn routing; "Öffnen in …" on each location hands off.
+// Points are the exact ones the server serialized. No turn-by-turn routing;
+// "Öffnen in …" on each location hands off.
 import { m } from "@trespass/shared/paraglide/messages";
 import { formatDistance, routeLegs, routeTotal } from "@trespass/shared/trips/route";
 import type { SerializedTripStop } from "@trespass/shared/trips/types";
@@ -14,14 +14,11 @@ export function RoutePreview(props: { stops: readonly SerializedTripStop[] }) {
       name: s.location.name,
       status: s.location.status,
       categoryIcon: s.location.category?.icon ?? "",
-      exact: s.location.exact,
       lat: s.location.point.lat,
       lon: s.location.point.lon,
     })),
   );
-  const legs = createMemo(() =>
-    routeLegs(props.stops.map((s) => ({ point: s.location.point, exact: s.location.exact }))),
-  );
+  const legs = createMemo(() => routeLegs(props.stops.map((s) => ({ point: s.location.point }))));
   const total = createMemo(() => routeTotal(legs()));
   const fit = createMemo<MapBbox | null>(() => {
     const p = points();
@@ -54,10 +51,7 @@ export function RoutePreview(props: { stops: readonly SerializedTripStop[] }) {
                 <span>
                   {props.stops[leg.from]?.location.name} → {props.stops[leg.to]?.location.name}
                 </span>
-                <span class="whitespace-nowrap tabular-nums">
-                  {leg.approximate ? "≈ " : ""}
-                  {formatDistance(leg.meters)}
-                </span>
+                <span class="whitespace-nowrap tabular-nums">{formatDistance(leg.meters)}</span>
               </li>
             )}
           </For>
@@ -66,16 +60,10 @@ export function RoutePreview(props: { stops: readonly SerializedTripStop[] }) {
             data-testid="route-total"
           >
             <span>{m.trips_route_total()}</span>
-            <span class="whitespace-nowrap tabular-nums">
-              {total().approximate ? "≈ " : ""}
-              {formatDistance(total().meters)}
-            </span>
+            <span class="whitespace-nowrap tabular-nums">{formatDistance(total().meters)}</span>
           </li>
         </ol>
-        <p class="text-xs text-muted-foreground">
-          {m.trips_route_hint()}
-          <Show when={total().approximate}> {m.trips_route_approximate()}</Show>
-        </p>
+        <p class="text-xs text-muted-foreground">{m.trips_route_hint()}</p>
       </Show>
     </div>
   );

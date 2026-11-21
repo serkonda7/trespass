@@ -10,15 +10,13 @@
   "scripts": {
     "gen": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy baseLocale --output-structure locale-modules --silent",
     "dev": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy baseLocale --output-structure locale-modules --silent --watch",
-    "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "zod": "4.6.7"
   },
   "devDependencies": {
     "@inlang/paraglide-js": "3.2.2",
-    "@inlang/plugin-message-format": "4.6.0",
-    "fast-check": "4.10.2"
+    "@inlang/plugin-message-format": "4.6.0"
   }
 }

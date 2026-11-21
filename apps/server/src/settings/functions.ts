@@ -18,7 +18,6 @@ export const updateSettingsFn = createServerFn({ method: "POST" })
       instanceName: z.string().max(200),
       researchBudgetCents: z.number().int().min(0),
       tileBudgetMb: z.number().int().min(1),
-      defaultFuzzM: z.number().int().min(0),
     }),
   )
   .handler(({ context: { ctx }, data }) => updateSettings(getDb(), ctx, data));

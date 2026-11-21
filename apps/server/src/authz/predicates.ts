@@ -23,8 +23,6 @@ export type LocationsTableLike = {
   friendsLevel: AnySQLiteColumn;
   lat: AnySQLiteColumn;
   lon: AnySQLiteColumn;
-  pubLat: AnySQLiteColumn;
-  pubLon: AnySQLiteColumn;
 };
 
 const TRUE = sql`1 = 1`;
@@ -59,7 +57,7 @@ function grantAtLeastWhere(ctx: AuthCtx, min: VisibleLevel, t: LocationsTableLik
  * True exactly where `locationLevel(ctx, loc, grants) >= min`. `min` starts at
  * `view`; the role ceiling caps everything, including ownership and grants.
  * The `friends_level` comparison happens in SQL (never fetched and compared in
- * JS), so a low viewer cannot use a bbox or a distance sort as an oracle.
+ * JS). Every visible location's coordinates are exact.
  */
 export function locationsAtLeastWhere(
   ctx: AuthCtx,
@@ -85,9 +83,4 @@ export function locationsAtLeastWhere(
 /** Locations ctx can see (level >= view). AND it into every location query. */
 export function visibleLocationsWhere(ctx: AuthCtx, table: LocationsTableLike = locations): SQL {
   return locationsAtLeastWhere(ctx, "view", table);
-}
-
-/** Locations whose exact point ctx may see. Use for any exact-coordinate query. */
-export function preciseWhere(ctx: AuthCtx, table: LocationsTableLike = locations): SQL {
-  return locationsAtLeastWhere(ctx, "precise", table);
 }

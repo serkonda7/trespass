@@ -11,7 +11,6 @@ import type {
   StoredLocationStatus,
 } from "@trespass/shared/locations/types";
 import { locationLevels, type VisibleLevel } from "../authz";
-import { canSeeExact } from "../authz/levels";
 import type { AppDb } from "../db/client";
 import { categories } from "../db/schema";
 import { LocationsError } from "./errors";
@@ -25,7 +24,7 @@ export type LocationListRow = {
   country: string | null;
   ownerId: string;
   visibility: "private" | "friends";
-  friendsLevel: "view" | "contribute" | "precise";
+  friendsLevel: "view" | "contribute";
   visibleLat: number;
   visibleLon: number;
   visibleDistSq: number | null;
@@ -86,7 +85,6 @@ export function toLocationListItems(
       status: row.effectiveStatus,
       storedStatus: row.status,
       point: { lat: row.visibleLat, lon: row.visibleLon },
-      exact: canSeeExact(level),
       level: level as VisibleLevel,
       country: row.country,
     });

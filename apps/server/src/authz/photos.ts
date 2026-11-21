@@ -76,19 +76,6 @@ export function photoVisitVisibleWhere(ctx: AuthCtx, table: PhotosTableLike = ph
 const isAdmin = (ctx: AuthCtx) => ctx.role === "admin";
 const isUploader = (ctx: AuthCtx, photo: { uploaderId: string }) => photo.uploaderId === ctx.userId;
 
-/** Exact GPS and GPS-derived suggestions need uploader, admin or `precise`. */
-export function canSeePhotoGps(
-  ctx: AuthCtx,
-  photo: { uploaderId: string; locationId: string | null },
-  level: Level,
-): boolean {
-  return (
-    isAdmin(ctx) ||
-    isUploader(ctx, photo) ||
-    (photo.locationId !== null && atLeast(level, "precise"))
-  );
-}
-
 /** Originals are private to the uploader and admins (DESIGN §3.4 rule 6). */
 export const canSeePhotoOriginal = (ctx: AuthCtx, photo: { uploaderId: string }): boolean =>
   isAdmin(ctx) || isUploader(ctx, photo);

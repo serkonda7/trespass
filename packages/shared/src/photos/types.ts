@@ -1,6 +1,6 @@
-// Shared output shapes for photos. No server-only imports here. Below `precise`
-// the exact GPS point, the suggestion and the original URL are ABSENT keys, not
-// null (DESIGN §3.4 rule 4, §3.5 rule 6).
+// Shared output shapes for photos. No server-only imports here. GPS and the
+// suggestion are absent only when the photo has no usable GPS. The original URL
+// stays private to the uploader and admins (DESIGN §3.5 rule 6).
 
 /** Stored EXIF is reduced to this allow-list — never GPS, serials or software. */
 export type PhotoExifData = {
@@ -53,9 +53,9 @@ export type SerializedPhoto = {
   sort: number;
   createdAt: Date;
   permissions: PhotoPermissions;
-  /** Precise viewers, the uploader and admins only. Absent otherwise. */
+  /** Absent when the photo has no GPS data. */
   gps?: { lat: number; lon: number };
-  /** Same audience as GPS: it is derived from GPS. Absent otherwise. */
+  /** Derived from GPS; absent when there is no GPS. */
   suggestion?: PhotoSuggestion | null;
 };
 

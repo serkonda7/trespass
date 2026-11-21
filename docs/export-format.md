@@ -1,4 +1,7 @@
-# Export archive format (version 1)
+# Export archive format (version 2)
+
+Version 2 removes the blurred-location fields (`exact`, `fuzzRadiusM`) from
+serialized locations and always exports exact points, notes and photo GPS.
 
 `GET /api/v1/export` returns one ZIP (`trespass-export_YYYY-MM-DD_HH-MM.zip`,
 UTC time). This is the contract for anything that reads it back. Writer:
@@ -25,7 +28,7 @@ data/locations.json        serialized locations (with `point`)
 data/categories.json       seeded categories
 data/tags.json             tags
 data/visits.json           visit DTOs (people, conditions, sanitized HTML)
-data/photos.json           photo DTOs (no GPS below precise)
+data/photos.json           photo DTOs (GPS when the photo has it)
 data/grants.json           grants of managed locations
 data/users.json            { id, displayName } of referenced users only
 data/history.json          history entries with their sources
@@ -76,15 +79,15 @@ Ids are the database ids (UUIDv7 strings). Timestamps are ISO 8601 UTC strings;
 visit dates are `YYYY-MM-DD` in the location's time zone.
 
 - **locations**: exactly the output of `serializeLocation` — coordinates only
-  in `point` (the SQL-visible point), precise-only fields absent below
-  `precise`. `level`, `permissions` and the effective `status` are included.
+  in `point`, always the exact point. `level`, `permissions` and the effective
+  `status` are included.
 - **categories / tags**: the seeded, editable reference tables.
 - **visits**: the DTOs of `src/server/visits/service.ts`, including `people`
   and `conditions`. `journalMd` is present only where the exporter may edit
   the visit; everyone else gets the sanitized `journalHtml`.
-- **photos**: the DTOs of `src/server/photos/service.ts`. `gps`,
-  `suggestion` and `originalUrl` are absent unless the caller is allowed to
-  see them (§3.4 rules 4 & 6).
+- **photos**: the DTOs of `src/server/photos/service.ts`. `gps` and
+  `suggestion` are present when the photo has GPS data; `originalUrl` stays
+  private to the uploader and admins (§3.5 rule 6).
 - **grants**: `locationId`, `principalKind`, `principalId`, `level` — only for
   locations the exporter manages.
 - **users**: `{ id, displayName }` of the users referenced by the other files
@@ -105,10 +108,10 @@ visit dates are `YYYY-MM-DD` in the location's time zone.
   (`equipmentIds`). Members export their own, admins everyone's (`ownerId`).
 
 `locations.geojson` has one `Point` Feature per location. Its geometry comes
-from `visibleLatExpr` / `visibleLonExpr` in SQL: exact at `precise` and above,
-otherwise the stable fuzzed point. `properties` are the serialized location
-**without** `point`. At `precise` and above, a location with an outline gets a
-second Feature whose geometry is the polygon and whose properties are
+from `visibleLatExpr` / `visibleLonExpr` in SQL and is always the exact point.
+`properties` are the serialized location **without** `point`. A location with
+an outline gets a second Feature whose geometry is the polygon and whose
+properties are
 `{ "kind": "outline", "locationId": "…", "name": "…" }`.
 
 ## Journals

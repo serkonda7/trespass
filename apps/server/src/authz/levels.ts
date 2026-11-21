@@ -5,22 +5,21 @@
 import type { AuthCtx, Role } from "@trespass/shared/authz/ctx";
 import type { Location, LocationGrant } from "../db/schema";
 
-/** `none < view < contribute < precise < edit < manage` (DESIGN §3.2). */
-export const LEVELS = ["none", "view", "contribute", "precise", "edit", "manage"] as const;
+/** `none < view < contribute < edit < manage` (DESIGN §3.2). */
+export const LEVELS = ["none", "view", "contribute", "edit", "manage"] as const;
 export type Level = (typeof LEVELS)[number];
 /** Any level that lets the caller see the location at all. */
 export type VisibleLevel = Exclude<Level, "none">;
 /** Levels a `friends_level` column may hold (DESIGN §9). */
-export const FRIENDS_LEVELS = ["view", "contribute", "precise"] as const;
+export const FRIENDS_LEVELS = ["view", "contribute"] as const;
 export type FriendsLevel = (typeof FRIENDS_LEVELS)[number];
 
 const RANK: Record<Level, number> = {
   none: 0,
   view: 1,
   contribute: 2,
-  precise: 3,
-  edit: 4,
-  manage: 5,
+  edit: 3,
+  manage: 4,
 };
 
 export const levelRank = (lvl: Level): number => RANK[lvl];
@@ -34,7 +33,7 @@ export function grantLevelsAtLeast(min: Level): Exclude<Level, "none">[] {
   return LEVELS.filter((l): l is Exclude<Level, "none"> => l !== "none" && atLeast(l, min));
 }
 
-/** `friends_level` values that are >= min (empty above `precise`). */
+/** `friends_level` values that are >= min (empty above `contribute`). */
 export function friendLevelsAtLeast(min: Level): FriendsLevel[] {
   return FRIENDS_LEVELS.filter((l) => atLeast(l, min));
 }
@@ -91,6 +90,3 @@ export function locationLevel(
   lvl = maxLevel(lvl, grantLevel(ctx, grants, loc.id));
   return minLevel(lvl, ROLE_CEILING[ctx.role]);
 }
-
-/** Exact coordinates (and their derivatives) need at least `precise` (DESIGN §3.2). */
-export const canSeeExact = (lvl: Level): boolean => atLeast(lvl, "precise");

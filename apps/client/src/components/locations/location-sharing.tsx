@@ -153,13 +153,10 @@ export function LocationSharing(props: {
                 id="share-friends-level"
                 class={inputClass}
                 value={friendsLevel()}
-                onChange={(e) =>
-                  setFriendsLevel(e.currentTarget.value as "view" | "contribute" | "precise")
-                }
+                onChange={(e) => setFriendsLevel(e.currentTarget.value as "view" | "contribute")}
               >
                 <option value="view">{m.location_friends_level_view()}</option>
                 <option value="contribute">{m.location_friends_level_contribute()}</option>
-                <option value="precise">{m.location_friends_level_precise()}</option>
               </select>
             </Show>
             <Button variant="outline" disabled={busy()} onClick={saveVisibility}>

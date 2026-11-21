@@ -1,11 +1,10 @@
 // Route preview (DESIGN §5.5): straight lines and distances between consecutive
-// stops. Uses only the points the server already serialized for the caller, so
-// a leg that touches a fuzzed point is marked approximate.
+// stops. Uses only the points the server already serialized for the caller.
 import { haversineMeters } from "../geo/distance";
 import type { Point } from "../geo/types";
 
-export type RouteStop = { point: Point; exact: boolean };
-export type RouteLeg = { from: number; to: number; meters: number; approximate: boolean };
+export type RouteStop = { point: Point };
+export type RouteLeg = { from: number; to: number; meters: number };
 
 export function routeLegs(stops: readonly RouteStop[]): RouteLeg[] {
   const legs: RouteLeg[] = [];
@@ -16,17 +15,13 @@ export function routeLegs(stops: readonly RouteStop[]): RouteLeg[] {
       from: i - 1,
       to: i,
       meters: haversineMeters(a.point, b.point),
-      approximate: !a.exact || !b.exact,
     });
   }
   return legs;
 }
 
-export function routeTotal(legs: readonly RouteLeg[]): { meters: number; approximate: boolean } {
-  return {
-    meters: legs.reduce((sum, l) => sum + l.meters, 0),
-    approximate: legs.some((l) => l.approximate),
-  };
+export function routeTotal(legs: readonly RouteLeg[]): { meters: number } {
+  return { meters: legs.reduce((sum, l) => sum + l.meters, 0) };
 }
 
 /** "850 m", "12,4 km", "128 km". */

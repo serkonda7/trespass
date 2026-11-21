@@ -8,6 +8,7 @@ import {
   setCoverPhotoFn,
   updatePhotoFn,
 } from "@trespass/server/photos/functions";
+import { formatCoordinates } from "@trespass/shared/geo/parse-coords";
 import { m } from "@trespass/shared/paraglide/messages";
 import { photoUrl } from "@trespass/shared/photos/rules";
 import type { SerializedPhoto } from "@trespass/shared/photos/types";
@@ -194,7 +195,7 @@ export function PhotoGallery(props: {
                     {m.photos_exif_camera()}: {exifLine(p())}
                     <Show when={p().gps}>
                       {" · "}
-                      {m.photos_approximate()}
+                      {m.location_coordinates()}: {formatCoordinates(p().gps!)}
                     </Show>
                   </p>
                 </Show>

@@ -49,8 +49,6 @@ export function locationsErrorText(err: unknown): string {
       return m.locations_error_category();
     case "COORDS_INVALID":
       return m.locations_error_coords();
-    case "FUZZ_INVALID":
-      return m.locations_error_fuzz();
     case "GRANT_INVALID":
       return m.locations_error_grant();
     case "GRANT_ABOVE_CEILING":

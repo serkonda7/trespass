@@ -19,7 +19,6 @@ export { visibleLatExpr, visibleLonExpr } from "./coords";
 export { canEditHistory, visibleHistoryWhere } from "./history";
 export {
   atLeast,
-  canSeeExact,
   FRIENDS_LEVELS,
   type FriendsLevel,
   friendLevelsAtLeast,
@@ -49,7 +48,6 @@ export {
   canAttachPhotoToVisit,
   canDeletePhoto,
   canEditPhoto,
-  canSeePhotoGps,
   canSeePhotoOriginal,
   canSetCoverPhoto,
   canUploadPhoto,
@@ -63,7 +61,6 @@ export {
 export {
   type LocationsTableLike,
   locationsAtLeastWhere,
-  preciseWhere,
   visibleLocationsWhere,
 } from "./predicates";
 export {

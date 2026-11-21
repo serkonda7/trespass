@@ -2,7 +2,7 @@
 // §5.5). Visibility comes from authz/trips.ts (SQL). A trip never widens what
 // a viewer may see of its stops: stop locations are loaded with
 // visibleLocationsWhere(ctx) and serialized with serializeLocation at the
-// viewer's own level, so below `precise` a stop is the fuzzed point only.
+// viewer's own level; every visible stop is shown at its exact point.
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
 import type { LocationStatus } from "@trespass/shared/locations/types";
 import {

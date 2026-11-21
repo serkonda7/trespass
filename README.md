@@ -17,5 +17,5 @@ subdomains and separate tailnet nodes.
 
 Bun workspaces managed by Turborepo: `apps/client` (TanStack Start app), `apps/server`
 (server code, worker, migrations) and `packages/shared` (contract types and i18n).
-`bun install && bun run check && bun run build` builds and tests everything (`bun run e2e` for Playwright). See
+`bun install && bun run check && bun run build` builds everything. See
 [AGENTS.md](AGENTS.md) for the layout and conventions.

@@ -1,6 +1,6 @@
 // Output shapes for location server functions. Shared by server and client;
-// no server-only imports here. The precise-only fields are optional: below
-// `precise` they are absent from the object entirely (serialize.ts).
+// no server-only imports here. Everyone who can see a location gets its exact
+// point and all of its details (serialize.ts).
 import type { GeoJsonPolygon, Point } from "../geo/types";
 
 export type LocationStatus =
@@ -14,15 +14,14 @@ export type LocationStatus =
 /** Statuses a user may set; `visited` is derived from visits. */
 export type StoredLocationStatus = Exclude<LocationStatus, "visited">;
 export type Visibility = "private" | "friends";
-export type FriendsLevel = "view" | "contribute" | "precise";
-export type LocationGrantLevel = "view" | "contribute" | "precise" | "edit" | "manage";
+export type FriendsLevel = "view" | "contribute";
+export type LocationGrantLevel = "view" | "contribute" | "edit" | "manage";
 export type PrincipalKind = "user" | "group";
-export type LocationLevel = "none" | "view" | "contribute" | "precise" | "edit" | "manage";
+export type LocationLevel = "none" | "view" | "contribute" | "edit" | "manage";
 export type VisibleLocationLevel = Exclude<LocationLevel, "none">;
 
 export type LocationPermissions = {
   canContribute: boolean;
-  canSeeExact: boolean;
   canEdit: boolean;
   canManage: boolean;
 };
@@ -48,8 +47,6 @@ export type SerializedLocation = {
   /** The stored status, for the edit form (never `visited`). */
   storedStatus: StoredLocationStatus;
   point: Point;
-  /** True when `point` is the exact position; false when it is the fuzzed one. */
-  exact: boolean;
   country: string | null;
   adminArea: string | null;
   tz: string;
@@ -63,8 +60,6 @@ export type SerializedLocation = {
   updatedAt: Date;
   level: VisibleLocationLevel;
   permissions: LocationPermissions;
-  /** Precise only. Never present below `precise`. */
-  fuzzRadiusM?: number;
   geomArea?: GeoJsonPolygon | null;
   parking?: Point[] | null;
   accessNotes?: string | null;
@@ -86,7 +81,6 @@ export type LocationListItem = {
   status: LocationStatus;
   storedStatus: StoredLocationStatus;
   point: Point;
-  exact: boolean;
   level: VisibleLocationLevel;
   country: string | null;
 };

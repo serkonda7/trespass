@@ -10,7 +10,6 @@
 
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
 import { diffFields } from "@trespass/shared/diff";
-import { haversineMeters } from "@trespass/shared/geo/distance";
 import type { GeoJsonPolygon, Point } from "@trespass/shared/geo/types";
 import {
   type CreateLocationInput,
@@ -63,11 +62,9 @@ import {
   locations,
   locationTags,
   type NewLocation,
-  settings,
   tags,
   users,
 } from "../db/schema";
-import { fuzzPoint } from "../geo/fuzz";
 import { timeZoneForPoint } from "../geo/tz";
 import { geocodeEnabled } from "../geocode/reverse";
 import { enqueueJob } from "../jobs/queue";
@@ -116,13 +113,6 @@ function requireCategory(db: DbOrTx, id: string) {
   const category = db.select().from(categories).where(eq(categories.id, id)).get();
   if (!category) throw new LocationsError(422, "CATEGORY_INVALID");
   return category;
-}
-
-function defaultFuzz(db: DbOrTx): number {
-  return (
-    db.select({ v: settings.defaultFuzzM }).from(settings).where(eq(settings.id, 1)).get()?.v ??
-    1500
-  );
 }
 
 function enqueueGeocode(db: DbOrTx, locationId: string, point: Point) {
@@ -240,12 +230,7 @@ export function createLocation(
   return db.transaction((tx) => {
     const at = new Date();
     requireCategory(tx, input.categoryId);
-    const fuzzRadiusM = input.fuzzRadiusM ?? defaultFuzz(tx);
-    if (!Number.isSafeInteger(fuzzRadiusM) || fuzzRadiusM < 0) {
-      throw new LocationsError(422, "FUZZ_INVALID");
-    }
     const exact: Point = { lat: input.point.lat, lon: input.point.lon };
-    const pub = fuzzPoint(exact, fuzzRadiusM);
     const tagRefs = tagIdsForNames(tx, input.tags ?? []);
     const row = tx
       .insert(locations)
@@ -259,9 +244,6 @@ export function createLocation(
         statusChangedAt: at,
         lat: exact.lat,
         lon: exact.lon,
-        pubLat: pub.lat,
-        pubLon: pub.lon,
-        fuzzRadiusM,
         geomArea: (input.geomArea as GeoJsonPolygon | undefined) ?? null,
         parking: input.parking ?? null,
         accessNotes: input.accessNotes ?? null,
@@ -408,32 +390,17 @@ export function moveLocation(db: AppDb, ctx: AuthCtx, raw: MoveLocationInput): {
   return db.transaction((tx) => {
     const { location } = requireLocation(tx, ctx, input.id, "edit");
     assertVersion(location, input.version);
-    const fuzzRadiusM = input.fuzzRadiusM ?? location.fuzzRadiusM;
-    if (!Number.isSafeInteger(fuzzRadiusM) || fuzzRadiusM < 0) {
-      throw new LocationsError(422, "FUZZ_INVALID");
-    }
     const exact: Point = { lat: input.point.lat, lon: input.point.lon };
-    const exactChanged = exact.lat !== location.lat || exact.lon !== location.lon;
-    const radiusChanged = fuzzRadiusM !== location.fuzzRadiusM;
-    if (!exactChanged && !radiusChanged) return { version: location.version };
-
-    const oldPub: Point = { lat: location.pubLat, lon: location.pubLon };
-    // Keep the old public point while it still covers the new exact point;
-    // otherwise (or when the radius changed) generate a fresh one.
-    const pub =
-      !radiusChanged && haversineMeters(exact, oldPub) <= fuzzRadiusM
-        ? oldPub
-        : fuzzPoint(exact, fuzzRadiusM);
+    if (exact.lat === location.lat && exact.lon === location.lon) {
+      return { version: location.version };
+    }
 
     const version = writeVersioned(tx, location.id, location.version, {
       lat: exact.lat,
       lon: exact.lon,
-      pubLat: pub.lat,
-      pubLon: pub.lon,
-      fuzzRadiusM,
       tz: timeZoneForPoint(exact),
     });
-    // Never log the old or the new coordinates, for anyone below precise.
+    // Never log the old or the new coordinates.
     recordEvent(tx, {
       actorId: ctx.userId,
       entityId: location.id,

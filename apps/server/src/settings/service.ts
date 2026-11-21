@@ -15,7 +15,6 @@ export type Settings = {
   instanceName: string;
   researchBudgetCents: number;
   tileBudgetMb: number;
-  defaultFuzzM: number;
 };
 
 export type SettingsInput = Settings;
@@ -27,7 +26,6 @@ function current(db: DbOrTx): Settings {
     instanceName: row?.instanceName ?? "Trespass",
     researchBudgetCents: row?.researchBudgetCents ?? 0,
     tileBudgetMb: row?.tileBudgetMb ?? 10240,
-    defaultFuzzM: row?.defaultFuzzM ?? 1500,
   };
 }
 
@@ -56,11 +54,10 @@ export function updateSettings(db: AppDb, ctx: AuthCtx, input: SettingsInput): S
     "SETTINGS_BUDGET_INVALID",
   );
   const tileBudgetMb = cleanNonNegativeInt(input.tileBudgetMb, "SETTINGS_TILE_BUDGET_INVALID", 1);
-  const defaultFuzzM = cleanNonNegativeInt(input.defaultFuzzM, "SETTINGS_FUZZ_INVALID");
 
   return db.transaction((tx) => {
     const before = current(tx);
-    const after: Settings = { instanceName, researchBudgetCents, tileBudgetMb, defaultFuzzM };
+    const after: Settings = { instanceName, researchBudgetCents, tileBudgetMb };
     const diff = diffFields(before, after);
 
     tx.update(settings).set(after).where(eq(settings.id, 1)).run();

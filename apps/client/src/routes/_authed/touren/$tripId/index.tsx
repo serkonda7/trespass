@@ -203,9 +203,6 @@ function TripView(props: { trip: SerializedTrip; canOwnEquipment: boolean; canAd
                       </Link>
                       <div class="flex flex-wrap items-center gap-1.5">
                         <StatusBadge status={stop.location.status} />
-                        <Show when={!stop.location.exact}>
-                          <Badge variant="outline">≈ {m.location_approximate()}</Badge>
-                        </Show>
                       </div>
                       <div class="flex flex-wrap items-center gap-1 empty:hidden">
                         <Show when={props.canAddVisit && stop.location.permissions.canContribute}>

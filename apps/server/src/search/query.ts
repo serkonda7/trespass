@@ -6,7 +6,7 @@
 // listLocations, so a search result is byte-for-byte a list result.
 //
 // Ranking by bm25 would only see view-level columns (the index contains no
-// precise-only data), but we keep the stable id/distance ordering of the map
+// exact detail fields), but we keep the stable id/distance ordering of the map
 // list so the same keyset cursor works for both paths.
 
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
@@ -137,7 +137,7 @@ export function searchLocations(db: AppDb, ctx: AuthCtx, raw: ListLocationsInput
   }
 
   // Equirectangular approximation in SQL, over the VISIBLE coordinates only:
-  // a distance sort must not leak the exact point (DESIGN §3.4 rule 2).
+  // coordinates always come from the shared expression (DESIGN §3.4 rule 2).
   let distSq: SQL | null = null;
   if (input.near) {
     const metersPerLon = 111_320 * Math.cos((input.near.lat * Math.PI) / 180);

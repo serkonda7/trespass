@@ -33,7 +33,7 @@ export type AdminTileRegion = {
   error: string | null;
 };
 
-/** TILES=off disables both enqueueing and extraction (e2e/test override). */
+/** TILES=off disables both enqueueing and extraction. */
 export function tilesEnabled(): boolean {
   return getEnv().TILES === "on";
 }

@@ -1,7 +1,7 @@
 // Photos: upload/list/assign/caption/reorder/delete/cover. Independent of the
 // request; ./functions.ts adds authMiddleware, ./upload.ts handles multipart.
 // Every visibility decision comes from src/server/authz/photos.ts and is
-// enforced in SQL. Precise-only fields are added to the DTO on the server.
+// enforced in SQL. GPS is added to the DTO whenever the photo has it.
 
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
 import {
@@ -24,7 +24,6 @@ import {
   canAttachPhotoToVisit,
   canDeletePhoto,
   canEditPhoto,
-  canSeePhotoGps,
   canSeePhotoOriginal,
   canSetCoverPhoto,
   canUploadPhoto,
@@ -116,7 +115,7 @@ function levelOf(db: DbOrTx, ctx: AuthCtx, row: PhotoRow): Level {
       id: row.locationId,
       ownerId: row.ownerId,
       visibility: row.visibility as "private" | "friends",
-      friendsLevel: row.friendsLevel as "view" | "contribute" | "precise",
+      friendsLevel: row.friendsLevel as "view" | "contribute",
     },
   ]).get(row.locationId) ?? "none") as Level;
 }
@@ -158,7 +157,6 @@ function serialize(db: DbOrTx, ctx: AuthCtx, row: PhotoRow): SerializedPhoto {
   const level = levelOf(db, ctx, row);
   const canEdit = canEditPhoto(ctx, photo, level);
   const canDelete = canDeletePhoto(ctx, photo, level);
-  const canGps = canSeePhotoGps(ctx, photo, level);
   const urls = Object.fromEntries(
     PHOTO_SIZES.map((s) => [s, photoUrl(photo.id, s)]),
   ) as SerializedPhoto["urls"];
@@ -186,10 +184,10 @@ function serialize(db: DbOrTx, ctx: AuthCtx, row: PhotoRow): SerializedPhoto {
     },
   };
   if (canSeePhotoOriginal(ctx, photo)) out.originalUrl = photoUrl(photo.id, "original");
-  if (canGps && photo.gpsLat !== null && photo.gpsLon !== null) {
+  if (photo.gpsLat !== null && photo.gpsLon !== null) {
     out.gps = { lat: photo.gpsLat, lon: photo.gpsLon };
-    out.suggestion = loadSuggestion(db, ctx, row);
   }
+  out.suggestion = loadSuggestion(db, ctx, row);
   return out;
 }
 

@@ -13,7 +13,6 @@ import {
 } from "~/components/locations/location-form";
 import { MapView } from "~/components/map/map-view";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import { settingsQuery } from "~/lib/admin-queries";
 import { categoriesQuery } from "~/lib/locations/queries";
 import { runAction } from "~/lib/run-action";
 
@@ -21,11 +20,7 @@ export const Route = createFileRoute("/_authed/locations/new")({
   beforeLoad: ({ context }) => {
     if (context.user.role === "guest") throw notFound();
   },
-  loader: ({ context }) =>
-    Promise.all([
-      context.queryClient.ensureQueryData(categoriesQuery()),
-      context.queryClient.ensureQueryData(settingsQuery()),
-    ]),
+  loader: ({ context }) => context.queryClient.ensureQueryData(categoriesQuery()),
   head: () => ({ meta: [{ title: `${m.location_new_title()} · ${m.app_name()}` }] }),
   component: NewLocationPage,
 });
@@ -33,7 +28,6 @@ export const Route = createFileRoute("/_authed/locations/new")({
 function NewLocationPage() {
   const navigate = useNavigate();
   const categories = useQuery(() => categoriesQuery());
-  const settings = useQuery(() => settingsQuery());
   const [name, setName] = createSignal("");
   const [coordText, setCoordText] = createSignal("");
   const [pick, setPick] = createSignal<{
@@ -60,8 +54,7 @@ function NewLocationPage() {
     }, 350);
   });
 
-  const initial = () =>
-    emptyLocationValues(categories.data ?? [], settings.data?.defaultFuzzM ?? 1500);
+  const initial = () => emptyLocationValues(categories.data ?? []);
 
   const onSubmit = async (values: LocationFormValues): Promise<boolean> => {
     const payload = formPayload(values);

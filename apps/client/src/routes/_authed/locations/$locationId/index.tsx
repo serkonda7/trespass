@@ -48,7 +48,6 @@ import { Label } from "~/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { showToast } from "~/components/ui/toast";
 import { LocationTimeline } from "~/components/visits/location-timeline";
-import { settingsQuery } from "~/lib/admin-queries";
 import { cn } from "~/lib/cn";
 import { locationQuery } from "~/lib/locations/queries";
 import { runAction } from "~/lib/run-action";
@@ -74,7 +73,7 @@ export const Route = createFileRoute("/_authed/locations/$locationId/")({
   component: LocationPage,
 });
 
-/** Maps only get exact coordinates when the server says `exact`. */
+/** Hand-off links always use the exact point. */
 function openLinks(point: { lat: number; lon: number }) {
   const lat = String(point.lat);
   const lon = String(point.lon);
@@ -116,7 +115,6 @@ function LocationView(props: {
   const loc = () => props.location;
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const settings = useQuery(() => settingsQuery());
   const [shareOpen, setShareOpen] = createSignal(false);
   const [moveOpen, setMoveOpen] = createSignal(false);
   const [tripOpen, setTripOpen] = createSignal(false);
@@ -138,7 +136,6 @@ function LocationView(props: {
   });
 
   const point = () => parseCoordinates(coordText()) ?? loc().point;
-  const exact = () => loc().exact;
   const refresh = () => qc.invalidateQueries({ queryKey: ["locations", "detail", loc().id] });
 
   const onMove = async () => {
@@ -176,21 +173,12 @@ function LocationView(props: {
             name: loc().name,
             status: loc().status,
             categoryIcon: loc().category?.icon ?? "",
-            exact: exact(),
             lat: loc().point.lat,
             lon: loc().point.lon,
           },
         ]}
         marker={loc().point}
-        center={{ point: loc().point, zoom: exact() ? 13 : 11 }}
-        circle={
-          exact() || !loc().fuzzRadiusM
-            ? null
-            : {
-                point: loc().point,
-                radiusM: loc().fuzzRadiusM ?? settings.data?.defaultFuzzM ?? 1500,
-              }
-        }
+        center={{ point: loc().point, zoom: 13 }}
         label={loc().name}
         class="size-full"
       />
@@ -242,9 +230,6 @@ function LocationView(props: {
           </h1>
           <div class="flex flex-wrap items-center gap-2">
             <StatusBadge status={loc().status} />
-            <Show when={!exact()}>
-              <Badge variant="outline">≈ {m.location_approximate()}</Badge>
-            </Show>
           </div>
 
           <section
@@ -314,12 +299,6 @@ function LocationView(props: {
         </div>
       </section>
 
-      <Show when={!exact()}>
-        <Callout tone="info">
-          <strong>{m.location_approximate()}</strong> — {m.location_approximate_hint()}
-        </Callout>
-      </Show>
-
       {/* min-w-0: the grid item must not grow to the tab list's width on phones. */}
       <Tabs defaultValue="overview" class="min-w-0">
         <TabsList class="flex w-full justify-start overflow-x-auto [scrollbar-width:none]">
@@ -352,77 +331,73 @@ function LocationView(props: {
                   </Show>
                 </CardContent>
               </Card>
-              <Show when={exact()}>
-                <dl class="grid gap-3">
-                  <Show when={loc().dangerNotes}>
-                    <Note
-                      icon={<IconAlertTriangle />}
-                      title={m.location_danger_notes()}
-                      tone="warning"
-                    >
-                      {loc().dangerNotes}
-                    </Note>
-                  </Show>
-                  <Show when={loc().accessNotes}>
-                    <Note icon={<IconKey />} title={m.location_access_notes()}>
-                      {loc().accessNotes}
-                    </Note>
-                  </Show>
-                  <Show when={loc().parking?.length}>
-                    <Note icon={<IconCar />} title={m.location_parking()}>
-                      <span class="grid gap-1 font-mono text-sm">
-                        <For each={loc().parking ?? []}>
-                          {(p) => <span>{formatCoordinates(p)}</span>}
-                        </For>
-                      </span>
-                    </Note>
-                  </Show>
-                </dl>
-              </Show>
+              <dl class="grid gap-3">
+                <Show when={loc().dangerNotes}>
+                  <Note
+                    icon={<IconAlertTriangle />}
+                    title={m.location_danger_notes()}
+                    tone="warning"
+                  >
+                    {loc().dangerNotes}
+                  </Note>
+                </Show>
+                <Show when={loc().accessNotes}>
+                  <Note icon={<IconKey />} title={m.location_access_notes()}>
+                    {loc().accessNotes}
+                  </Note>
+                </Show>
+                <Show when={loc().parking?.length}>
+                  <Note icon={<IconCar />} title={m.location_parking()}>
+                    <span class="grid gap-1 font-mono text-sm">
+                      <For each={loc().parking ?? []}>
+                        {(p) => <span>{formatCoordinates(p)}</span>}
+                      </For>
+                    </span>
+                  </Note>
+                </Show>
+              </dl>
             </div>
 
             <div class="grid content-start gap-4">
               <Show when={loc().coverPhotoId}>
                 {mapPreview("grid-paper h-48 overflow-hidden rounded-lg border")}
               </Show>
-              <Show when={exact()}>
-                <section
-                  class="grid gap-3 rounded-lg border bg-card p-4"
-                  aria-label={m.location_coordinates()}
-                >
-                  <h2 class="kicker">{m.location_coordinates()}</h2>
-                  <div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-md border border-dashed bg-background px-3 py-2">
-                    <code
-                      class="whitespace-nowrap text-sm text-foreground"
-                      data-testid="location-coordinates"
-                    >
-                      {formatCoordinates(loc().point)}
-                    </code>
-                    <Button variant="ghost" size="sm" class="-mr-1.5" onClick={copy}>
-                      <IconCopy />
-                      {m.location_copy()}
-                    </Button>
-                  </div>
-                  <h3 class="kicker mt-1">{m.location_open_in()}</h3>
-                  <ul class="grid gap-1.5">
-                    <For each={openLinks(loc().point)}>
-                      {(link) => (
-                        <li>
-                          <a
-                            class="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm font-medium text-primary hover:bg-accent"
-                            href={link.href}
-                            rel="noopener noreferrer"
-                          >
-                            {m.location_open_in_app({ app: link.name })}
-                            <IconExternalLink class="size-3.5 opacity-70" />
-                          </a>
-                        </li>
-                      )}
-                    </For>
-                  </ul>
-                  <p class="text-xs text-muted-foreground">{m.location_external_notice()}</p>
-                </section>
-              </Show>
+              <section
+                class="grid gap-3 rounded-lg border bg-card p-4"
+                aria-label={m.location_coordinates()}
+              >
+                <h2 class="kicker">{m.location_coordinates()}</h2>
+                <div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-md border border-dashed bg-background px-3 py-2">
+                  <code
+                    class="whitespace-nowrap text-sm text-foreground"
+                    data-testid="location-coordinates"
+                  >
+                    {formatCoordinates(loc().point)}
+                  </code>
+                  <Button variant="ghost" size="sm" class="-mr-1.5" onClick={copy}>
+                    <IconCopy />
+                    {m.location_copy()}
+                  </Button>
+                </div>
+                <h3 class="kicker mt-1">{m.location_open_in()}</h3>
+                <ul class="grid gap-1.5">
+                  <For each={openLinks(loc().point)}>
+                    {(link) => (
+                      <li>
+                        <a
+                          class="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm font-medium text-primary hover:bg-accent"
+                          href={link.href}
+                          rel="noopener noreferrer"
+                        >
+                          {m.location_open_in_app({ app: link.name })}
+                          <IconExternalLink class="size-3.5 opacity-70" />
+                        </a>
+                      </li>
+                    )}
+                  </For>
+                </ul>
+                <p class="text-xs text-muted-foreground">{m.location_external_notice()}</p>
+              </section>
             </div>
           </div>
         </TabsContent>
@@ -503,19 +478,6 @@ function LocationView(props: {
         </DialogContent>
       </Dialog>
     </div>
-  );
-}
-
-function Callout(props: { tone?: "info" | "warning"; children: JSX.Element }) {
-  return (
-    <p
-      class={cn(
-        "rounded-lg border border-l-4 bg-card p-3 text-sm",
-        props.tone === "warning" ? "border-l-warning" : "border-l-primary/70",
-      )}
-    >
-      {props.children}
-    </p>
   );
 }
 

@@ -30,8 +30,8 @@ export const LOCATION_STATUSES = [
   "demolished",
 ] as const;
 export const VISIBILITIES = ["private", "friends"] as const;
-export const FRIENDS_LEVELS = ["view", "contribute", "precise"] as const;
-export const LOCATION_GRANT_LEVELS = ["view", "contribute", "precise", "edit", "manage"] as const;
+export const FRIENDS_LEVELS = ["view", "contribute"] as const;
+export const LOCATION_GRANT_LEVELS = ["view", "contribute", "edit", "manage"] as const;
 export const VISIT_ACCESS = ["open", "difficult", "sealed"] as const;
 export const VISIT_CONDITIONS = ["good", "fair", "poor", "collapsing"] as const;
 export const PHOTO_STATUSES = ["processing", "ready", "failed"] as const;
@@ -95,7 +95,6 @@ export const settings = sqliteTable(
     instanceName: text("instance_name").notNull().default("Trespass"),
     researchBudgetCents: integer("research_budget_cents").notNull().default(0),
     tileBudgetMb: integer("tile_budget_mb").notNull().default(10240),
-    defaultFuzzM: integer("default_fuzz_m").notNull().default(1500),
   },
   () => [check("settings_singleton", sql`id = 1`)],
 );
@@ -253,9 +252,9 @@ export const categories = sqliteTable("categories", {
 });
 
 /**
- * One abandoned place (DESIGN §4, §9). `lat/lon` is exact; `pub_lat/pub_lon` is
- * the single stable fuzzed point shown below `precise`. `cover_photo_id` has no
- * FK yet: photos arrive in Stage 3.
+ * One abandoned place (DESIGN §4, §9). `lat/lon` is the exact point returned to
+ * everyone who can see the location. `cover_photo_id` has no FK yet: photos
+ * arrive in Stage 3.
  */
 export const locations = sqliteTable(
   "locations",
@@ -277,9 +276,6 @@ export const locations = sqliteTable(
     statusChangedAt: integer("status_changed_at", { mode: "timestamp_ms" }),
     lat: real("lat").notNull(),
     lon: real("lon").notNull(),
-    pubLat: real("pub_lat").notNull(),
-    pubLon: real("pub_lon").notNull(),
-    fuzzRadiusM: integer("fuzz_radius_m").notNull().default(1500),
     geomArea: text("geom_area", { mode: "json" }).$type<GeoJsonPolygon>(),
     parking: text("parking", { mode: "json" }).$type<Point[]>(),
     accessNotes: text("access_notes"),
@@ -306,7 +302,6 @@ export const locations = sqliteTable(
     check("locations_visibility", inList("visibility", VISIBILITIES)),
     check("locations_friends_level", inList("friends_level", FRIENDS_LEVELS)),
     index("locations_lat_lon_idx").on(t.lat, t.lon),
-    index("locations_pub_lat_lon_idx").on(t.pubLat, t.pubLon),
     index("locations_owner_idx").on(t.ownerId),
     index("locations_category_idx").on(t.categoryId),
   ],

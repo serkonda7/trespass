@@ -1,6 +1,6 @@
 // Downloads the Protomaps basemap glyphs/sprites into public/map/ and copies
 // MapLibre's standalone worker there. Run with `bun run map-assets` (the Docker
-// build and `bun run e2e` do it automatically). public/map/ is gitignored: the
+// build and `bun run map-assets` do it automatically). public/map/ is gitignored: the
 // map still works without these files (pins, no labels), so network failures
 // are warnings, never a failed build. No third-party URL appears in the app.
 import { existsSync, mkdirSync, statSync } from "node:fs";

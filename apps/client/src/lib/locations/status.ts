@@ -58,7 +58,6 @@ const COLORS: Record<LocationStatus, string> = {
 const LEVEL_LABELS = {
   view: m.levels_view,
   contribute: m.levels_contribute,
-  precise: m.levels_precise,
   edit: m.levels_edit,
   manage: m.levels_manage,
 };

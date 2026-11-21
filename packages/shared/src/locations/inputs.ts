@@ -35,8 +35,8 @@ export const statusSchema = z.enum([
 /** Statuses usable as a filter/list value, including derived `visited`. */
 export const effectiveStatusSchema = z.enum([...statusSchema.options, "visited"] as const);
 export const visibilitySchema = z.enum(["private", "friends"]);
-export const friendsLevelSchema = z.enum(["view", "contribute", "precise"]);
-export const grantLevelSchema = z.enum(["view", "contribute", "precise", "edit", "manage"]);
+export const friendsLevelSchema = z.enum(["view", "contribute"]);
+export const grantLevelSchema = z.enum(["view", "contribute", "edit", "manage"]);
 export const principalKindSchema = z.enum(["user", "group"]);
 
 const polygonSchema = z.object({
@@ -50,8 +50,6 @@ export const createLocationInput = z.object({
   categoryId: idSchema,
   status: statusSchema.optional(),
   point: pointSchema,
-  /** Defaults to settings.default_fuzz_m. */
-  fuzzRadiusM: z.number().int().min(0).max(100_000).optional(),
   parking: z.array(pointSchema).min(1).max(20).nullable().optional(),
   geomArea: polygonSchema.nullable().optional(),
   accessNotes: optText(TEXT_MAX),
@@ -83,8 +81,6 @@ export const moveLocationInput = z.object({
   id: idSchema,
   version,
   point: pointSchema,
-  /** Changing the radius always regenerates the public point. */
-  fuzzRadiusM: z.number().int().min(0).max(100_000).optional(),
 });
 export type MoveLocationInput = z.input<typeof moveLocationInput>;
 

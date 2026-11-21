@@ -15,7 +15,6 @@ export type MapPoint = {
   name: string;
   status: LocationStatus;
   categoryIcon: string;
-  exact: boolean;
   lat: number;
   lon: number;
 };
@@ -83,7 +82,7 @@ async function addCategoryImages(m: MapInstance) {
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
-/** An approximate circle ring in degrees, for the fuzz-radius display only. */
+/** A circle ring in degrees, for the research-area radius preview. */
 function circleRing(center: Point, radiusM: number): number[][] {
   const ring: number[][] = [];
   const latDelta = radiusM / 111_320;
@@ -110,6 +109,7 @@ export function MapView(props: {
   /** When set, a click/long-press on the map picks a coordinate. */
   onPick?: (point: Point) => void;
   marker?: Point | null;
+  /** Circle to draw (e.g. the radius of a research area). */
   circle?: { point: Point; radiusM: number } | null;
   /** Straight lines between consecutive points (trip route preview). */
   route?: readonly Point[] | null;
@@ -235,20 +235,20 @@ export function MapView(props: {
           "icon-ignore-placement": true,
         } as never,
       });
-      m.addSource("fuzz", {
+      m.addSource("circle", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
       });
       m.addLayer({
-        id: "fuzz-fill",
+        id: "circle-fill",
         type: "fill",
-        source: "fuzz",
+        source: "circle",
         paint: { "fill-color": ACCENT, "fill-opacity": 0.1 },
       });
       m.addLayer({
-        id: "fuzz-line",
+        id: "circle-line",
         type: "line",
-        source: "fuzz",
+        source: "circle",
         paint: { "line-color": ACCENT, "line-dasharray": [2, 2], "line-width": 1.5 },
       });
       m.addSource("areas", {
@@ -391,7 +391,7 @@ export function MapView(props: {
   createEffect(() => {
     const circle = props.circle;
     if (!ready() || !map) return;
-    const source = map.getSource("fuzz") as import("maplibre-gl").GeoJSONSource | undefined;
+    const source = map.getSource("circle") as import("maplibre-gl").GeoJSONSource | undefined;
     source?.setData({
       type: "FeatureCollection",
       features: circle

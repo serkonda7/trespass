@@ -1,20 +1,18 @@
 // The ONE source of coordinates for every location query (DESIGN §3.4 rule 2).
-// Filtering, sorting or returning coordinates without these expressions would
-// turn a tiny bounding box or a "near me" sort into an oracle for the real point.
+// Every visible location is returned at its exact point; these expressions keep
+// a single place for queries to take coordinates from.
 
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
 import { type SQL, sql } from "drizzle-orm";
 import { locations } from "../db/schema";
-import { type LocationsTableLike, preciseWhere } from "./predicates";
+import type { LocationsTableLike } from "./predicates";
 
-/** `CASE WHEN level >= precise THEN exact ELSE fuzzed END` for latitude. */
-export function visibleLatExpr(ctx: AuthCtx, table: LocationsTableLike = locations): SQL {
-  const precise = preciseWhere(ctx, table);
-  return sql`(case when ${precise} then ${table.lat} else ${table.pubLat} end)`;
+/** Exact latitude. Kept as an expression so every query uses the same source. */
+export function visibleLatExpr(_ctx: AuthCtx, table: LocationsTableLike = locations): SQL {
+  return sql`${table.lat}`;
 }
 
-/** `CASE WHEN level >= precise THEN exact ELSE fuzzed END` for longitude. */
-export function visibleLonExpr(ctx: AuthCtx, table: LocationsTableLike = locations): SQL {
-  const precise = preciseWhere(ctx, table);
-  return sql`(case when ${precise} then ${table.lon} else ${table.pubLon} end)`;
+/** Exact longitude. Kept as an expression so every query uses the same source. */
+export function visibleLonExpr(_ctx: AuthCtx, table: LocationsTableLike = locations): SQL {
+  return sql`${table.lon}`;
 }

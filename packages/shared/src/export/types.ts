@@ -2,7 +2,7 @@
 // is the contract in docs/export-format.md; bump EXPORT_FORMAT_VERSION whenever
 // a file or field changes meaning.
 export const EXPORT_FORMAT = "trespass-export";
-export const EXPORT_FORMAT_VERSION = 1;
+export const EXPORT_FORMAT_VERSION = 2;
 export const EXPORT_URL = "/api/v1/export";
 
 /** Mirrors `exportScope()` in server/authz/actions.ts (admin/all, member/visible). */

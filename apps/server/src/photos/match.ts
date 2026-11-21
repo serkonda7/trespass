@@ -1,9 +1,6 @@
 // GPS/timestamp auto-matching only SUGGESTS a location and a visit; it never
-// attaches them. Candidates are filtered in SQL with the UPLOADER's visible
-// coordinates (DESIGN §3.4 rule 2): using exact coordinates here would let a
-// fake-GPS upload triangulate hidden points. A viewer below `precise` whose
-// photo GPS equals the exact point but is >300 m from the fuzzed point gets no
-// suggestion.
+// attaches them. Candidates are filtered in SQL using the uploader's visible
+// coordinates (DESIGN §3.4 rule 2).
 
 import { localDateTimeToUtc, todayInTz } from "@trespass/shared/format";
 import { bboxAround, haversineMeters, splitBbox } from "@trespass/shared/geo/distance";

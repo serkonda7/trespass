@@ -37,10 +37,10 @@ export function registerAllJobHandlers() {
     backoffBaseMs: 60_000,
     timeoutMs: 120_000,
   });
-  // Photo processing runs in the standalone worker; e2e starts one too.
+  // Photo processing runs in the standalone worker.
   addPhotoJobs(registry, getPhotoStore);
   // Tile regions are extracted by the worker only; TILES=off disables all of
-  // them (e2e and tests). Nothing is downloaded by the web process.
+  // them. Nothing is downloaded by the web process.
   addTileJobs(registry);
   // Research (DESIGN §6): scans, enrich and the weekly watch. RESEARCH=off
   // finishes runs as skipped without any outbound request.

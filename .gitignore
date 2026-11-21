@@ -13,6 +13,4 @@ data/
 deploy/data/
 deploy/ts-state/
 packages/shared/src/paraglide/
-test-results/
-playwright-report/
 apps/client/public/map/

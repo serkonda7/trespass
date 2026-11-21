@@ -34,7 +34,6 @@ export type LocationFormValues = {
   categoryId: string;
   status: StoredLocationStatus;
   coordText: string;
-  fuzzRadiusM: string;
   visibility: Visibility;
   friendsLevel: FriendsLevel;
   description: string;
@@ -45,15 +44,11 @@ export type LocationFormValues = {
   tags: string;
 };
 
-export const emptyLocationValues = (
-  categories: readonly CategoryRow[],
-  defaultFuzz: number,
-): LocationFormValues => ({
+export const emptyLocationValues = (categories: readonly CategoryRow[]): LocationFormValues => ({
   name: "",
   categoryId: categories[0]?.id ?? "",
   status: "idea",
   coordText: "",
-  fuzzRadiusM: String(defaultFuzz),
   visibility: "private",
   friendsLevel: "view",
   description: "",
@@ -69,7 +64,6 @@ export const valuesFromLocation = (loc: SerializedLocation): LocationFormValues 
   categoryId: loc.categoryId,
   status: loc.storedStatus,
   coordText: formatCoordinates(loc.point),
-  fuzzRadiusM: String(loc.fuzzRadiusM ?? 1500),
   visibility: loc.visibility,
   friendsLevel: loc.friendsLevel,
   description: loc.description ?? "",
@@ -291,23 +285,10 @@ export function LocationForm(props: {
                 >
                   <option value="view">{m.location_friends_level_view()}</option>
                   <option value="contribute">{m.location_friends_level_contribute()}</option>
-                  <option value="precise">{m.location_friends_level_precise()}</option>
                 </select>
               </Field>
             </Show>
           </div>
-          <Field id="location-fuzz" label={m.location_field_fuzz()} info={m.location_fuzz_hint()}>
-            <Input
-              id="location-fuzz"
-              aria-describedby="location-fuzz-info"
-              type="number"
-              min="0"
-              step="1"
-              required
-              value={values().fuzzRadiusM}
-              onInput={(e) => set("fuzzRadiusM", e.currentTarget.value)}
-            />
-          </Field>
           <Show when={leak()}>
             <p
               class="rounded-md border border-destructive p-3 text-sm text-destructive"
@@ -393,7 +374,6 @@ export const formPayload = (v: LocationFormValues) => ({
   categoryId: v.categoryId,
   status: v.status,
   point: parseCoordinates(v.coordText),
-  fuzzRadiusM: Number(v.fuzzRadiusM),
   description: v.description || null,
   accessNotes: v.accessNotes || null,
   dangerNotes: v.dangerNotes || null,

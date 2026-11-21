@@ -19,7 +19,6 @@ const TEXT: Record<string, () => string> = {
   SETTINGS_NAME_INVALID: m.admin_settings_error_name,
   SETTINGS_BUDGET_INVALID: m.admin_settings_error_budget,
   SETTINGS_TILE_BUDGET_INVALID: m.admin_settings_error_tile_budget,
-  SETTINGS_FUZZ_INVALID: m.admin_settings_error_fuzz,
   VISIT_NOT_FOUND: m.visits_error_not_found,
   VISIT_FORBIDDEN: m.visits_error_forbidden,
   VISIT_DATE_INVALID: m.visits_error_date,

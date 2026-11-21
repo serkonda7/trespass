@@ -11,8 +11,7 @@
     "worker": "bun scripts/worker.ts",
     "create-admin-invite": "bun scripts/create-admin-invite.ts",
     "db:generate": "bun --bun drizzle-kit generate",
-    "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.5.0",
@@ -30,7 +29,6 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "drizzle-kit": "0.31.11",
-    "fast-check": "4.10.2"
+    "drizzle-kit": "0.31.11"
   }
 }

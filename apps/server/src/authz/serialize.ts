@@ -1,11 +1,10 @@
 // The one place a location turns into what leaves the server (DESIGN §3.4
-// rule 4). Below `precise`, exact coordinates, outline, parking, notes and the
-// fuzz radius are ABSENT from the output (not null) — including from
-// JSON.stringify — and `point` is the stable fuzzed point. This happens on the
+// rule 4). Anyone who can see a location gets its exact coordinates and all of
+// its details. Grants are still limited to `manage`. This happens on the
 // server, never in the UI.
 
 import type { AuthCtx } from "@trespass/shared/authz/ctx";
-import type { GeoJsonPolygon, Point } from "@trespass/shared/geo/types";
+import type { GeoJsonPolygon } from "@trespass/shared/geo/types";
 import type {
   GrantRow,
   LocationCategoryRef,
@@ -15,7 +14,7 @@ import type {
 } from "@trespass/shared/locations/types";
 import type { AppDb } from "../db/client";
 import type { Location } from "../db/schema";
-import { atLeast, canSeeExact, type Level, type VisibleLevel } from "./levels";
+import { atLeast, type Level, type VisibleLevel } from "./levels";
 import { type LeveledLocation, locationLevels } from "./load";
 
 export type SerializeExtra = {
@@ -31,7 +30,6 @@ export type SerializeExtra = {
 function permissions(level: VisibleLevel): LocationPermissions {
   return {
     canContribute: atLeast(level, "contribute"),
-    canSeeExact: canSeeExact(level),
     canEdit: atLeast(level, "edit"),
     canManage: atLeast(level, "manage"),
   };
@@ -48,10 +46,6 @@ export function serializeLocation(
   extra: SerializeExtra = {},
 ): SerializedLocation {
   if (level === "none") throw new Error("serializeLocation: location is not visible to the caller");
-  const exact = canSeeExact(level);
-  const point: Point = exact
-    ? { lat: loc.lat, lon: loc.lon }
-    : { lat: loc.pubLat, lon: loc.pubLon };
   const out: Record<string, unknown> = {
     id: loc.id,
     ownerId: loc.ownerId,
@@ -60,8 +54,7 @@ export function serializeLocation(
     categoryId: loc.categoryId,
     status: extra.effectiveStatus ?? loc.status,
     storedStatus: loc.status,
-    point,
-    exact,
+    point: { lat: loc.lat, lon: loc.lon },
     country: loc.country,
     adminArea: loc.adminArea,
     tz: loc.tz,
@@ -75,19 +68,16 @@ export function serializeLocation(
     updatedAt: loc.updatedAt,
     level,
     permissions: permissions(level as VisibleLevel),
+    geomArea: loc.geomArea as GeoJsonPolygon | null,
+    parking: loc.parking as { lat: number; lon: number }[] | null,
+    accessNotes: loc.accessNotes,
+    dangerNotes: loc.dangerNotes,
   };
   out.category = extra.category ?? null;
   out.tags = extra.tags ?? [];
   out.ownerName = extra.ownerName ?? null;
-  if (exact) {
-    out.fuzzRadiusM = loc.fuzzRadiusM;
-    out.geomArea = loc.geomArea as GeoJsonPolygon | null;
-    out.parking = loc.parking as Point[] | null;
-    out.accessNotes = loc.accessNotes;
-    out.dangerNotes = loc.dangerNotes;
-    // At `manage` only; grants list must not exist for lower levels.
-    if (atLeast(level, "manage")) out.grants = extra.grants ?? null;
-  }
+  // At `manage` only; grants list must not exist for lower levels.
+  if (atLeast(level, "manage")) out.grants = extra.grants ?? null;
   return out as unknown as SerializedLocation;
 }
 

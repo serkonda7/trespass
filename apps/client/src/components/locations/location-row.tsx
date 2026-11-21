@@ -1,6 +1,5 @@
 import { Link } from "@tanstack/solid-router";
 import type { LocationListItem } from "@trespass/shared/locations/types";
-import { m } from "@trespass/shared/paraglide/messages";
 import { Show } from "solid-js";
 import { CategoryIcon } from "~/components/locations/category-icon";
 import { StatusBadge } from "~/components/locations/status-badge";
@@ -42,9 +41,6 @@ export function LocationRow(props: {
           </Show>
           <Show when={loc().country}>
             <Badge variant="outline">{loc().country}</Badge>
-          </Show>
-          <Show when={!loc().exact}>
-            <Badge variant="outline">≈ {m.location_approximate_short()}</Badge>
           </Show>
         </span>
       </span>

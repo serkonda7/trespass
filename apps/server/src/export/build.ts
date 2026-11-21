@@ -5,8 +5,7 @@
 // visibleVisitsWhere, visiblePhotosWhere, visibleHistoryWhere,
 // visibleCommentsWhere and visibleTripsWhere. Nothing is filtered in JS.
 // Coordinates come from visibleLatExpr/visibleLonExpr, and locations go through
-// serializeLocation, so a viewer below `precise` gets one stable fuzzed point
-// and never an outline, notes, fuzz radius or exact photo GPS.
+// serializeLocation; every exported location has its exact point and details.
 //
 // Memory: data is read in pages from a single read snapshot and written as it
 // is read; files are streamed in 256 KiB chunks; between pages the loop yields
@@ -305,8 +304,7 @@ async function build(
             properties,
           }),
         );
-        // The outline is exact data: only a precise viewer gets this feature.
-        if (dto.exact && row.location.geomArea) {
+        if (row.location.geomArea) {
           await w.put(
             `,${JSON.stringify({
               type: "Feature",
